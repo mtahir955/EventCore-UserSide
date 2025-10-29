@@ -1,10 +1,11 @@
-"use client";
-import { useState } from "react";
-
 export default function PaymentDetails() {
-  const [isDefault, setIsDefault] = useState(true);
-
-  const handleToggle = () => setIsDefault((prev) => !prev);
+  const data = {
+    nameOnCard: "Jasmine Marina",
+    cardNumber: "1253-5594-8845-2777",
+    expireDate: "04/29",
+    cvc: "720",
+    isDefault: true,
+  };
 
   return (
     <div className="space-y-6 transition-colors duration-300 text-gray-900 dark:text-gray-100">
@@ -13,11 +14,9 @@ export default function PaymentDetails() {
         <label className="text-sm text-gray-700 dark:text-gray-200">
           Name On Card:
         </label>
-        <input
-          defaultValue="Jasmine Marina"
-          className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
-          aria-label="Name on card"
-        />
+        <div className="h-12 flex items-center rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#181818] px-4 text-sm font-medium">
+          {data.nameOnCard}
+        </div>
       </div>
 
       {/* Card Number */}
@@ -25,11 +24,9 @@ export default function PaymentDetails() {
         <label className="text-sm text-gray-700 dark:text-gray-200">
           Card Number:
         </label>
-        <input
-          defaultValue="1253-5594-8845-2777"
-          className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
-          aria-label="Card number"
-        />
+        <div className="h-12 flex items-center rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#181818] px-4 text-sm font-medium tracking-wide">
+          {data.cardNumber}
+        </div>
       </div>
 
       {/* Expiry & CVC */}
@@ -38,42 +35,34 @@ export default function PaymentDetails() {
           <label className="text-sm text-gray-700 dark:text-gray-200">
             Expire Date:
           </label>
-          <input
-            defaultValue="04/29"
-            className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
-            aria-label="Expire date"
-          />
+          <div className="h-12 flex items-center rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#181818] px-4 text-sm font-medium">
+            {data.expireDate}
+          </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm text-gray-700 dark:text-gray-200">CVC:</label>
-          <input
-            defaultValue="720"
-            className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
-            aria-label="CVC"
-          />
+          <label className="text-sm text-gray-700 dark:text-gray-200">
+            CVC:
+          </label>
+          <div className="h-12 flex items-center rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#181818] px-4 text-sm font-medium">
+            {data.cvc}
+          </div>
         </div>
       </div>
 
-      {/* Toggle Default Payment */}
+      {/* Default Payment Toggle (fixed display) */}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleToggle}
-          aria-pressed={isDefault}
-          className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors duration-300 ${
-            isDefault
-              ? "bg-[#F97316]"
-              : "bg-gray-300 dark:bg-gray-700"
+        <div
+          className={`relative inline-flex h-6 w-10 items-center rounded-full ${
+            data.isDefault ? "bg-[#F97316]" : "bg-gray-300 dark:bg-gray-700"
           }`}
         >
-          <span className="sr-only">Use as default payment</span>
           <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-200 shadow transition-transform duration-300 ${
-              isDefault ? "translate-x-5" : "translate-x-1"
+            className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-200 shadow transition-transform ${
+              data.isDefault ? "translate-x-5" : "translate-x-1"
             }`}
           />
-        </button>
+        </div>
 
         <span className="text-sm text-gray-700 dark:text-gray-300">
           Set as default payment option to use in future.

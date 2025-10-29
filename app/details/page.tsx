@@ -10,7 +10,11 @@ import { Footer } from "../../components/footer";
 import { CalendarModal } from "../details/components/calendar-modal";
 import { Button } from "@/components/ui/button";
 
-export default function EventDetailPage() {
+export default function EventDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const eventDate = new Date("2025-06-13T20:00:00");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -19,6 +23,8 @@ export default function EventDetailPage() {
       <Header />
 
       <main>
+        <p>{params.id}</p>
+
         {/* Hero Section with Countdown */}
         <section className="relative max-w-[1440px] mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-8">
           <div className="relative h-[220px] sm:h-[300px] md:h-[400px] rounded-2xl overflow-hidden">

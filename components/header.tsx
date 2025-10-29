@@ -17,6 +17,19 @@ export function Header() {
   const pathname = usePathname();
   const { resolvedTheme, theme, setTheme } = useTheme();
 
+  // ✅ counters for tickets and notifications
+  const [ticketsCount, setTicketsCount] = useState(2);
+  const [notificationsCount, setNotificationsCount] = useState(5);
+
+  // (Optional) simulate real-time updates every 10s (for demo)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTicketsCount((prev) => prev + Math.floor(Math.random() * 2)); // +0 or +1
+      setNotificationsCount((prev) => prev + Math.floor(Math.random() * 3)); // +0 to +2
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const menuItemsProfile = [
     {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/profile-icon-hpLk6uI2OKdzKYaF7al9JgxYBvGPvw.png",
@@ -32,6 +45,7 @@ export function Header() {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Ticket-icon-UCFZYJF7qiaJCM33FtP2mbaaGBEXA9.png",
       label: "Tickets",
       href: "/tickets",
+      counter: ticketsCount, // ✅ live ticket counter
     },
     {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Calendar-icon-ilbfRcUhzwNOhOz3QBIziWCZOK4uDV.png",
@@ -42,14 +56,8 @@ export function Header() {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/notifications-icon-YNBdsbLEdRySLL7MtsqsOP5jYisuIh.png",
       label: "Notifications",
       href: "/notifications",
+      counter: notificationsCount, // ✅ live notifications counter
     },
-    // {
-    //   icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logout-icon-oSPWMhCaqEy8zFT4DOBc9DY2pUNhYW.png",
-    //   label: "Logout",
-    //   // href: "#",
-    //   isLogout: true,
-    //   onClick: () => setShowLogoutModal(true),
-    // },
   ];
 
   useEffect(() => {
@@ -203,9 +211,9 @@ export function Header() {
 
             {/* Desktop Login */}
             <Link href="/sign-up">
-            <Button className="hidden lg:inline-flex bg-[#0077F7] hover:bg-[#0066D6] text-white px-6 py-2 rounded-full font-medium dark:bg-[#3399FF] dark:hover:bg-[#4DA3FF]">
-              Login
-            </Button>
+              <Button className="hidden lg:inline-flex bg-[#0077F7] hover:bg-[#0066D6] text-white px-6 py-2 rounded-full font-medium dark:bg-[#3399FF] dark:hover:bg-[#4DA3FF]">
+                Login
+              </Button>
             </Link>
 
             {/* Mobile menu button */}
@@ -248,26 +256,31 @@ export function Header() {
 
                 <div className="py-2">
                   {menuItemsProfile.map((item, index) => (
-                    <a
+                    <Link
                       key={index}
                       href={item.href}
-                      className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                        item.isLogout
-                          ? "hover:bg-blue-50 dark:hover:bg-[#353535] text-gray-900 dark:text-gray-100"
-                          : "hover:bg-gray-50 dark:hover:bg-[#353535] text-gray-900 dark:text-gray-100"
-                      }`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#353535] text-gray-900 dark:text-gray-100"
                     >
-                      <Image
-                        src={item.icon || "/placeholder.svg"}
-                        alt={item.label}
-                        width={17}
-                        height={17}
-                        className="flex-shrink-0 dark:invert"
-                      />
-                      <span className="text-[14px] font-medium">
-                        {item.label}
-                      </span>
-                    </a>
+                      <div className="flex items-center gap-3">
+                        <Image
+                          src={item.icon}
+                          alt={item.label}
+                          width={17}
+                          height={17}
+                          className="dark:invert"
+                        />
+                        <span className="text-[14px] font-medium">
+                          {item.label}
+                        </span>
+                      </div>
+
+                      {/* ✅ Counter badge */}
+                      {item.counter !== undefined && item.counter > 0 && (
+                        <span className="ml-2 px-2 py-[2px] text-xs font-semibold bg-[#0077F7] text-white rounded-full">
+                          {item.counter}
+                        </span>
+                      )}
+                    </Link>
                   ))}
                 </div>
                 <Button
@@ -298,9 +311,9 @@ export function Header() {
               </Link>
             ))}
             <Link href="/sign-up">
-            <Button className="w-full bg-[#0077F7] hover:bg-[#0066D6] dark:bg-[#3399FF] dark:hover:bg-[#4DA3FF] text-white rounded-full">
-              Login
-            </Button>
+              <Button className="w-full bg-[#0077F7] hover:bg-[#0066D6] dark:bg-[#3399FF] dark:hover:bg-[#4DA3FF] text-white rounded-full">
+                Login
+              </Button>
             </Link>
           </div>
         )}

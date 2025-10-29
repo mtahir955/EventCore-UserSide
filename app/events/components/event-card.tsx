@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Event {
   id: number;
@@ -24,9 +25,16 @@ interface EventCardProps {
 
 export function EventCard({ event }: EventCardProps) {
   const [isInterested, setIsInterested] = useState(false);
+  const router = useRouter();
+
+  // Navigate to /details when card is clicked
+  const handleCardClick = () => {
+    router.push(`/details?id=${event.id}`); // or `/details/${event.id}` if you use dynamic route
+  };
 
   return (
     <div
+      onClick={handleCardClick}
       className="
       relative rounded-2xl overflow-hidden group cursor-pointer 
       transition-all duration-500 hover:scale-[1.01] 
@@ -51,7 +59,10 @@ export function EventCard({ event }: EventCardProps) {
         </div>
 
         {/* Card Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-white">
+        <div
+          className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-white"
+          onClick={(e) => e.stopPropagation()} // prevent navigating when clicking inside favorite button
+        >
           {/* Host + Favorite */}
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs sm:text-sm text-white/80">
@@ -62,7 +73,10 @@ export function EventCard({ event }: EventCardProps) {
               size="icon"
               variant="ghost"
               className="bg-white/90 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 rounded-full w-8 h-8 transition"
-              onClick={() => setIsInterested(!isInterested)}
+              onClick={(e) => {
+                e.stopPropagation(); // prevent routing
+                setIsInterested(!isInterested);
+              }}
             >
               <Star
                 className={`w-4 h-4 ${

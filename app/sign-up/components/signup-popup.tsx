@@ -12,10 +12,31 @@ interface SignupPopupProps {
 export default function SignupPopup({ onNavigate }: SignupPopupProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: "Alizebth Quen",
-    email: "alizebthquen@email.com",
-    password: "••••••••••••••••••",
+    name: "",
+    email: "",
+    password: "",
   });
+
+  const [errors, setErrors] = useState({
+    name: false,
+    email: false,
+    password: false,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newErrors = {
+      name: formData.name.trim() === "",
+      email: formData.email.trim() === "",
+      password: formData.password.trim() === "",
+    };
+
+    setErrors(newErrors);
+
+    // No alerts or disabling — just visual feedback
+    // Proceed logic can be added here if needed (e.g., API call)
+  };
 
   return (
     <div className="w-full max-w-[596px] h-auto md:h-[640px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-8 font-sans">
@@ -67,7 +88,7 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
       </div>
 
       {/* Form */}
-      <form className="space-y-2">
+      <form className="space-y-2" onSubmit={handleSubmit}>
         {/* Name Field */}
         <div>
           <label className="block text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
@@ -77,7 +98,12 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full h-10 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#D19537]"
+            className={`w-full h-10 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
+              errors.name
+                ? "bg-red-50 border border-red-500 focus:ring-red-500"
+                : "bg-gray-100 dark:bg-gray-800 focus:ring-[#D19537]"
+            }`}
+            placeholder="Enter your name"
           />
         </div>
 
@@ -92,7 +118,12 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
             }
-            className="w-full h-10 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#D19537]"
+            className={`w-full h-10 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
+              errors.email
+                ? "bg-red-50 border border-red-500 focus:ring-red-500"
+                : "bg-gray-100 dark:bg-gray-800 focus:ring-[#D19537]"
+            }`}
+            placeholder="Enter your email"
           />
         </div>
 
@@ -108,7 +139,12 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full h-10 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 pr-12 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#D19537]"
+              placeholder="Enter your password"
+              className={`w-full h-10 rounded-lg px-4 pr-12 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
+                errors.password
+                  ? "bg-red-50 border border-red-500 focus:ring-red-500"
+                  : "bg-gray-100 dark:bg-gray-800 focus:ring-[#D19537]"
+              }`}
             />
             <button
               type="button"
@@ -154,12 +190,6 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
           type="submit"
           className="w-full h-12 rounded-lg font-bold text-white uppercase tracking-wide transition-colors text-sm sm:text-base"
           style={{ backgroundColor: "#0077F7" }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0077F7")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0077F7")
-          }
         >
           START MY FREE TRIAL
         </button>

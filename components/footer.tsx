@@ -139,7 +139,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="border-t border-gray-800 pt-8">
           <p className="text-center text-gray-400 text-xs sm:text-sm">
-            ©2025 Viago. All rights reserved.
+            ©2025 Event Core. All rights reserved.
           </p>
         </div>
       </div>

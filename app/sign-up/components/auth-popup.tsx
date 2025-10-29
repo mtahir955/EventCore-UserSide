@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import SignupPopup from "./signup-popup";
 import SigninPopup from "./signin-popup";
 import ForgotPasswordPopup from "./forgot-password-popup";
@@ -14,6 +15,12 @@ export default function AuthPopup() {
   const [isOpen, setIsOpen] = useState(true);
   const [view, setView] = useState<AuthView>("signup");
   const { resolvedTheme } = useTheme();
+  const router = useRouter(); // ✅ for redirection
+
+  const handleClose = () => {
+    setIsOpen(false);
+    router.push("/"); // ✅ redirect to homepage
+  };
 
   const renderView = () => {
     switch (view) {
@@ -40,7 +47,7 @@ export default function AuthPopup() {
     >
       {/* Close Button */}
       <button
-        onClick={() => setIsOpen(false)}
+        onClick={handleClose}
         className="absolute top-6 right-6 bg-black dark:bg-white text-white dark:text-black p-2 rounded-full shadow-md hover:opacity-80 transition"
       >
         <X size={20} />

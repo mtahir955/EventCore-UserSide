@@ -14,11 +14,22 @@ export default function ForgotPasswordPopup({
   onNavigate,
 }: ForgotPasswordPopupProps) {
   const [formData, setFormData] = useState({
-    email: "alizebthquen@email.com",
+    email: "",
   });
+
+  const [error, setError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If email is empty → mark as error
+    if (formData.email.trim() === "") {
+      setError(true);
+      return;
+    }
+
+    // If filled → proceed normally
+    setError(false);
     onNavigate("reset-password");
   };
 
@@ -75,10 +86,16 @@ export default function ForgotPasswordPopup({
           <input
             type="email"
             value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-            className="w-full h-10 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#D19537]"
+            onChange={(e) => {
+              setFormData({ ...formData, email: e.target.value });
+              if (e.target.value.trim() !== "") setError(false); // ✅ remove red as user types
+            }}
+            placeholder="Enter your email"
+            className={`w-full h-10 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
+              error
+                ? "bg-red-50 border border-red-500 focus:ring-red-500"
+                : "bg-gray-100 dark:bg-gray-800 focus:ring-[#D19537]"
+            }`}
           />
         </div>
 
@@ -86,12 +103,6 @@ export default function ForgotPasswordPopup({
           type="submit"
           className="w-full h-12 rounded-lg font-bold text-white uppercase tracking-wide transition-colors text-sm sm:text-base mt-3"
           style={{ backgroundColor: "#0077F7" }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0077F7")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0077F7")
-          }
         >
           Reset Password
         </button>

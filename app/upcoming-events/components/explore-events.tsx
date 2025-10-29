@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EventCard } from "./explore-card"
+import { useRouter } from "next/navigation";  
 
 const events = [
   {
@@ -42,6 +43,8 @@ export function ExploreEvents() {
   const goToNext = () => {
     setCurrentIndex((prevIndex) => (prevIndex === events.length - 1 ? 0 : prevIndex + 1))
   }
+  
+  const router = useRouter();
 
   return (
     <section className="py-16 bg-white">

@@ -20,13 +20,29 @@ export default function ResetPasswordPopup({
   const [showPassword, setShowPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
 
+  const [errors, setErrors] = useState({
+    password: false,
+    resetPassword: false,
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onNavigate("signin");
+
+    const newErrors = {
+      password: formData.password.trim() === "",
+      resetPassword: formData.resetPassword.trim() === "",
+    };
+
+    setErrors(newErrors);
+
+    // if both filled, proceed
+    if (!newErrors.password && !newErrors.resetPassword) {
+      onNavigate("signin");
+    }
   };
 
   return (
-    <div className="w-full max-w-[596px] h-auto md:h-[420px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
+    <div className="w-full max-w-[596px] h-auto md:h-[435px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
       {/* Header */}
       <div className="mb-6 sm:mb-8 text-center md:text-left">
         <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-2">
@@ -38,29 +54,35 @@ export default function ResetPasswordPopup({
       </div>
 
       {/* Form */}
-      <form className="space-y-2" onSubmit={handleSubmit}>
-        {/* Password Field */}
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {/* New Password Field */}
         <div>
           <label className="block text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
-            Password
+            New Password
           </label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="w-full h-10 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 pr-12 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#D19537]"
-              placeholder="••••••••••••••••••••"
+              onChange={(e) => {
+                setFormData({ ...formData, password: e.target.value });
+                if (e.target.value.trim() !== "")
+                  setErrors({ ...errors, password: false });
+              }}
+              placeholder="Enter new password"
+              className={`w-full h-10 rounded-lg px-4 pr-12 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
+                errors.password
+                  ? "bg-red-50 border border-red-500 focus:ring-red-500"
+                  : "bg-gray-100 dark:bg-gray-800 focus:ring-[#D19537]"
+              }`}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               {showPassword ? (
-                // Eye with slash
+                // Hide (eye with slash)
                 <svg
                   width="20"
                   height="20"
@@ -73,7 +95,7 @@ export default function ResetPasswordPopup({
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               ) : (
-                // Eye open
+                // Show (open eye)
                 <svg
                   width="20"
                   height="20"
@@ -90,28 +112,34 @@ export default function ResetPasswordPopup({
           </div>
         </div>
 
-        {/* Reset Password Field */}
+        {/* Confirm Password Field */}
         <div>
           <label className="block text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
-            Reset Password
+            Confirm Password
           </label>
           <div className="relative">
             <input
               type={showResetPassword ? "text" : "password"}
               value={formData.resetPassword}
-              onChange={(e) =>
-                setFormData({ ...formData, resetPassword: e.target.value })
-              }
-              className="w-full h-10 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 pr-12 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#D19537]"
-              placeholder="••••••••••••••••••••"
+              onChange={(e) => {
+                setFormData({ ...formData, resetPassword: e.target.value });
+                if (e.target.value.trim() !== "")
+                  setErrors({ ...errors, resetPassword: false });
+              }}
+              placeholder="Confirm new password"
+              className={`w-full h-10 rounded-lg px-4 pr-12 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
+                errors.resetPassword
+                  ? "bg-red-50 border border-red-500 focus:ring-red-500"
+                  : "bg-gray-100 dark:bg-gray-800 focus:ring-[#D19537]"
+              }`}
             />
             <button
               type="button"
               onClick={() => setShowResetPassword(!showResetPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               {showResetPassword ? (
-                // Eye with slash
+                // Hide (eye with slash)
                 <svg
                   width="20"
                   height="20"
@@ -124,7 +152,7 @@ export default function ResetPasswordPopup({
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               ) : (
-                // Eye open
+                // Show (open eye)
                 <svg
                   width="20"
                   height="20"
@@ -146,12 +174,6 @@ export default function ResetPasswordPopup({
           type="submit"
           className="w-full h-12 rounded-lg font-bold text-white uppercase tracking-wide transition-colors text-sm sm:text-base mt-6 sm:mt-8"
           style={{ backgroundColor: "#0077F7" }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0077F7")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0077F7")
-          }
         >
           Continue to Login
         </button>

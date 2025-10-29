@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "../host-dashboard/components/sidebar";
 import { StatCard } from "../host-dashboard/components/stat-card";
 import { LineChartCard } from "../host-dashboard/components/charts/line-chart-card";
@@ -8,101 +8,82 @@ import { DonutChartCard } from "../host-dashboard/components/charts/donut-chart-
 import { MyEventsCard } from "../host-dashboard/components/my-events-card";
 import { WithdrawModal } from "../host-dashboard/components/withdraw-modal";
 import { WithdrawSuccessModal } from "../host-dashboard/components/withdraw-success-modal";
-import { Menu } from "lucide-react";
-import { SidebarToggle } from "../host-dashboard/components/sidebar-toggle";
-
-type Props = {
-  imageSrc: string;
-  price: string;
-  hostby: string;
-  title: string;
-  description: string;
-  location: string;
-  date: string;
-  audience: number;
-  time: string;
-};
-
-const dummyEvents: Props[] = [
-  {
-    imageSrc: "/images/event-1.png",
-    price: "1500",
-    hostby: "Ali Khan",
-    title: "Lahore Music Fest 2025",
-    description:
-      "Join us for an unforgettable night of music, food, and lights in Lahore.",
-    location: "Lahore Expo Center",
-    date: "12/11/2025",
-    audience: 5000,
-    time: "7:00 PM - 11:00 PM",
-  },
-  {
-    imageSrc: "/images/event-2.png",
-    price: "0",
-    hostby: "ITU CS Department",
-    title: "Tech Conference Pakistan",
-    description:
-      "A gathering of tech enthusiasts discussing AI, Blockchain, and Web3.",
-    location: "Islamabad Convention Hall",
-    date: "25/11/2025",
-    audience: 1200,
-    time: "10:00 AM - 5:00 PM",
-  },
-];
+import { X, LogOut } from "lucide-react";
 
 export default function Page() {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Dropdowns
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Dummy notifications
+  const notifications = [
+    { id: 1, message: "Your event 'Tech Summit' was approved!" },
+    { id: 2, message: "You sold 3 tickets for 'Lahore Music Fest'." },
+    { id: 3, message: "New user message received." },
+  ];
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const dummyEvents = [
+    {
+      imageSrc: "/images/event-1.png",
+      price: "1500",
+      hostby: "Ali Khan",
+      title: "Lahore Music Fest 2025",
+      description:
+        "Join us for an unforgettable night of music, food, and lights in Lahore.",
+      location: "Lahore Expo Center",
+      date: "12/11/2025",
+      audience: 5000,
+      time: "7:00 PM - 11:00 PM",
+    },
+    {
+      imageSrc: "/images/event-2.png",
+      price: "0",
+      hostby: "ITU CS Department",
+      title: "Tech Conference Pakistan",
+      description:
+        "A gathering of tech enthusiasts discussing AI, Blockchain, and Web3.",
+      location: "Islamabad Convention Hall",
+      date: "25/11/2025",
+      audience: 1200,
+      time: "10:00 AM - 5:00 PM",
+    },
+  ];
 
   return (
     <main className="min-h-screen w-full bg-[var(--bg-base)] relative overflow-x-hidden">
-      {/* --- Sidebar --- */}
       <Sidebar active="Dashboard" />
 
-      {/* --- Mobile Top Bar --- */}
-      {/* <div className="md:hidden fixed top-0 left-0 right-0 z-[60] flex items-center justify-between bg-white border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Sidebar active="Dashboard" />
-          <h3 className="text-lg font-semibold text-black">Dashboard</h3>
-        </div> */}
-
-        {/* Right: Notification + Profile */}
-        {/* <div className="flex items-center gap-3">
-          <div className="bg-white border h-9 w-9 flex justify-center items-center rounded-full">
-            <img
-              src="/images/icons/notification-new.png"
-              alt="notification"
-              className="h-4 w-4"
-            />
-          </div>
-          <div className="bg-black border h-9 w-9 flex justify-center items-center rounded-full">
-            <img
-              src="/images/icons/profile-user.png"
-              alt="profile"
-              className="h-4 w-4"
-            />
-          </div>
-        </div>
-      </div> */}
-
-      {/* --- Overlay for mobile sidebar --- */}
-      {/* {sidebarOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/40 z-20 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="fixed top-0 left-0 w-[256px] h-full z-30 bg-white shadow-lg transition-transform duration-300 ease-in-out md:hidden">
-            <Sidebar active="Dashboard" />
-          </div>
-        </>
-      )} */}
-
-      {/* --- Dashboard Content --- */}
-      <section className="flex-1 md:ml-[256px] bg-[#FAFAFB] min-h-screen transition-all duration-300">
-        {/* Desktop Header */}
-        <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
+      <section className="flex-1 md:ml-[256px] bg-[#FAFAFB] dark:bg-[#121212] text-gray-900 dark:text-gray-100 min-h-screen transition-all duration-300">
+        {/* Header */}
+        <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4 relative">
           <div>
             <h1 className="text-[32px] font-semibold tracking-[-0.02em] text-foreground">
               Dashboard
@@ -119,23 +100,85 @@ export default function Page() {
             </div>
           </div>
 
+          {/* Right section */}
           <div className="flex flex-col items-end gap-3">
-            <div className="flex items-center gap-4">
-              <div className="bg-white border h-9 w-9 flex justify-center items-center rounded-full">
-                <img
-                  src="/images/icons/notification-new.png"
-                  alt="notification"
-                  className="h-4 w-4"
-                />
+            <div className="flex items-center gap-4 relative">
+              {/* Notification icon */}
+              <div ref={notificationsRef} className="relative">
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setShowProfileDropdown(false);
+                  }}
+                  className="bg-white border h-9 w-9 flex justify-center items-center rounded-full relative hover:bg-gray-100"
+                >
+                  <img
+                    src="/images/icons/notification-new.png"
+                    alt="notification"
+                    className="h-4 w-4"
+                  />
+                  {/* Counter badge */}
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                </button>
+
+                {/* Notification popup */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                      Notifications
+                    </h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className="text-sm bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition"
+                          >
+                            {n.message}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          No new notifications
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="bg-black border h-9 w-9 flex justify-center items-center rounded-full">
-                <img
-                  src="/images/icons/profile-user.png"
-                  alt="profile"
-                  className="h-4 w-4"
-                />
+
+              {/* Profile icon + dropdown */}
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(!showProfileDropdown);
+                    setShowNotifications(false);
+                  }}
+                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+                >
+                  <img
+                    src="/images/icons/profile-user.png"
+                    alt="profile"
+                    className="h-4 w-4"
+                  />
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                    <button
+                      onClick={() => setShowLogoutModal(true)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Withdraw button */}
             <button
               className="h-10 rounded-2xl px-5 font-medium text-white"
               style={{ background: "var(--brand, #D19537)" }}
@@ -146,24 +189,16 @@ export default function Page() {
           </div>
         </header>
 
-        {/* Mobile Header */}
-        <div className="md:hidden mt-20 px-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">
-              Welcome <span className="font-black">Host_name 👋</span>
-            </h2>
-            <button
-              className="h-9 px-4 rounded-2xl text-sm font-medium text-white"
-              style={{ background: "#D19537" }}
-              onClick={() => setWithdrawOpen(true)}
-            >
-              Withdraw
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 mt-6">
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 sm:mt-0 mt-20">
+          {/* Withdraw button */}
+          <button
+            className="h-10 sm:hidden rounded-2xl px-5 font-medium text-white"
+            style={{ background: "var(--brand, #D19537)" }}
+            onClick={() => setWithdrawOpen(true)}
+          >
+            Withdraw
+          </button>
           <StatCard
             icon="/images/icons/1.png"
             label="Total Events"
@@ -190,7 +225,7 @@ export default function Page() {
           />
         </div>
 
-        {/* Charts Section */}
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 mt-8">
           <div className="lg:col-span-7">
             <LineChartCard />
@@ -200,32 +235,71 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Events Section */}
+        {/* Events */}
         <div className="px-4 md:px-8 mt-10 mb-12">
           <h2 className="text-lg md:text-[18px] font-semibold mb-4">
             Explore More Events
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {dummyEvents.map((event, index) => (
-              <MyEventsCard
-                key={index}
-                imageSrc={event.imageSrc}
-                price={event.price}
-                isEditEvent={true}
-                hostby={event.hostby}
-                title={event.title}
-                description={event.description}
-                location={event.location}
-                date={event.date}
-                audience={event.audience}
-                time={event.time}
-              />
+              <MyEventsCard key={index} {...event} isEditEvent />
             ))}
           </div>
         </div>
       </section>
 
-      {/* --- Modals --- */}
+      {/* Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm"
+            onClick={() => setShowLogoutModal(false)}
+          />
+          <div
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            style={{ height: "auto", borderRadius: "16px" }}
+          >
+            <button
+              onClick={() => setShowLogoutModal(false)}
+              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-black text-white transition-colors hover:bg-gray-800"
+            >
+              <X className="size-4" />
+            </button>
+            <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-gray-300">
+              <div className="flex size-12 items-center justify-center rounded-full bg-[#D19537]">
+                <LogOut className="size-6 text-white" />
+              </div>
+            </div>
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+              Are you sure you want to log out?
+            </h2>
+            <p className="mb-8 text-center text-gray-600">
+              {"You'll be signed out from your account."}
+            </p>
+            <div className="flex w-full flex-col gap-4 sm:flex-row">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="h-14 w-full bg-gray-100 font-medium text-[#D19537] transition-colors hover:bg-gray-200 sm:w-[212px]"
+                style={{ borderRadius: "50px" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Logging out...");
+                  setShowLogoutModal(false);
+                }}
+                className="h-14 w-full bg-[#D19537] font-medium text-white transition-colors hover:bg-[#e99714] sm:w-[212px]"
+                style={{ borderRadius: "50px" }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
       <WithdrawModal
         open={withdrawOpen}
         onClose={() => setWithdrawOpen(false)}

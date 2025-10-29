@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MapPin, Calendar, Users, Clock } from "lucide-react";
 
@@ -10,17 +13,25 @@ type EventCardProps = {
 };
 
 export function EventCard({ image, title, subtitle, price }: EventCardProps) {
+  const router = useRouter();
+
+  // Navigate to /details when the card is clicked
+  const handleClick = () => {
+    router.push("/details");
+  };
+
   return (
     <div
+      onClick={handleClick}
       className={cn(
-        "relative overflow-hidden rounded-xl border border-border dark:border-gray-700 w-full",
-        "bg-white dark:bg-[#181818] transition-colors duration-300 hover:shadow-md dark:hover:shadow-blue-500/10"
+        "relative overflow-hidden rounded-xl border border-border dark:border-gray-700 w-full cursor-pointer",
+        "bg-white dark:bg-[#181818] transition-all duration-300 hover:shadow-lg dark:hover:shadow-blue-500/20 hover:scale-[1.01]"
       )}
     >
       <div className="relative h-[220px] sm:h-[280px] md:h-[330px] w-full">
         {/* event image */}
         <Image
-          src="/images/event-venue-1.png"
+          src={image || "/images/event-venue-1.png"}
           alt={title}
           fill
           className="object-cover"
@@ -35,9 +46,10 @@ export function EventCard({ image, title, subtitle, price }: EventCardProps) {
           {price}
         </div>
 
-        {/* favorite button */}
+        {/* favorite button (click disabled from triggering redirect) */}
         <button
           aria-label="Favorite event"
+          onClick={(e) => e.stopPropagation()}
           className="absolute right-3 sm:right-4 top-3 sm:top-4 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-white dark:bg-[#222222] flex items-center justify-center shadow hover:scale-105 transition-transform"
         >
           <Image
