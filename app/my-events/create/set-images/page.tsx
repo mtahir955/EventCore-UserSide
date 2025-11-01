@@ -72,13 +72,13 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
 
   return (
     <div className="px-4 sm:px-6 md:px-8 pb-8">
-      <div className="rounded-2xl p-4 sm:p-6 md:p-8 bg-white max-w-[1200px] mx-auto">
+      <div className="rounded-2xl p-4 sm:p-6 md:p-8 bg-white dark:bg-[#101010] dark:border max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h3 className="text-[22px] sm:text-[26px] md:text-[28px] font-bold mb-2">
             Upload Banner
           </h3>
-          <p className="text-[13px] sm:text-[15px] md:text-[16px] font-medium text-[#666666]">
+          <p className="text-[13px] sm:text-[15px] md:text-[16px] font-medium text-[#666666] dark:text-gray-300">
             Upload a banner to make your event stand out and grab attention
             instantly.
           </p>
@@ -129,7 +129,7 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
                   <span className="text-[18px] leading-none">+</span>
                   Upload Banner
                 </button>
-                <p className="text-[13px] sm:text-[14px] text-center text-[#666666]">
+                <p className="text-[13px] sm:text-[14px] text-center text-[#666666] dark:text-gray-300">
                   Drag & drop your image or tap upload to choose a file.
                 </p>
               </>

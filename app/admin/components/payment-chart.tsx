@@ -68,9 +68,9 @@ export function PaymentChart() {
               <button
                 key={option}
                 onClick={() => setActive(option)}
-                className={`px-3 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-xs rounded-2xl transition-all ${
+                className={`px-3 sm:px-4 py-2 sm:py-3 text-[10px] dark:text-gray-700 sm:text-xs rounded-2xl transition-all ${
                   active === option
-                    ? "bg-foreground text-background"
+                    ? "bg-foreground dark:bg-[#6164f7] dark:text-white text-background"
                     : "text-muted-foreground hover:bg-secondary"
                 }`}
               >

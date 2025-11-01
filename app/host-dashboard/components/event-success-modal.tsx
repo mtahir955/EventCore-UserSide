@@ -39,7 +39,7 @@ export function EventSuccessModal({
       }}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col sm:w-[640px] w-[330px] h-[600px]"
+        className="bg-white dark:bg-[#101010] rounded-3xl shadow-2xl overflow-hidden flex flex-col sm:w-[640px] w-[330px] h-[600px]"
         // style={{ width: "640px", height: "592.15px" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -56,7 +56,7 @@ export function EventSuccessModal({
             <h2 className="sm:text-[36px] text-[26px] font-bold mb-3 leading-tight tracking-tight">
               Event Successfully Uploaded!
             </h2>
-            <p className="sm:text-[17px] text-[15px] text-gray-700 leading-relaxed px-2">
+            <p className="sm:text-[17px] text-[15px] text-gray-700 dark:text-gray-400 leading-relaxed px-2">
               Your event is now live on Event Core. Attendees can start
               exploring and booking right away.
             </p>

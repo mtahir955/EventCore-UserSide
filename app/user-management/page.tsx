@@ -2,10 +2,12 @@
 
 import { Sidebar } from "../admin/components/sidebar";
 import { UserManagementTable } from "../admin/components/user-management-table";
-import { Bell, User, X, LogOut } from "lucide-react";
+import { Bell, User, X, LogOut, Moon, Sun } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function UserManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,12 +39,16 @@ export default function UserManagementPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
+  const selectRef = useRef<HTMLSelectElement>(null);
+
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar (responsive handled inside component) */}
       <Sidebar activePage="User Management" />
 
-      <main className="flex-1 overflow-auto lg:ml-[250px]">
+      <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* ===== Header ===== */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
           <h1 className="text-3xl font-semibold text-foreground">
@@ -50,6 +56,39 @@ export default function UserManagementPage() {
           </h1>
 
           <div className="flex items-center gap-4">
+            {/* Light/Dark toggle */}
+            <Button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              variant="ghost"
+              size="sm"
+              className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+            >
+              {theme === "light" ? (
+                <>
+                  <Moon className="h-4 w-4" /> Dark Mode
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4" /> Light Mode
+                </>
+              )}
+            </Button>
+
+            {/* Mobile toggle */}
+            <button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+              ) : (
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </button>
             <Link href="/push-notification">
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
                 <Bell className="h-5 w-5 text-gray-600" />
@@ -71,10 +110,30 @@ export default function UserManagementPage() {
               </button>
 
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                  <Link href="/host-management">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      Host Management
+                    </button>
+                  </Link>
+                  <Link href="/host-request">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      Host Request
+                    </button>
+                  </Link>
+                  <Link href="/payment-withdrawal">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      Payment Withdrawal
+                    </button>
+                  </Link>
+                  <Link href="/system-settings">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      System Settings
+                    </button>
+                  </Link>
                   <button
                     onClick={() => setShowLogoutModal(true)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
                   >
                     Logout
                   </button>
@@ -114,16 +173,21 @@ export default function UserManagementPage() {
             </div>
 
             {/* Status Dropdown */}
-            <div className="relative min-w-[140px] sm:min-w-[160px]">
+            <div
+              className="relative min-w-[140px] sm:min-w-[160px] cursor-pointer"
+              onClick={() => selectRef.current?.focus()} // triggers dropdown
+            >
               <select
+                ref={selectRef}
                 value={statusFilter}
                 onChange={(e) => setAppliedStatus(e.target.value)}
-                className="appearance-none w-full px-4 sm:px-6 py-2.5 sm:py-3 pr-10 bg-background border border-border rounded-lg text-sm text-foreground cursor-pointer hover:border-primary transition-colors"
+                className="appearance-none w-full px-4 sm:px-6 py-2.5 sm:py-3 pr-10 bg-background border border-border rounded-lg text-sm text-foreground hover:border-primary transition-colors focus:ring-2 focus:ring-[#D19537] focus:outline-none"
               >
                 <option value="all">Status</option>
                 <option value="active">Active</option>
                 <option value="banned">Banned</option>
               </select>
+
               <Image
                 src="/icons/chevron-down.png"
                 alt="Dropdown"
@@ -160,7 +224,7 @@ export default function UserManagementPage() {
             onClick={() => setShowLogoutModal(false)}
           />
           <div
-            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
             style={{ height: "auto", borderRadius: "16px" }}
           >
             <button
@@ -174,10 +238,10 @@ export default function UserManagementPage() {
                 <LogOut className="size-6 text-white" />
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
               Are you sure you want to log out?
             </h2>
-            <p className="mb-8 text-center text-gray-600">
+            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
               {"You'll be signed out from your account."}
             </p>
             <div className="flex w-full flex-col gap-4 sm:flex-row">

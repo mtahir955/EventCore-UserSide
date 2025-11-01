@@ -51,12 +51,12 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white font-sans overflow-x-hidden">
+    <div className="flex min-h-screen bg-white dark:bg-[#101010] font-sans overflow-x-hidden">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50 min-h-screen pb-10">
+      <main className="flex-1 bg-gray-50 dark:bg-[#101010] min-h-screen pb-10">
         {/* Header */}
         <Header title="Dashboard" />
 
@@ -82,9 +82,9 @@ export default function Dashboard() {
         {/* Stats Cards */}
         <div className="mx-4 sm:mx-6 md:mx-8 mt-6 mr-[410px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 justify-items-center md:justify-items-stretch">
           {/* Card 1 */}
-          <div className="w-[300px] sm:w-full rounded-2xl bg-white p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
+          <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
-              <div className="rounded-full bg-blue-50 p-4 mt-1">
+              <div className="rounded-full bg-blue-50 dark:bg-[#101010] p-4 mt-1">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fi_3857838-W26EJe0hBtwACW7UFPz0DwV3xqruzC.png"
                   alt="Calendar"
@@ -93,18 +93,18 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-black">
+                <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
                   150
                 </div>
-                <div className="mt-1 text-sm text-gray-600">Pending Events</div>
+                <div className="mt-1 text-sm text-gray-600 dark:text-white">Pending Events</div>
               </div>
             </div>
           </div>
 
           {/* Card 2 */}
-          <div className="w-[300px] sm:w-full rounded-2xl bg-white p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
+          <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
-              <div className="rounded-full bg-blue-50 p-4 mt-1">
+              <div className="rounded-full bg-blue-50 dark:bg-[#101010] p-4 mt-1">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fi_11785545-eCq9B27XM2g0TeMb4b7SzjJYt8YmsQ.png"
                   alt="Completed"
@@ -113,10 +113,10 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-black">
+                <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
                   720
                 </div>
-                <div className="mt-1 text-sm text-gray-600">
+                <div className="mt-1 text-sm text-gray-600 dark:text-white">
                   Events Completed
                 </div>
               </div>
@@ -124,9 +124,9 @@ export default function Dashboard() {
           </div>
 
           {/* Card 3 */}
-          <div className="w-[300px] sm:w-full rounded-2xl bg-white p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
+          <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
-              <div className="rounded-full bg-orange-50 p-4 mt-1">
+              <div className="rounded-full bg-orange-50 dark:bg-[#101010] p-4 mt-1">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fi_9221356-UwRank2CWVKZz8Ms2Q7vaXqTV4FbaL.png"
                   alt="Tickets"
@@ -135,10 +135,10 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-black">
+                <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
                   12,00
                 </div>
-                <div className="mt-1 text-sm text-gray-600">
+                <div className="mt-1 text-sm text-gray-600 dark:text-white">
                   Total Tickets Checked
                 </div>
               </div>
@@ -146,9 +146,9 @@ export default function Dashboard() {
           </div>
 
           {/* Card 4 */}
-          <div className="w-[300px] sm:w-full rounded-2xl bg-white p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
+          <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
-              <div className="rounded-full bg-orange-50 p-4 mt-1">
+              <div className="rounded-full bg-orange-50 dark:bg-[#101010] p-4 mt-1">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Layer_1-SjePEeKaLr3vHm9MtrA2kHBiAjjFkI.png"
                   alt="Timer"
@@ -157,10 +157,10 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-black">
+                <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
                   20sec
                 </div>
-                <div className="mt-1 text-sm text-gray-600">
+                <div className="mt-1 text-sm text-gray-600 dark:text-white">
                   Average Check-in Time
                 </div>
               </div>
@@ -169,7 +169,7 @@ export default function Dashboard() {
         </div>
 
         {/* Events Table */}
-        <div className="mx-4 sm:mx-6 md:mx-8 mb-10 mt-6 rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+        <div className="mx-4 sm:mx-6 md:mx-8 mb-10 mt-6 rounded-2xl bg-white dark:bg-[#101010] shadow-sm ring-1 ring-gray-100">
           {/* Mobile horizontal scroll wrapper */}
           <div className="overflow-x-auto sm:overflow-x-visible">
             <table className="min-w-[700px] w-full text-sm sm:text-base">
@@ -194,19 +194,19 @@ export default function Dashboard() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {events.map((event, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 sm:px-6 py-4 text-gray-900">
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 sm:px-6 py-4 text-gray-900 dark:text-white">
                       {event.name}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-gray-900">
+                    <td className="px-4 sm:px-6 py-4 text-gray-900 dark:text-white">
                       {event.date}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-gray-900">
+                    <td className="px-4 sm:px-6 py-4 text-gray-900 dark:text-white">
                       {event.address}
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       {event.status === "Upcoming" ? (
-                        <span className="text-gray-900">{event.status}</span>
+                        <span className="text-gray-900 dark:text-white">{event.status}</span>
                       ) : (
                         <span className="text-red-600">{event.status}</span>
                       )}

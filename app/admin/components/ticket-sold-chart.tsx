@@ -34,7 +34,7 @@ export function TicketSoldChart() {
         </div>
 
         <select
-          className="px-3 sm:px-4 py-2 border border-border rounded-full text-xs sm:text-sm bg-background w-full sm:w-auto"
+          className="px-3 sm:px-4 py-2 border border-border dark:text-black rounded-full text-xs sm:text-sm bg-background w-full sm:w-auto"
           style={{ background: "rgba(248, 248, 255, 1)" }}
         >
           <option>Annual</option>

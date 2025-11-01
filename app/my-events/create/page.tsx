@@ -1,11 +1,15 @@
 "use client";
 
 import { Sidebar } from "../../host-dashboard/components/sidebar";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SetImagesPage from "./set-images/page";
 import TicketingDetailsPage from "./ticketing-details/page";
 import PreviewEventPage from "./preview-event/page";
+import Link from "next/link";
+import { X, LogOut, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function CreateEventPage() {
   const [eventType, setEventType] = useState<"in-person" | "virtual">(
@@ -22,6 +26,44 @@ export default function CreateEventPage() {
   const [isEndOpen, setIsEndOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [error, setError] = useState("");
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
+  // Dropdowns
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Dummy notifications
+  const notifications = [
+    { id: 1, message: "Your event 'Tech Summit' was approved!" },
+    { id: 2, message: "You sold 3 tickets for 'Lahore Music Fest'." },
+    { id: 3, message: "New user message received." },
+  ];
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const router = useRouter();
 
@@ -73,26 +115,131 @@ export default function CreateEventPage() {
       <Sidebar active="My Events" />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto md:ml-[256px]">
+      <main className="flex-1 overflow-auto md:ml-[256px] dark:bg-[#101010]">
         {/* Header */}
-        <header className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-4 md:pt-8 md:pb-6 bg-white border-b md:border-none">
+        <header className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-4 md:pt-8 md:pb-6 bg-white dark:bg-[#101010] border-b md:border-none">
           <h1 className="text-[20px] sm:text-[26px] md:text-[32px] leading-none font-semibold tracking-[-0.02em]">
             Events
           </h1>
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="bg-white border h-8 w-8 md:h-10 md:w-10 flex justify-center items-center rounded-full p-1">
-              <img
-                src="/images/icons/notification-new.png"
-                alt="notification"
-                className="rounded-full"
-              />
-            </div>
-            <div className="bg-black border h-8 w-8 md:h-10 md:w-10 flex justify-center items-center rounded-full p-1">
-              <img
-                src="/images/icons/profile-user.png"
-                alt="profile"
-                className="rounded-full"
-              />
+          {/* Right section */}
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex items-center gap-4 relative">
+              {/* Light/Dark toggle */}
+              <Button
+                onClick={() =>
+                  setTheme(resolvedTheme === "light" ? "dark" : "light")
+                }
+                variant="ghost"
+                size="sm"
+                className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+              >
+                {theme === "light" ? (
+                  <>
+                    <Moon className="h-4 w-4" /> Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="h-4 w-4" /> Light Mode
+                  </>
+                )}
+              </Button>
+
+              {/* Mobile toggle */}
+              <button
+                onClick={() =>
+                  setTheme(resolvedTheme === "light" ? "dark" : "light")
+                }
+                className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+              >
+                {theme === "light" ? (
+                  <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+                ) : (
+                  <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+                )}
+              </button>
+              {/* Notification icon */}
+              <div ref={notificationsRef} className="relative">
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setShowProfileDropdown(false);
+                  }}
+                  className="bg-black dark:bg-black border h-9 w-9 flex justify-center items-center rounded-full relative hover:opacity-90"
+                >
+                  <img
+                    src="/icons/Vector.png"
+                    alt="notification"
+                    className="h-4 w-4"
+                  />
+                  {/* Counter badge */}
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                </button>
+
+                {/* Notification popup */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
+                      Notifications
+                    </h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className="text-sm bg-gray-50 dark:bg-[#1f1e1e] rounded-lg p-2 hover:bg-gray-100 transition"
+                          >
+                            {n.message}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          No new notifications
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile icon + dropdown */}
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(!showProfileDropdown);
+                    setShowNotifications(false);
+                  }}
+                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+                >
+                  <img
+                    src="/images/icons/profile-user.png"
+                    alt="profile"
+                    className="h-4 w-4"
+                  />
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                    <Link href="/my-events">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                        My Events
+                      </button>
+                    </Link>
+                    <Link href="/payment-setup">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                        Payment Setup
+                      </button>
+                    </Link>
+                    <button
+                      onClick={() => setShowLogoutModal(true)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -155,13 +302,13 @@ export default function CreateEventPage() {
         {/* Form Content */}
         {ActivePage === "create" && (
           <div className="px-4 sm:px-6 md:px-8 pb-8">
-            <div className="rounded-2xl p-4 sm:p-6 md:p-8 bg-white max-w-[1200px] mx-auto">
+            <div className="rounded-2xl p-4 sm:p-6 md:p-8 bg-white dark:bg-[#101010] dark:border max-w-[1200px] mx-auto">
               {/* Header */}
               <div className="mb-8">
                 <h3 className="text-[22px] sm:text-[26px] md:text-[28px] font-bold mb-2">
                   Create New Event
                 </h3>
-                <p className="text-[13px] sm:text-[14px] text-[#666666]">
+                <p className="text-[13px] sm:text-[14px] text-[#666666] dark:text-gray-300">
                   Share your event details with Event Core and let the
                   excitement unfold!
                 </p>
@@ -182,7 +329,7 @@ export default function CreateEventPage() {
                       placeholder="Write title here..."
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
-                      className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] border-[#E5E5E5]"
+                      className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                     />
                   </div>
 
@@ -195,7 +342,7 @@ export default function CreateEventPage() {
                       placeholder="Describe here..."
                       value={eventDescription}
                       onChange={(e) => setEventDescription(e.target.value)}
-                      className="w-full h-32 px-4 py-3 rounded-lg border text-[14px] outline-none resize-none bg-[#FAFAFB] border-[#E5E5E5]"
+                      className="w-full h-32 px-4 py-3 rounded-lg border text-[14px] outline-none resize-none dark:bg-[#101010] bg-[#FAFAFB] border-[#E5E5E5]"
                     />
                   </div>
                 </div>
@@ -245,7 +392,7 @@ export default function CreateEventPage() {
                         type="date"
                         value={eventDate}
                         onChange={(e) => setEventDate(e.target.value)}
-                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] border-[#E5E5E5]"
+                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                       />
                     </div>
 
@@ -258,7 +405,7 @@ export default function CreateEventPage() {
                         type="time"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] border-[#E5E5E5]"
+                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                       />
                     </div>
 
@@ -271,7 +418,7 @@ export default function CreateEventPage() {
                         type="time"
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] border-[#E5E5E5]"
+                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                       />
                     </div>
                   </div>
@@ -290,7 +437,7 @@ export default function CreateEventPage() {
                   <select
                     value={eventLocation}
                     onChange={(e) => setEventLocation(e.target.value)}
-                    className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] border-[#E5E5E5]"
+                    className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                   >
                     <option value="">Please select one</option>
                     <option value="location1">Location 1</option>
@@ -320,6 +467,57 @@ export default function CreateEventPage() {
                   className="h-12 px-6 sm:px-8 rounded-xl text-[14px] font-semibold bg-[#D19537] text-white"
                 >
                   Save & Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Logout Modal */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm"
+              onClick={() => setShowLogoutModal(false)}
+            />
+            <div
+              className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
+              style={{ height: "auto", borderRadius: "16px" }}
+            >
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-black text-white transition-colors hover:bg-gray-800"
+              >
+                <X className="size-4" />
+              </button>
+              <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-gray-300">
+                <div className="flex size-12 items-center justify-center rounded-full bg-[#D19537]">
+                  <LogOut className="size-6 text-white" />
+                </div>
+              </div>
+              <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
+                Are you sure you want to log out?
+              </h2>
+              <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
+                {"You'll be signed out from your account."}
+              </p>
+              <div className="flex w-full flex-col gap-4 sm:flex-row">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="h-14 w-full bg-gray-100 font-medium text-[#D19537] transition-colors hover:bg-gray-200 sm:w-[212px]"
+                  style={{ borderRadius: "50px" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    console.log("Logging out...");
+                    setShowLogoutModal(false);
+                  }}
+                  className="h-14 w-full bg-[#D19537] font-medium text-white transition-colors hover:bg-[#e99714] sm:w-[212px]"
+                  style={{ borderRadius: "50px" }}
+                >
+                  Logout
                 </button>
               </div>
             </div>

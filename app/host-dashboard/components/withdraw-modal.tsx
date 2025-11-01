@@ -30,34 +30,34 @@ export function WithdrawModal({
         role="dialog"
         aria-labelledby="withdraw-title"
         aria-modal="true"
-        className="relative bg-white text-black shadow-md rounded-3xl w-full mt-8 sm:mt-1 max-w-[640px] sm:h-auto"
+        className="relative bg-white dark:bg-[#101010] text-black shadow-md rounded-3xl w-full mt-8 sm:mt-1 max-w-[640px] sm:h-auto"
       >
         <div className="w-full h-full px-6 sm:px-10 pt-8 sm:pt-10 pb-8 flex flex-col">
           {/* Title */}
           <h2
             id="withdraw-title"
-            className="text-2xl sm:text-[32px] leading-none font-black tracking-[-0.02em]"
+            className="text-2xl sm:text-[32px] leading-none font-black dark:text-white tracking-[-0.02em]"
           >
             Withdraw Earnings
           </h2>
 
           {/* Current Balance */}
           <div className="mt-6 sm:mt-8">
-            <div className="text-[15px] sm:text-[16px]">Current Balance</div>
-            <div className="mt-2 text-[32px] sm:text-[40px] font-black tracking-[-0.02em]">
+            <div className="text-[15px] sm:text-[16px] dark:text-white">Current Balance</div>
+            <div className="mt-2 text-[32px] sm:text-[40px] font-black dark:text-white tracking-[-0.02em]">
               $67,000
             </div>
           </div>
 
           {/* Withdrawal Amount */}
           <div className="mt-6 sm:mt-8">
-            <label className="block text-[15px] sm:text-[16px] mb-3">
+            <label className="block text-[15px] sm:text-[16px] mb-3 dark:text-white">
               Withdrawal Amount
             </label>
             <input
               type="text"
               placeholder="$0.00"
-              className="w-full h-12 sm:h-14 rounded-2xl px-4 sm:px-5 text-[15px] sm:text-[16px] outline-none border border-gray-300"
+              className="w-full h-12 sm:h-14 dark:text-white rounded-2xl px-4 sm:px-5 text-[15px] sm:text-[16px] outline-none border border-gray-300"
               style={{ background: "var(--card)" }}
               required
             />
@@ -65,13 +65,13 @@ export function WithdrawModal({
 
           {/* Linked Payment Method */}
           <div className="mt-6 sm:mt-8">
-            <div className="text-[15px] sm:text-[16px] mb-4">
+            <div className="text-[15px] sm:text-[16px] mb-4 dark:text-white">
               Linked Payment Method
             </div>
             <div className="flex items-center gap-3">
               <img src="/images/icons/bank.png" alt="" className="h-5 w-5" />
               <div>
-                <div className="text-[15px] sm:text-[16px]">
+                <div className="text-[15px] sm:text-[16px] dark:text-white">
                   Account ending in 1234
                 </div>
                 <div className="text-[13px] text-muted-foreground -mt-0.5">
@@ -82,7 +82,7 @@ export function WithdrawModal({
 
             {/* Buttons: Add Method + Edit */}
             <div className="mt-6 flex flex-row sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-              <button className="h-10 sm:h-12 sm:w-auto flex-1 rounded-full text-[10px] sm:text-[15px] font-medium border border-gray-300 bg-white">
+              <button className="h-10 sm:h-12 sm:w-auto flex-1 rounded-full text-[10px] sm:text-[15px] font-medium border border-gray-300 bg-white dark:bg-[#101010] dark:text-white">
                 Add Payment Method
               </button>
               <Link href="/payment-setup" className="flex-1 sm:flex-none">

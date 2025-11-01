@@ -43,7 +43,7 @@ export function UserInfoModal_UserManagement({
       onClick={handleBackdropClick}
     >
       <div
-        className="relative bg-[#FBFBF9] rounded-2xl shadow-2xl sm:w-[400px] w-[330px] sm:h-[520px] h-[540px]"
+        className="relative bg-[#FBFBF9] dark:bg-[#101010] rounded-2xl shadow-2xl sm:w-[400px] w-[330px] sm:h-[520px] h-[540px]"
         // style={{ width: 420, height: 530 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -79,34 +79,34 @@ export function UserInfoModal_UserManagement({
 
           <div className="space-y-5">
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Full Name</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Full Name</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.fullname}
               </div>
             </div>
 
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Email</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Email</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.email}
               </div>
             </div>
 
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Phone Number</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Phone Number</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.phone}
               </div>
             </div>
 
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Gender</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Gender</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.gender}
               </div>
             </div>
             <div className="flex items-center">
-              <div className="w-32 text-[14px] text-gray-600">
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">
                 Profile Status
               </div>
               <div
@@ -130,7 +130,7 @@ export function UserInfoModal_UserManagement({
               </div>
             </div>
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Address</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Address</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.address}
               </div>

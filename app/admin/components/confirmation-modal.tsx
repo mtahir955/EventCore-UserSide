@@ -15,7 +15,7 @@ export function ConfirmationModal({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
-      <div className="relative rounded-2xl shadow-2xl bg-white p-6 sm:p-8 w-full max-w-[532px] h-auto sm:h-[384px] transition-all">
+      <div className="relative rounded-2xl shadow-2xl bg-white dark:bg-[#101010] p-6 sm:p-8 w-full max-w-[532px] h-auto sm:h-[384px] transition-all">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -43,12 +43,12 @@ export function ConfirmationModal({
           </div>
 
           {/* Title */}
-          <h2 className="text-[22px] sm:text-[28px] font-bold text-black mb-3 sm:mb-4 text-center">
+          <h2 className="text-[22px] sm:text-[28px] font-bold text-black dark:text-white mb-3 sm:mb-4 text-center">
             Delete Event
           </h2>
 
           {/* Description */}
-          <p className="text-[14px] sm:text-[16px] text-center text-gray-700 leading-relaxed mb-6 sm:mb-8 max-w-md">
+          <p className="text-[14px] sm:text-[16px] text-center text-gray-700 dark:text-gray-400 leading-relaxed mb-6 sm:mb-8 max-w-md">
             Are you sure you want to delete this event? This action cannot be
             undone, and all related details will be permanently removed from
             your account.

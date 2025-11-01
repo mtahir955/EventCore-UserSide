@@ -25,7 +25,7 @@ export function PaymentSuccessModal({
         role="dialog"
         aria-labelledby="withdraw-success-title"
         aria-modal="true"
-        className="relative bg-white text-black shadow-md rounded-2xl w-[90%] max-w-[532px] mx-auto flex flex-col items-center text-center px-5 sm:px-8 md:px-10 pt-10 sm:pt-12 pb-6 sm:pb-8"
+        className="relative bg-white dark:bg-[#101010] text-black dark:text-white shadow-md rounded-2xl w-[90%] max-w-[532px] mx-auto flex flex-col items-center text-center px-5 sm:px-8 md:px-10 pt-10 sm:pt-12 pb-6 sm:pb-8"
       >
         {/* Close Button */}
         <button
@@ -66,7 +66,7 @@ export function PaymentSuccessModal({
         </h3>
 
         {/* Description */}
-        <p className="text-[14px] sm:text-[15px] leading-[1.6] text-gray-600 max-w-[420px] mb-5">
+        <p className="text-[14px] sm:text-[15px] leading-[1.6] text-gray-600 dark:text-gray-400 max-w-[420px] mb-5">
           Your payment information has been securely saved and is ready for
           future transactions on Event Core.
         </p>

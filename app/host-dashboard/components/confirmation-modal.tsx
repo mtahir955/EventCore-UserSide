@@ -20,7 +20,7 @@ export function ConfirmationModal({
         role="dialog"
         aria-labelledby="confirmation-title"
         aria-modal="true"
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[532px] sm:h-auto p-6 sm:p-8"
+        className="relative bg-white dark:bg-[#101010] rounded-2xl shadow-2xl w-full max-w-[532px] sm:h-auto p-6 sm:p-8"
       >
         {/* Close Button */}
         <button
@@ -51,13 +51,13 @@ export function ConfirmationModal({
           {/* Title */}
           <h2
             id="confirmation-title"
-            className="text-[22px] sm:text-[28px] font-bold text-black mb-3 sm:mb-4"
+            className="text-[22px] sm:text-[28px] font-bold text-black dark:text-white mb-3 sm:mb-4"
           >
             Delete Event
           </h2>
 
           {/* Description */}
-          <p className="text-[14px] sm:text-[16px] text-gray-700 leading-relaxed mb-6 sm:mb-8 max-w-md">
+          <p className="text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-400 leading-relaxed mb-6 sm:mb-8 max-w-md">
             Are you sure you want to delete this event? This action cannot be
             undone, and all related details will be permanently removed from
             your account.

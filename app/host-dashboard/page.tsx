@@ -8,7 +8,10 @@ import { DonutChartCard } from "../host-dashboard/components/charts/donut-chart-
 import { MyEventsCard } from "../host-dashboard/components/my-events-card";
 import { WithdrawModal } from "../host-dashboard/components/withdraw-modal";
 import { WithdrawSuccessModal } from "../host-dashboard/components/withdraw-success-modal";
-import { X, LogOut } from "lucide-react";
+import { X, LogOut, Moon, Sun } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function Page() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -49,6 +52,8 @@ export default function Page() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const { resolvedTheme, theme, setTheme } = useTheme();
 
   const dummyEvents = [
     {
@@ -103,6 +108,39 @@ export default function Page() {
           {/* Right section */}
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
+              {/* Light/Dark toggle */}
+              <Button
+                onClick={() =>
+                  setTheme(resolvedTheme === "light" ? "dark" : "light")
+                }
+                variant="ghost"
+                size="sm"
+                className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+              >
+                {theme === "light" ? (
+                  <>
+                    <Moon className="h-4 w-4" /> Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="h-4 w-4" /> Light Mode
+                  </>
+                )}
+              </Button>
+
+              {/* Mobile toggle */}
+              <button
+                onClick={() =>
+                  setTheme(resolvedTheme === "light" ? "dark" : "light")
+                }
+                className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+              >
+                {theme === "light" ? (
+                  <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+                ) : (
+                  <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+                )}
+              </button>
               {/* Notification icon */}
               <div ref={notificationsRef} className="relative">
                 <button
@@ -110,10 +148,10 @@ export default function Page() {
                     setShowNotifications(!showNotifications);
                     setShowProfileDropdown(false);
                   }}
-                  className="bg-white border h-9 w-9 flex justify-center items-center rounded-full relative hover:bg-gray-100"
+                  className="bg-black dark:bg-black border h-9 w-9 flex justify-center items-center rounded-full relative hover:opacity-90"
                 >
                   <img
-                    src="/images/icons/notification-new.png"
+                    src="/icons/Vector.png"
                     alt="notification"
                     className="h-4 w-4"
                   />
@@ -125,8 +163,8 @@ export default function Page() {
 
                 {/* Notification popup */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg border border-gray-200 rounded-xl z-50 p-3">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
                     </h4>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -134,7 +172,7 @@ export default function Page() {
                         notifications.map((n) => (
                           <div
                             key={n.id}
-                            className="text-sm bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition"
+                            className="text-sm bg-gray-50 dark:bg-[#1f1e1e] rounded-lg p-2 hover:bg-gray-100 transition"
                           >
                             {n.message}
                           </div>
@@ -166,10 +204,20 @@ export default function Page() {
                 </button>
 
                 {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                    <Link href="/my-events">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                        My Events
+                      </button>
+                    </Link>
+                    <Link href="/payment-setup">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                        Payment Setup
+                      </button>
+                    </Link>
                     <button
                       onClick={() => setShowLogoutModal(true)}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
                     >
                       Logout
                     </button>
@@ -256,7 +304,7 @@ export default function Page() {
             onClick={() => setShowLogoutModal(false)}
           />
           <div
-            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
             style={{ height: "auto", borderRadius: "16px" }}
           >
             <button
@@ -270,10 +318,10 @@ export default function Page() {
                 <LogOut className="size-6 text-white" />
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
               Are you sure you want to log out?
             </h2>
-            <p className="mb-8 text-center text-gray-600">
+            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
               {"You'll be signed out from your account."}
             </p>
             <div className="flex w-full flex-col gap-4 sm:flex-row">

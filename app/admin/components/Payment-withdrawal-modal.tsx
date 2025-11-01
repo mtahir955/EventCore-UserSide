@@ -30,6 +30,7 @@ export function PaymentWithdrawalModal({
         className="
           relative 
           bg-white 
+          dark:bg-[#101010]
           rounded-2xl 
           shadow-2xl 
           w-full 
@@ -71,7 +72,7 @@ export function PaymentWithdrawalModal({
             <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2 sm:mb-3 text-left">
               Current Balance
             </h3>
-            <p className="text-2xl sm:text-3xl text-black font-bold text-left">
+            <p className="text-2xl sm:text-3xl text-black dark:text-white font-bold text-left">
               $67,000
             </p>
           </div>

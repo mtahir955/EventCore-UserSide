@@ -37,7 +37,7 @@ export function RecentEventsTable() {
                   (header, idx) => (
                     <th
                       key={idx}
-                      className="py-2 sm:py-4 px-1 sm:px-4 font-semibold text-foreground align-middle whitespace-nowrap"
+                      className="py-2 sm:py-4 px-1 sm:px-4 font-semibold dark:text-black text-foreground align-middle whitespace-nowrap"
                     >
                       {header}
                     </th>

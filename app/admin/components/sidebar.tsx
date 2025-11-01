@@ -105,7 +105,7 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
               onClick={() => {
                 setShowProfileDropdown(!showProfileDropdown);
               }}
-              className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+              className="bg-black border h-7 w-7 flex justify-center items-center rounded-full hover:opacity-90"
             >
               <img
                 src="/images/icons/profile-user.png"
@@ -116,6 +116,26 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
 
             {showProfileDropdown && (
               <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                <Link href="/host-management">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Host Management
+                  </button>
+                </Link>
+                <Link href="/host-request">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Host Request
+                  </button>
+                </Link>
+                <Link href="/payment-withdrawal">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Payment Withdrawal
+                  </button>
+                </Link>
+                <Link href="/system-settings">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+                    System Settings
+                  </button>
+                </Link>
                 <button
                   onClick={() => setShowLogoutModal(true)}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -193,37 +213,6 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
             />
             Logout
           </button>
-
-          {/* Light/Dark Buttons Row */}
-          <div className="flex justify-center items-center gap-3 mt-2">
-            {/* Light Button */}
-            <button
-              onClick={() => setTheme("light")}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-all duration-150",
-                theme === "light"
-                  ? "bg-[#D19537] text-white border-[#D19537]"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              )}
-            >
-              <Sun size={16} />
-              Light
-            </button>
-
-            {/* Dark Button */}
-            <button
-              onClick={() => setTheme("dark")}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-all duration-150",
-                theme === "dark"
-                  ? "bg-[#D19537] text-white border-[#D19537]"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              )}
-            >
-              <Moon size={16} />
-              Dark
-            </button>
-          </div>
         </div>
       </aside>
 
@@ -235,7 +224,7 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
             onClick={() => setShowLogoutModal(false)}
           />
           <div
-            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
             style={{ height: "auto", borderRadius: "16px" }}
           >
             <button
@@ -249,10 +238,10 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
                 <LogOut className="size-6 text-white" />
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
               Are you sure you want to log out?
             </h2>
-            <p className="mb-8 text-center text-gray-600">
+            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
               {"You'll be signed out from your account."}
             </p>
             <div className="flex w-full flex-col gap-4 sm:flex-row">

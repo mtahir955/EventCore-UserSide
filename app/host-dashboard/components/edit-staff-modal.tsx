@@ -51,7 +51,7 @@ export function EditStaffModal({
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40">
       <div
-        className="relative rounded-2xl shadow-2xl bg-white overflow-hidden sm:w-[600px] w-[320px]"
+        className="relative rounded-2xl shadow-2xl bg-white dark:bg-[#101010] overflow-hidden sm:w-[600px] w-[320px]"
         // style={{
         //   width: 640,
         //   maxHeight: "90vh",
@@ -59,7 +59,7 @@ export function EditStaffModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-8 pb-6">
-          <h2 className="sm:text-[24px] text-[20px] font-bold text-black">Event Details</h2>
+          <h2 className="sm:text-[24px] text-[20px] font-bold text-black dark:text-white">Event Details</h2>
           <button
             onClick={handleAddMore}
             className="flex items-center gap-3 sm:px-4 px-2 sm:py-2.5 py-3 rounded-lg bg-black text-white text-[12px] sm:text-[14px] font-semibold"
@@ -81,7 +81,7 @@ export function EditStaffModal({
             >
               {/* Full Name */}
               <div className="mb-6">
-                <label className="block sm:text-[14px] text-[13px] font-medium text-black mb-2">
+                <label className="block sm:text-[14px] text-[13px] font-medium text-black dark:text-white mb-2">
                   Full Name <span className="text-[#D6111A]">*</span>
                 </label>
                 <input
@@ -97,7 +97,7 @@ export function EditStaffModal({
 
               {/* Email Address */}
               <div className="mb-6">
-                <label className="block sm:text-[14px] text-[13px] font-medium text-black mb-2">
+                <label className="block sm:text-[14px] text-[13px] font-medium text-black dark:text-white mb-2">
                   Email Address <span className="text-[#D6111A]">*</span>
                 </label>
                 <input
@@ -111,7 +111,7 @@ export function EditStaffModal({
 
               {/* Phone Number */}
               <div className="mb-6">
-                <label className="block sm:text-[14px] text-[13px] font-medium text-black mb-2">
+                <label className="block sm:text-[14px] text-[13px] font-medium text-black dark:text-white mb-2">
                   Phone Number <span className="text-[#D6111A]">*</span>
                 </label>
                 <input
@@ -127,7 +127,7 @@ export function EditStaffModal({
 
               {/* Assign Role */}
               <div className="mb-6">
-                <label className="block sm:text-[14px] text-[13px] font-medium text-black mb-3">
+                <label className="block sm:text-[14px] text-[13px] font-medium text-black dark:text-white mb-3">
                   Assign Role <span className="text-[#D6111A]">*</span>
                 </label>
                 <div className="flex items-center gap-8">
@@ -146,7 +146,7 @@ export function EditStaffModal({
                       }}
                     />
 
-                    <span className="sm:text-[14px] text-[13px] text-black">Ticket Check</span>
+                    <span className="sm:text-[14px] text-[13px] text-black dark:text-white">Ticket Check</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -162,7 +162,7 @@ export function EditStaffModal({
                         boxShadow: "inset 0 0 0 3px white", // creates the gap between the dot and border
                       }}
                     />
-                    <span className="sm:text-[14px] text-[13px] text-black">Both</span>
+                    <span className="sm:text-[14px] text-[13px] text-black dark:text-white">Both</span>
                   </label>
                 </div>
               </div>

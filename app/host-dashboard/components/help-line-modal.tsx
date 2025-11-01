@@ -53,11 +53,11 @@ export function HelpLineModal({
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8"
-      style={{ background: "rgba(0, 0, 0, 0.5)" }}
+      // style={{ background: "rgba(0, 0, 0, 0.5)" }}
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-[640px] h-auto md:h-[640px]"
+        className="relative bg-white dark:bg-[#101010] rounded-3xl shadow-2xl w-full max-w-[640px] h-auto md:h-[640px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -90,9 +90,9 @@ export function HelpLineModal({
             >
               Get in touch
             </span>{" "}
-            <span className="text-black">with us.</span>
+            <span className="text-black dark:text-white">with us.</span>
             <br className="hidden sm:block" />
-            <span className="text-black">We're here to assist you.</span>
+            <span className="text-black dark:text-white">We're here to assist you.</span>
           </h2>
 
           {/* Form */}
@@ -100,7 +100,7 @@ export function HelpLineModal({
             {/* Full Name + Company Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 mb-2">
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-white mb-2">
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -115,7 +115,7 @@ export function HelpLineModal({
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 mb-2">
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-white mb-2">
                   Company Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -133,7 +133,7 @@ export function HelpLineModal({
             {/* Phone + Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 mb-2">
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-white mb-2">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -148,7 +148,7 @@ export function HelpLineModal({
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 mb-2">
+                <label className="block text-[13px] font-medium text-gray-700 dark:text-white mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -165,7 +165,7 @@ export function HelpLineModal({
 
             {/* Message */}
             <div>
-              <label className="block text-[13px] font-medium text-gray-700">
+              <label className="block text-[13px] font-medium text-gray-700 dark:text-white">
                 Message
               </label>
               <textarea

@@ -18,7 +18,7 @@ export function MessageSuccessModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4 sm:px-6">
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[532px] p-6 sm:p-8 flex flex-col items-center justify-center overflow-hidden"
+        className="relative bg-white dark:bg-[#101010] rounded-2xl shadow-2xl w-full max-w-[532px] p-6 sm:p-8 flex flex-col items-center justify-center overflow-hidden"
         style={{
           minHeight: "320px",
           maxHeight: "90vh",
@@ -47,12 +47,12 @@ export function MessageSuccessModal({
           </div>
 
           {/* Title */}
-          <h2 className="text-[22px] sm:text-[26px] md:text-[28px] font-bold text-black mb-3 sm:mb-4">
+          <h2 className="text-[22px] sm:text-[26px] md:text-[28px] font-bold text-black dark:text-white mb-3 sm:mb-4">
             Message Sent
           </h2>
 
           {/* Description */}
-          <p className="text-[14px] sm:text-[16px] text-gray-700 leading-relaxed mb-6 sm:mb-8 max-w-md">
+          <p className="text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-300 leading-relaxed mb-6 sm:mb-8 max-w-md">
             Thank you for contacting us. We’ve received your message and will
             respond as soon as possible.
           </p>

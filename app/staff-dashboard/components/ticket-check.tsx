@@ -126,7 +126,7 @@ export default function TicketCheck() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-gray-50 w-full">
+      <div className="flex-1 bg-gray-50 dark:bg-[#101010] w-full">
         {/* ✅ Header visible on tablet/desktop only */}
         <div className="hidden sm:block">
           <Header title="Ticket Check" />
@@ -159,6 +159,44 @@ export default function TicketCheck() {
               {showChecklist ? "Back to Scanner" : "View Check List"}
             </button>
           </div>
+
+          {/* <div>
+            <h2 className="verification-title">Ticket Verification</h2>
+            <p className="verification-subtitle">
+              Scan QR codes or enter Tickets IDs to verify
+            </p> */}
+
+            {/* Event Selection and Manual Entry */}
+            {/* <div className="verification-controls">
+              <div className="event-dropdown">
+                <span className="event-dropdown-text">{selectedEvent}</span>
+                <Image
+                  src="/images/chevron-down.png"
+                  alt="Dropdown"
+                  width={16}
+                  height={16}
+                  className="chevron-icon"
+                />
+              </div>
+
+              <div className="manual-entry">
+                <input
+                  type="text"
+                  placeholder="Manual Enter Ticket ID"
+                  value={ticketId}
+                  onChange={(e) => setTicketId(e.target.value)}
+                  className="ticket-id-input"
+                />
+                <Image
+                  src="/images/search-icon.png"
+                  alt="Search"
+                  width={20}
+                  height={20}
+                  className="search-icon"
+                />
+              </div>
+            </div>
+          </div> */}
 
           {!showChecklist ? (
             <>
@@ -223,29 +261,30 @@ export default function TicketCheck() {
               </div>
 
               {/* Verification Result */}
-{showResult && (
-  <div className="verification-result-section">
-    <h2 className="result-title">Verification Result</h2>
+              {showResult && (
+                <div className="verification-result-section">
+                  <h2 className="result-title">Verification Result</h2>
 
-    <div className="result-card">
-      <div className="result-content">
-        <Image
-          src="/images/check-circle.png"
-          alt="Valid"
-          width={48}
-          height={48}
-          className="check-icon"
-        />
-        <div className="result-info">
-          <h3 className="result-status">Valid Ticket</h3>
-          <p className="result-details">JohnDoe-TCK-992134, VIP Ticket</p>
-        </div>
-      </div>
-      <button className="checkin-btn">Check-In</button>
-    </div>
-  </div>
-)}
-
+                  <div className="result-card">
+                    <div className="result-content">
+                      <Image
+                        src="/images/check-circle.png"
+                        alt="Valid"
+                        width={48}
+                        height={48}
+                        className="check-icon"
+                      />
+                      <div className="result-info">
+                        <h3 className="result-status">Valid Ticket</h3>
+                        <p className="result-details">
+                          JohnDoe-TCK-992134, VIP Ticket
+                        </p>
+                      </div>
+                    </div>
+                    <button className="checkin-btn">Check-In</button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="checklist-view">

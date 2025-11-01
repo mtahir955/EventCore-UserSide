@@ -25,7 +25,7 @@ export function WithdrawSuccessModal({
         role="dialog"
         aria-labelledby="withdraw-success-title"
         aria-modal="true"
-        className="relative bg-white text-black shadow-md rounded-2xl w-full max-w-[532px] sm:h-auto"
+        className="relative bg-white dark:bg-[#101010] text-black shadow-md rounded-2xl w-full max-w-[532px] sm:h-auto"
       >
         {/* Close Button */}
         <button
@@ -62,7 +62,7 @@ export function WithdrawSuccessModal({
           {/* Title */}
           <h3
             id="withdraw-success-title"
-            className="text-[20px] sm:text-[24px] leading-tight font-black tracking-[-0.01em] mt-1"
+            className="text-[20px] sm:text-[24px] leading-tight dark:text-white font-black tracking-[-0.01em] mt-1"
           >
             Withdrawal Request Sent
           </h3>

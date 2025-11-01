@@ -5,6 +5,9 @@ import { useState, useRef, useEffect } from "react";
 import { HelpLineModal } from "./help-line-modal";
 import { MessageSuccessModal } from "./message-success-modal";
 import { Menu, X, Sun, Moon, LogOut } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 type NavItem = {
   label: string;
@@ -17,8 +20,6 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [messageSuccessOpen, setMessageSuccessOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const items: NavItem[] = [
@@ -84,10 +85,12 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
   return (
     <>
       {/* --- Unified Mobile Navbar --- */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b flex items-center justify-between px-4 py-3">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#101010] border-b flex items-center justify-between px-4 py-3">
         {/* Left: Hamburger */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -105,6 +108,39 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
         {/* Right section */}
         <div className="flex flex-col items-end gap-3">
           <div className="flex items-center gap-4 relative">
+            {/* Light/Dark toggle */}
+            <Button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              variant="ghost"
+              size="sm"
+              className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+            >
+              {theme === "light" ? (
+                <>
+                  <Moon className="h-4 w-4" /> Dark Mode
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4" /> Light Mode
+                </>
+              )}
+            </Button>
+
+            {/* Mobile toggle */}
+            <button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+              ) : (
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </button>
             {/* Notification icon */}
             <div ref={notificationsRef} className="relative">
               <button
@@ -112,10 +148,10 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
                   setShowNotifications(!showNotifications);
                   setShowProfileDropdown(false);
                 }}
-                className="bg-white border h-9 w-9 flex justify-center items-center rounded-full relative hover:bg-gray-100"
+                className="bg-black dark:bg-black border h-9 w-9 flex justify-center items-center rounded-full relative hover:opacity-90"
               >
                 <img
-                  src="/images/icons/notification-new.png"
+                  src="/icons/Vector.png"
                   alt="notification"
                   className="h-4 w-4"
                 />
@@ -127,32 +163,22 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
 
               {/* Notification popup */}
               {showNotifications && (
-                <div
-                  className="
-      absolute right-0 mt-2 
-      w-[70vw] sm:w-72 
-      bg-white dark:bg-[#1f1f1f]
-      shadow-lg border border-gray-200 dark:border-gray-700 
-      rounded-xl z-50 p-3 
-      max-h-[70vh] overflow-y-auto
-      sm:max-h-64
-    "
-                >
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                     Notifications
                   </h4>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
                     {notifications.length > 0 ? (
                       notifications.map((n) => (
                         <div
                           key={n.id}
-                          className="text-sm bg-gray-50 dark:bg-[#2a2a2a] rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-[#333] transition"
+                          className="text-sm bg-gray-50 dark:bg-[#1f1e1e] rounded-lg p-2 hover:bg-gray-100 transition"
                         >
                           {n.message}
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      <p className="text-sm text-gray-500 text-center py-4">
                         No new notifications
                       </p>
                     )}
@@ -178,10 +204,20 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
               </button>
 
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                  <Link href="/my-events">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                      My Events
+                    </button>
+                  </Link>
+                  <Link href="/payment-setup">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                      Payment Setup
+                    </button>
+                  </Link>
                   <button
                     onClick={() => setShowLogoutModal(true)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
                   >
                     Logout
                   </button>
@@ -274,37 +310,6 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
             />
             Logout
           </button>
-
-          {/* Light/Dark Toggle Row */}
-          <div className="flex justify-center items-center gap-3 mt-2">
-            {/* Light Mode */}
-            <button
-              onClick={() => setTheme("light")}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-all duration-150",
-                theme === "light"
-                  ? "bg-[#D19537] text-white border-[#D19537]"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              )}
-            >
-              <Sun size={16} />
-              Light
-            </button>
-
-            {/* Dark Mode */}
-            <button
-              onClick={() => setTheme("dark")}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-all duration-150",
-                theme === "dark"
-                  ? "bg-[#D19537] text-white border-[#D19537]"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              )}
-            >
-              <Moon size={16} />
-              Dark
-            </button>
-          </div>
         </div>
       </aside>
 
@@ -324,7 +329,7 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
             onClick={() => setShowLogoutModal(false)}
           />
           <div
-            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
             style={{ height: "auto", borderRadius: "16px" }}
           >
             <button
@@ -338,10 +343,10 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
                 <LogOut className="size-6 text-white" />
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
               Are you sure you want to log out?
             </h2>
-            <p className="mb-8 text-center text-gray-600">
+            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
               {"You'll be signed out from your account."}
             </p>
             <div className="flex w-full flex-col gap-4 sm:flex-row">

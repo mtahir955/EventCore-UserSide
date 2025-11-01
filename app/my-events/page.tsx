@@ -4,7 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "../host-dashboard/components/sidebar";
 import { MyEventsCard } from "../host-dashboard/components/my-events-card";
 import Link from "next/link";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 type Props = {
   imageSrc: string;
@@ -170,6 +172,8 @@ export default function MyEventsPage() {
     setFilteredEvents(dummyEvents);
   };
 
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
   return (
     <div className="flex min-h-screen bg-[#FAFAFB] relative">
       {/* Sidebar */}
@@ -207,7 +211,7 @@ export default function MyEventsPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-[256px] pt-20 md:pt-0 overflow-auto">
+      <main className="flex-1 md:ml-[256px] pt-20 md:pt-0 overflow-auto dark:bg-[#101010]">
         {/* Desktop Header */}
         <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
           <h1 className="text-[32px] font-semibold tracking-[-0.02em]">
@@ -216,6 +220,39 @@ export default function MyEventsPage() {
           {/* Right section */}
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
+              {/* Light/Dark toggle */}
+              <Button
+                onClick={() =>
+                  setTheme(resolvedTheme === "light" ? "dark" : "light")
+                }
+                variant="ghost"
+                size="sm"
+                className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+              >
+                {theme === "light" ? (
+                  <>
+                    <Moon className="h-4 w-4" /> Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="h-4 w-4" /> Light Mode
+                  </>
+                )}
+              </Button>
+
+              {/* Mobile toggle */}
+              <button
+                onClick={() =>
+                  setTheme(resolvedTheme === "light" ? "dark" : "light")
+                }
+                className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+              >
+                {theme === "light" ? (
+                  <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+                ) : (
+                  <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+                )}
+              </button>
               {/* Notification icon */}
               <div ref={notificationsRef} className="relative">
                 <button
@@ -223,10 +260,10 @@ export default function MyEventsPage() {
                     setShowNotifications(!showNotifications);
                     setShowProfileDropdown(false);
                   }}
-                  className="bg-white border h-9 w-9 flex justify-center items-center rounded-full relative hover:bg-gray-100"
+                  className="bg-black dark:bg-black border h-9 w-9 flex justify-center items-center rounded-full relative hover:opacity-90"
                 >
                   <img
-                    src="/images/icons/notification-new.png"
+                    src="/icons/Vector.png"
                     alt="notification"
                     className="h-4 w-4"
                   />
@@ -238,8 +275,8 @@ export default function MyEventsPage() {
 
                 {/* Notification popup */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg border border-gray-200 rounded-xl z-50 p-3">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
                     </h4>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -247,7 +284,7 @@ export default function MyEventsPage() {
                         notifications.map((n) => (
                           <div
                             key={n.id}
-                            className="text-sm bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition"
+                            className="text-sm bg-gray-50 dark:bg-[#1f1e1e] rounded-lg p-2 hover:bg-gray-100 transition"
                           >
                             {n.message}
                           </div>
@@ -279,10 +316,20 @@ export default function MyEventsPage() {
                 </button>
 
                 {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                    <Link href="/my-events">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                        My Events
+                      </button>
+                    </Link>
+                    <Link href="/payment-setup">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                        Payment Setup
+                      </button>
+                    </Link>
                     <button
                       onClick={() => setShowLogoutModal(true)}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
                     >
                       Logout
                     </button>
@@ -298,7 +345,7 @@ export default function MyEventsPage() {
           {/* Create + Filter Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="flex-1 sm:w-[820px] rounded-xl border px-4 h-12 flex items-center gap-2 bg-white">
+              <div className="flex-1 sm:w-[820px] rounded-xl border px-4 h-12 flex items-center gap-2 bg-white dark:bg-[#101010]">
                 <img
                   src="/images/icons/search-icon.png"
                   alt="search"
@@ -347,26 +394,26 @@ export default function MyEventsPage() {
               placeholder="Nearest Location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white outline-none placeholder:text-gray-500"
+              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white dark:bg-[#101010] outline-none placeholder:text-gray-500"
             />
             <input
               type="number"
               placeholder="Min. Ticket"
               value={minTicket}
               onChange={(e) => setMinTicket(e.target.value)}
-              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white outline-none placeholder:text-gray-500"
+              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white dark:bg-[#101010] outline-none placeholder:text-gray-500"
             />
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white outline-none text-gray-700"
+              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white dark:bg-[#101010] outline-none text-gray-700"
             />
             <input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white outline-none text-gray-700"
+              className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white dark:bg-[#101010] outline-none text-gray-700"
             />
           </div>
 
@@ -415,7 +462,7 @@ export default function MyEventsPage() {
             onClick={() => setShowLogoutModal(false)}
           />
           <div
-            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
             style={{ height: "auto", borderRadius: "16px" }}
           >
             <button
@@ -429,10 +476,10 @@ export default function MyEventsPage() {
                 <LogOut className="size-6 text-white" />
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
               Are you sure you want to log out?
             </h2>
-            <p className="mb-8 text-center text-gray-600">
+            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
               {"You'll be signed out from your account."}
             </p>
             <div className="flex w-full flex-col gap-4 sm:flex-row">

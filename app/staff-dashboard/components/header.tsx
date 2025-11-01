@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, LogOut } from "lucide-react";
+import { X, LogOut, Moon, Sun } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function Header({ title }: { title: string }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -39,13 +42,48 @@ export default function Header({ title }: { title: string }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
   return (
-    <header className="flex items-center justify-between border-b border-gray-100 px-8 py-4">
-      <h2 className="text-3xl font-bold text-black">{title}</h2>
+    <header className="flex items-center justify-between border-gray-100 px-8 py-4">
+      <h2 className="text-3xl font-bold text-black dark:text-white">{title}</h2>
       {/* Right section */}
       <div className="flex flex-col items-end gap-3">
         <div className="flex items-center gap-4 relative">
+          {/* Light/Dark toggle */}
+          <Button
+            onClick={() =>
+              setTheme(resolvedTheme === "light" ? "dark" : "light")
+            }
+            variant="ghost"
+            size="sm"
+            className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+          >
+            {theme === "light" ? (
+              <>
+                <Moon className="h-4 w-4" /> Dark Mode
+              </>
+            ) : (
+              <>
+                <Sun className="h-4 w-4" /> Light Mode
+              </>
+            )}
+          </Button>
+
+          {/* Mobile toggle */}
+          <button
+            onClick={() =>
+              setTheme(resolvedTheme === "light" ? "dark" : "light")
+            }
+            className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+            ) : (
+              <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+            )}
+          </button>
           {/* Notification icon */}
           <div ref={notificationsRef} className="relative">
             <button
@@ -53,10 +91,10 @@ export default function Header({ title }: { title: string }) {
                 setShowNotifications(!showNotifications);
                 setShowProfileDropdown(false);
               }}
-              className="bg-white border h-9 w-9 flex justify-center items-center rounded-full relative hover:bg-gray-100"
+              className="bg-black dark:bg-black border h-9 w-9 flex justify-center items-center rounded-full relative hover:opacity-90"
             >
               <img
-                src="/images/icons/notification-new.png"
+                src="/icons/Vector.png"
                 alt="notification"
                 className="h-4 w-4"
               />
@@ -68,8 +106,8 @@ export default function Header({ title }: { title: string }) {
 
             {/* Notification popup */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg border border-gray-200 rounded-xl z-50 p-3">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                   Notifications
                 </h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -77,7 +115,7 @@ export default function Header({ title }: { title: string }) {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        className="text-sm bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition"
+                        className="text-sm bg-gray-50 dark:bg-[#1f1e1e] rounded-lg p-2 hover:bg-gray-100 transition"
                       >
                         {n.message}
                       </div>
@@ -109,10 +147,25 @@ export default function Header({ title }: { title: string }) {
             </button>
 
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+              <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                <Link href="/my-events-staff">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                    My Events
+                  </button>
+                </Link>
+                <Link href="/ticket-check-staff">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                    Ticket Check
+                  </button>
+                </Link>
+                <Link href="/profile-settings-staff">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                    Profile & Settings
+                  </button>
+                </Link>
                 <button
                   onClick={() => setShowLogoutModal(true)}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
                 >
                   Logout
                 </button>

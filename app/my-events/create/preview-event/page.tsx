@@ -21,8 +21,8 @@ export default function PreviewEventPage({
     <>
       <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-6 md:py-8">
         <div
-          className="rounded-2xl p-6 sm:p-8 mx-auto"
-          style={{ background: "#FFFFFF", maxWidth: 1200 }}
+          className="rounded-2xl p-6 sm:p-8 mx-auto bg-white dark:bg-[#191919]"
+          style={{ maxWidth: 1200 }}
         >
           {/* Hero Image */}
           <div className="w-full mb-6">
@@ -110,7 +110,7 @@ export default function PreviewEventPage({
                 <h3 className="text-[18px] sm:text-[20px] font-semibold mb-4">
                   Event Description
                 </h3>
-                <div className="space-y-4 text-[15px] sm:text-[16px] leading-relaxed text-gray-700">
+                <div className="space-y-4 text-[15px] sm:text-[16px] leading-relaxed text-gray-700 dark:text-gray-400">
                   <p>
                     Get ready to kick off the Christmas season in Mumbai with
                     SOUND OF CHRISTMAS - your favourite LIVE Christmas concert!
@@ -265,7 +265,7 @@ export default function PreviewEventPage({
         </div>
 
         {/* Bottom Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 px-4 sm:px-8 py-6 bg-white border-t mt-6">
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 px-4 sm:px-8 py-6 bg-white dark:bg-[#191919] border-t mt-6">
           <button
             className="w-full sm:w-auto px-8 py-3 rounded-lg font-medium text-[15px] sm:text-[16px]"
             style={{ backgroundColor: "#FFF4E6", color: "#D19537" }}

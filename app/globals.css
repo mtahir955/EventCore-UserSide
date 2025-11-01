@@ -352,6 +352,10 @@
   font-weight: 700;
   color: #000000;
 }
+/* When dark mode is active */
+.dark .ticket-check-title {
+  color: #ffffff;
+}
 
 .view-checklist-btn {
   background: #d19537;
@@ -375,6 +379,9 @@
   padding: 32px;
   margin-bottom: 32px;
 }
+.dark .ticket-verification-section{
+  background: #282828;
+}
 
 .verification-title {
   font-size: 24px;
@@ -382,13 +389,18 @@
   color: #000000;
   margin-bottom: 8px;
 }
+.dark .verification-title {
+  color: white;
+}
 
 .verification-subtitle {
   font-size: 14px;
   color: #666666;
   margin-bottom: 28px;
 }
-
+.dark .verification-subtitle{
+  color:grey;
+}
 .verification-controls {
   display: flex;
   gap: 16px;
@@ -408,6 +420,10 @@
   transition: border-color 0.2s;
 }
 
+.dark .event-dropdown{
+  background: #101010;
+}
+
 .event-dropdown:hover {
   border-color: #d19537;
 }
@@ -416,6 +432,9 @@
   font-size: 14px;
   color: #000000;
   font-weight: 500;
+}
+.dark .event-dropdown-text {
+  color: white;
 }
 
 .chevron-icon {
@@ -431,6 +450,9 @@
   border: 1px solid #e5e5e5;
   border-radius: 8px;
   padding: 14px 20px;
+}
+.dark .manual-entry {
+  background: #101010;
 }
 
 .ticket-id-input {
@@ -541,12 +563,18 @@
   border-radius: 16px;
   padding: 32px;
 }
+.dark .verification-result-section{
+  background: #282828;
+}
 
 .result-title {
   font-size: 24px;
   font-weight: 700;
   color: #000000;
   margin-bottom: 24px;
+}
+.dark .result-title {
+  color: white;
 }
 
 .result-card {
@@ -582,6 +610,9 @@
   font-weight: 700;
   color: #000000;
 }
+.dark .result-status{
+  color: white;
+}
 
 .result-details {
   font-size: 14px;
@@ -616,12 +647,19 @@
   border-radius: 16px;
   padding: 32px;
 }
+.dark .event-summary-section{
+  background: #101010;
+  border: #ffffff;
+}
 
 .summary-title {
   font-size: 24px;
   font-weight: 700;
   color: #000000;
   margin-bottom: 8px;
+}
+.dark .summary-title {
+  color: white;
 }
 
 .summary-subtitle {
@@ -645,6 +683,9 @@
   border-radius: 12px;
   padding: 24px;
   transition: box-shadow 0.2s;
+}
+.dark .summary-card {
+  background-color: #101010;
 }
 
 .summary-card:hover {
@@ -673,6 +714,9 @@
   color: #000000;
   line-height: 1;
 }
+.dark .summary-number {
+  color: white;
+}
 
 .summary-label {
   font-size: 14px;
@@ -684,6 +728,9 @@
   background: #ffffff;
   border-radius: 16px;
   overflow: hidden;
+}
+.dark .attendee-table-container {
+  background: #101010;
 }
 
 .attendee-table {
@@ -712,6 +759,9 @@
 .attendee-table tbody tr:hover {
   background: #fafafb;
 }
+.dark .attendee-table tbody tr:hover{
+  background: #1c1c1c;
+}
 
 .attendee-table tbody tr:last-child {
   border-bottom: none;
@@ -722,6 +772,9 @@
   font-size: 14px;
   color: #333333;
   vertical-align: middle;
+}
+.dark .attendee-table tbody td{
+  color: white;
 }
 
 .attendee-name-cell {

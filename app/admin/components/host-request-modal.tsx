@@ -27,6 +27,7 @@ export function HostRequestModal({ isOpen, onClose }: HostRequestModalProps) {
         className="
           relative 
           bg-white 
+          dark:bg-[#101010]
           rounded-2xl 
           shadow-2xl 
           w-full 

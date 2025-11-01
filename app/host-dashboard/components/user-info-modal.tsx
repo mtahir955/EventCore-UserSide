@@ -53,7 +53,7 @@ export function UserInfoModal({
       onClick={handleBackdropClick}
     >
       <div
-        className="relative bg-[#FBFBF9] rounded-2xl shadow-2xl"
+        className="relative bg-[#FBFBF9] dark:bg-[#101010] rounded-2xl shadow-2xl"
         style={{ width: 420, height: 450 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -90,7 +90,7 @@ export function UserInfoModal({
           <div className="space-y-3">
             {/* Full Name */}
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Full Name</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Full Name</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.name}
               </div>
@@ -98,7 +98,7 @@ export function UserInfoModal({
 
             {/* Email */}
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Email</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Email</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.email}
               </div>
@@ -106,7 +106,7 @@ export function UserInfoModal({
 
             {/* Phone Number */}
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Phone Number</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Phone Number</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.phone}
               </div>
@@ -114,7 +114,7 @@ export function UserInfoModal({
 
             {/* Gender */}
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Gender</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Gender</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.gender}
               </div>
@@ -122,7 +122,7 @@ export function UserInfoModal({
 
             {/* Address */}
             <div className="flex items-start">
-              <div className="w-32 text-[14px] text-gray-600">Address</div>
+              <div className="w-32 text-[14px] text-gray-600 dark:text-gray-400">Address</div>
               <div className="flex-1 text-[14px] text-foreground font-medium">
                 {user.address}
               </div>

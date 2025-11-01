@@ -164,19 +164,19 @@ export function HostManagementTable({
             className="border-b border-border"
             style={{ background: "rgba(245, 237, 229, 1)" }}
           >
-            <th className="text-center px-6 py-4 text-sm font-semibold text-foreground">
+            <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Name
             </th>
-            <th className="text-center px-6 py-4 text-sm font-semibold text-foreground">
+            <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Email
             </th>
-            <th className="text-center px-6 py-4 text-sm font-semibold text-foreground">
+            <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Category
             </th>
-            <th className="text-center px-6 py-4 text-sm font-semibold text-foreground">
+            <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Address
             </th>
-            <th className="text-center px-6 py-4 text-sm font-semibold text-foreground">
+            <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Status
             </th>
           </tr>

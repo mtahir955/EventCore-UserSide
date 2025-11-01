@@ -107,20 +107,20 @@ export default function MyEvents() {
   };
 
   return (
-    <div className="flex min-h-screen font-sans">
+    <div className="flex min-h-screen bg-white dark:bg-[#101010] font-sans">
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50 mt-14 sm:mt-1 min-h-screen">
+      <main className="flex-1 bg-gray-50 dark:bg-[#101010] mt-14 sm:mt-1 min-h-screen">
         {/* ✅ Hide header only on mobile */}
         <div className="hidden sm:block">
           <Header title="My Events" />
         </div>
 
         {/* Search + Filter */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 md:px-8 py-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 md:px-8 py-4 border-gray-100">
           {/* Search Bar */}
-          <div className="flex items-center w-full sm:w-auto flex-grow border border-gray-200 rounded-full px-4 py-2 bg-gray-50">
+          <div className="flex items-center w-full sm:w-auto flex-grow border border-gray-200 dark:border-gray-800 rounded-full px-4 py-2 bg-gray-50 dark:bg-[#101010]">
             <Image
               src="/images/search-icon.png"
               alt="Search"
@@ -155,7 +155,7 @@ export default function MyEvents() {
               {paginatedEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col sm:flex-row max-w-[520px] w-full border border-gray-100"
+                  className="bg-white dark:bg-[#101010] rounded-2xl shadow-sm overflow-hidden flex flex-col sm:flex-row max-w-[520px] w-full border border-gray-100 dark:border-gray-800"
                 >
                   {/* Image Section */}
                   <div className="w-full sm:w-[220px] h-[200px] sm:h-[300px] overflow-hidden">
@@ -171,21 +171,21 @@ export default function MyEvents() {
                   {/* Content Section */}
                   <div className="flex flex-col justify-between p-4 sm:p-5 sm:w-[300px]">
                     <div>
-                      <p className="text-[12px] text-gray-500 mb-1">
+                      <p className="text-[12px] text-gray-500 dark:text-gray-300 mb-1">
                         Host By :{" "}
-                        <span className="text-gray-700 font-medium">
+                        <span className="text-gray-700 dark:text-white font-medium">
                           {event.host}
                         </span>
                       </p>
-                      <h3 className="text-[16px] font-semibold text-gray-900 leading-tight mb-2">
+                      <h3 className="text-[16px] font-semibold text-gray-900 dark:text-white leading-tight mb-2">
                         {event.title}
                       </h3>
-                      <p className="text-[13px] text-gray-600 mb-4 line-clamp-3">
+                      <p className="text-[13px] text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
                         {event.description}
                       </p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-gray-700 mb-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-gray-700 dark:text-gray-300 mb-3">
                         <div className="flex items-center gap-2">
                           <Image
                             src="/icons/location-icon.png"
@@ -216,7 +216,7 @@ export default function MyEvents() {
                       </div>
 
                       {/* Time */}
-                      <div className="flex items-center gap-2 text-[13px] text-gray-700 mb-4">
+                      <div className="flex items-center gap-2 text-[13px] text-gray-700 dark:text-gray-300 mb-4">
                         <Image
                           src="/icons/time-icon.png"
                           alt="Time"

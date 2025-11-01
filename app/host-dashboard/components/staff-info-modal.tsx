@@ -25,7 +25,7 @@ export function StaffInfoModal({ isOpen, onClose, staff }: StaffInfoModalProps) 
     <>
       <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
         <div
-          className="relative rounded-2xl shadow-2xl bg-[#FBFBF9] w-[300px] h-[550px] sm:w-[400px]"
+          className="relative rounded-2xl shadow-2xl bg-[#FBFBF9] dark:bg-[#101010] w-[300px] h-[550px] sm:w-[400px]"
           // style={{
           //   width: 420,
           //   height: 509,

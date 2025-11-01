@@ -6,8 +6,10 @@ import { RecentEventsTable } from "../admin/components/recent-events-table";
 import { TicketSoldChart } from "../admin/components/ticket-sold-chart";
 import { PaymentChart } from "../admin/components/payment-chart";
 import { useState, useRef, useEffect } from "react";
-import { Bell, User, X, LogOut } from "lucide-react";
+import { Bell, User, X, LogOut, Moon, Sun } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function DashboardPage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -27,19 +29,54 @@ export default function DashboardPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar (responsive handled inside component) */}
       <Sidebar activePage="Dashboard" />
 
       {/* ===== Main Content ===== */}
-      <main className="flex-1 overflow-auto lg:ml-[250px]">
+      <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* ===== Header ===== */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
           <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
 
           <div className="flex items-center gap-4">
+            {/* Light/Dark toggle */}
+            <Button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              variant="ghost"
+              size="sm"
+              className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+            >
+              {theme === "light" ? (
+                <>
+                  <Moon className="h-4 w-4" /> Dark Mode
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4" /> Light Mode
+                </>
+              )}
+            </Button>
+
+            {/* Mobile toggle */}
+            <button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+              ) : (
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </button>
             <Link href="/push-notification">
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
                 <Bell className="h-5 w-5 text-gray-600" />
@@ -61,10 +98,30 @@ export default function DashboardPage() {
               </button>
 
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                  <Link href="/host-management">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      Host Management
+                    </button>
+                  </Link>
+                  <Link href="/host-request">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      Host Request
+                    </button>
+                  </Link>
+                  <Link href="/payment-withdrawal">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      Payment Withdrawal
+                    </button>
+                  </Link>
+                  <Link href="/system-settings">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      System Settings
+                    </button>
+                  </Link>
                   <button
                     onClick={() => setShowLogoutModal(true)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
                   >
                     Logout
                   </button>
@@ -80,7 +137,7 @@ export default function DashboardPage() {
           {/* ===== Stats Section ===== */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatCard
-              icon="/icons/calendar-icon.png"
+              icon="/icons/calendar-active-icon.png"
               value="720"
               label="Total Events"
               bgColor="bg-blue-100"
@@ -124,7 +181,7 @@ export default function DashboardPage() {
             onClick={() => setShowLogoutModal(false)}
           />
           <div
-            className="relative flex w-[90%] flex-col items-center justify-center bg-white p-8 shadow-xl sm:w-[500px]"
+            className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
             style={{ height: "auto", borderRadius: "16px" }}
           >
             <button
@@ -138,10 +195,10 @@ export default function DashboardPage() {
                 <LogOut className="size-6 text-white" />
               </div>
             </div>
-            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900">
+            <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
               Are you sure you want to log out?
             </h2>
-            <p className="mb-8 text-center text-gray-600">
+            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
               {"You'll be signed out from your account."}
             </p>
             <div className="flex w-full flex-col gap-4 sm:flex-row">
