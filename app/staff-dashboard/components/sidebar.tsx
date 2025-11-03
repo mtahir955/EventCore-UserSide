@@ -7,13 +7,14 @@ import { usePathname } from "next/navigation";
 import { HelpLineModal } from "../../host-dashboard/components/help-line-modal";
 import { MessageSuccessModal } from "../../host-dashboard/components/message-success-modal";
 import { Menu, Bell, User, Sun, Moon, X, LogOut } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [showSidebar, setShowSidebar] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [messageSuccessOpen, setMessageSuccessOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const { resolvedTheme, theme, setTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -74,12 +75,20 @@ export default function Sidebar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const { systemTheme } = useTheme();
+  const currentTheme = theme === "system" ? systemTheme : theme;
+
+  const [mounted, setMounted] = useState(false);
+
+  // ✅ Ensures the component only renders icons after hydration
+  useEffect(() => setMounted(true), []);
+
   const navItems = [
     {
       name: "Dashboard",
       icon: "/icons/sidebar/1.png",
       orangeicon: "/icons/sidebar-orange/1.png",
-      whiteicon: "/icons/sidebar/8.png",
+      whiteicon: "/icons/sidebar-white/1.png",
       href: "/staff-dashboard",
     },
     {
@@ -93,17 +102,19 @@ export default function Sidebar() {
       name: "Ticket Check",
       icon: "/icons/sidebar/5.png",
       orangeicon: "/icons/sidebar-orange/4.png",
-      whiteicon: "/icons/sidebar/10.png",
+      whiteicon: "/icons/sidebar-white/9.png",
       href: "/ticket-check-staff",
     },
     {
       name: "Profile & Settings",
       icon: "/icons/sidebar/2.png",
       orangeicon: "/icons/sidebar-orange/5.png",
-      whiteicon: "/icons/sidebar/11.png",
+      whiteicon: "/icons/sidebar-white/7.png",
       href: "/profile-settings-staff",
     },
   ];
+
+  if (!mounted) return null;
 
   return (
     <>
@@ -137,28 +148,39 @@ export default function Sidebar() {
                 setShowNotifications(!showNotifications);
                 setShowProfileDropdown(false);
               }}
-              className="bg-white dark:bg-[#1f1f1f] border dark:border-gray-700 h-9 w-9 flex justify-center items-center rounded-full relative hover:bg-gray-100 dark:hover:bg-[#2a2a2a]"
+              className="bg-black dark:bg-black border h-9 w-9 flex justify-center items-center rounded-full relative hover:opacity-90"
             >
-              <Bell className="h-5 w-5 text-gray-800 dark:text-gray-200" />
+              <img
+                src="/icons/Vector.png"
+                alt="notification"
+                className="h-4 w-4"
+              />
+              {/* Counter badge */}
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                 {notifications.length}
               </span>
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#1f1f1f] shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl z-50 p-3 max-h-64 overflow-y-auto">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+              <div className="absolute right-0 mt-2 sm:w-72 w-60 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                   Notifications
                 </h4>
-                <div className="space-y-2">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className="text-sm bg-gray-50 dark:bg-[#2a2a2a] rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-[#333] transition"
-                    >
-                      {n.message}
-                    </div>
-                  ))}
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="text-sm bg-gray-50 dark:bg-[#1f1e1e] rounded-lg p-2 hover:bg-gray-100 transition"
+                      >
+                        {n.message}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No new notifications
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -171,16 +193,35 @@ export default function Sidebar() {
                 setShowProfileDropdown(!showProfileDropdown);
                 setShowNotifications(false);
               }}
-              className="bg-black dark:bg-[#D19537] h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+              className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
             >
-              <User className="h-5 w-5 text-white" />
+              <img
+                src="/images/icons/profile-user.png"
+                alt="profile"
+                className="h-4 w-4"
+              />
             </button>
 
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#1f1f1f] shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl z-50 py-2">
+              <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                <Link href="/my-events-staff">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                    My Events
+                  </button>
+                </Link>
+                <Link href="/ticket-check-staff">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                    Ticket Check
+                  </button>
+                </Link>
+                <Link href="/profile-settings-staff">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                    Profile & Settings
+                  </button>
+                </Link>
                 <button
                   onClick={() => setShowLogoutModal(true)}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] rounded-lg"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
                 >
                   Logout
                 </button>
@@ -214,21 +255,20 @@ export default function Sidebar() {
             {navItems.map((item) => {
               const isActive = pathname === item.href;
 
-              // Choose icon based on theme & state
+              // ✅ Choose correct icon dynamically
               const currentIcon =
-                theme === "dark"
+                currentTheme === "dark"
                   ? isActive
-                    ? item.orangeicon // active icon stays orange even in dark mode
-                    : item.whiteicon // white icons for dark mode
+                    ? item.orangeicon // keep orange for active in dark mode
+                    : item.whiteicon // use white icons in dark mode
                   : isActive
-                  ? item.orangeicon // orange icon when active (light)
-                  : item.icon; // default gray icon for light
+                  ? item.orangeicon // orange icon for active (light mode)
+                  : item.icon; // normal gray icon in light mode
 
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setShowSidebar(false)}
                   className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
                     isActive
                       ? "bg-[#F5EDE5] dark:bg-[#1f1f1f]"
@@ -240,7 +280,8 @@ export default function Sidebar() {
                     alt={item.name}
                     width={20}
                     height={20}
-                    className="h-5 w-5"
+                    className="h-5 w-5 object-contain"
+                    priority
                   />
                   <span
                     className={`font-medium ${
@@ -254,12 +295,10 @@ export default function Sidebar() {
                 </Link>
               );
             })}
-            {/* Help & Support */}
+
+            {/* Help & Support button */}
             <button
-              onClick={() => {
-                setShowHelpModal(true);
-                setShowSidebar(false);
-              }}
+              onClick={() => alert("Open Help & Support modal")}
               className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-[#1a1a1a]"
             >
               <svg

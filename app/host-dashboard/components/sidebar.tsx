@@ -284,9 +284,14 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
                               .pop()}`
                           : item.icon || "/placeholder.svg"
                       }
-                      alt=""
-                      className="h-5 w-5"
+                      alt={item.label}
+                      className={`h-5 w-5 transition ${
+                        theme === "dark" && !isActive
+                          ? "invert brightness-50"
+                          : ""
+                      }`}
                     />
+
                     {item.label}
                   </Element>
                 </li>

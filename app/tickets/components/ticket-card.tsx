@@ -257,20 +257,20 @@ export function TicketCard({
                   Event URL
                 </p>
                 <p className="mt-[2px] text-[12px] sm:text-[14px] text-black dark:text-gray-300 break-all">
-                  https://viagoevents.com/v2/events/928
+                  https://eventcore.com/v2/events/928
                 </p>
               </div>
               <button
                 aria-label="Copy event URL"
                 onClick={() =>
                   navigator.clipboard.writeText(
-                    "https://viagoevents.com/v2/events/928"
+                    "https://eventcore.com/v2/events/928"
                   )
                 }
                 className="h-[40px] w-[40px] sm:h-[44px] sm:w-[45px] rounded-full grid place-items-center dark:hover:bg-[#333]"
               >
                 <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Copy%20icon-hLC2rCxtTJjCbcRBhJtTzj.png"
+                  src="/icons/Copy.png"
                   alt="Copy"
                   className="h-[22px] sm:h-[24px] w-[22px] sm:w-[24px] dark:invert"
                 />

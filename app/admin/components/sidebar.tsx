@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { Menu, Bell, User, Sun, Moon, X, LogOut } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface SidebarProps {
   className?: string;
@@ -16,49 +17,55 @@ const menuItems = [
     name: "Dashboard",
     icon: "/icons/sidebar/1.png",
     orangeicon: "/icons/sidebar-orange/1.png",
+    whiteicon: "/icons/sidebar-white/1.png",
     href: "/admin",
   },
   {
     name: "User Management",
     icon: "/icons/sidebar/3.png",
     orangeicon: "/icons/sidebar-orange/7.png",
+    whiteicon: "/icons/sidebar-white/2.png",
     href: "/user-management",
   },
   {
     name: "Host Management",
     icon: "/icons/sidebar/4.png",
     orangeicon: "/icons/sidebar-orange/2.png",
+    whiteicon: "/icons/sidebar-white/3.png",
     href: "/host-management",
   },
   {
     name: "Host Request",
     icon: "/icons/sidebar/5.png",
     orangeicon: "/icons/sidebar-orange/3.png",
+    whiteicon: "/icons/sidebar-white/4.png",
     href: "/host-request",
   },
   {
     name: "Payment Withdrawal",
     icon: "/icons/sidebar/7.png",
     orangeicon: "/icons/sidebar-orange/6.png",
+    whiteicon: "/icons/sidebar-white/5.png",
     href: "/payment-withdrawal",
   },
   {
     name: "Push Notification Center",
     icon: "/icons/sidebar/6.png",
     orangeicon: "/icons/sidebar-orange/4.png",
+    whiteicon: "/icons/sidebar-white/6.png",
     href: "/push-notification",
   },
   {
     name: "System Settings",
     icon: "/icons/sidebar/2.png",
     orangeicon: "/icons/sidebar-orange/5.png",
+    whiteicon: "/icons/sidebar-white/7.png",
     href: "/system-settings",
   },
 ];
 
 export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -77,6 +84,7 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  const { resolvedTheme, theme, setTheme } = useTheme();
 
   return (
     <>
@@ -94,6 +102,19 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
         </h2>
 
         <div className="flex items-center gap-4">
+          {/* Mobile toggle */}
+          <button
+            onClick={() =>
+              setTheme(resolvedTheme === "light" ? "dark" : "light")
+            }
+            className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+            ) : (
+              <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+            )}
+          </button>
           <Link href="/push-notification">
             <button className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
               <Bell className="h-4 w-4 text-gray-600" />
@@ -178,7 +199,6 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
               <Link
                 key={index}
                 href={item.href}
-                onClick={() => setIsOpen(false)}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-4 mb-1 transition-colors",
                   isActive
@@ -187,7 +207,13 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
                 )}
               >
                 <Image
-                  src={isActive ? item.orangeicon : item.icon}
+                  src={
+                    theme === "dark"
+                      ? item.whiteicon
+                      : isActive
+                      ? item.orangeicon
+                      : item.icon
+                  }
                   alt={item.name}
                   width={20}
                   height={20}
