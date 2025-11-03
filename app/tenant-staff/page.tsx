@@ -1,4 +1,4 @@
-import AuthPopup from "../sign-up/components/auth-popup"
+import AuthPopup from "../tenant-staff/components/auth-popup"
 
 export default function Home() {
   return (
