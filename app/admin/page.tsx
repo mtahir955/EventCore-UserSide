@@ -157,7 +157,7 @@ export default function DashboardPage() {
             >
               <DropdownMenuItem asChild>
                 <Link
-                  href="/create-host"
+                  href="/profile-settings-admin"
                   className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-md transition"
                 >
                   Create Host
@@ -166,7 +166,7 @@ export default function DashboardPage() {
 
               <DropdownMenuItem asChild>
                 <Link
-                  href="/create-staff"
+                  href="/profile-settings-admin"
                   className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-md transition"
                 >
                   Create Staff

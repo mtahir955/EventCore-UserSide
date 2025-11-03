@@ -42,6 +42,13 @@ const menuItems = [
     href: "/host-request",
   },
   {
+    name: "Profile & Settings",
+    icon: "/icons/sidebar/2.png",
+    orangeicon: "/icons/sidebar-orange/5.png",
+    whiteicon: "/icons/sidebar-white/7.png",
+    href: "/profile-settings-admin",
+  },
+  {
     name: "Payment Withdrawal",
     icon: "/icons/sidebar/7.png",
     orangeicon: "/icons/sidebar-orange/6.png",

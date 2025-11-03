@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Sidebar } from "../../admin/components/sidebar";
-import Header from "./header";
+import Header from "../../admin/components/header";
 import { Button } from "@/components/ui/button";
 
 export default function ProfileSettings() {

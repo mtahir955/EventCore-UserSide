@@ -105,13 +105,13 @@ export default function Sidebar() {
       whiteicon: "/icons/sidebar-white/9.png",
       href: "/ticket-check-staff",
     },
-    {
-      name: "Profile & Settings",
-      icon: "/icons/sidebar/2.png",
-      orangeicon: "/icons/sidebar-orange/5.png",
-      whiteicon: "/icons/sidebar-white/7.png",
-      href: "/profile-settings-staff",
-    },
+    // {
+    //   name: "Profile & Settings",
+    //   icon: "/icons/sidebar/2.png",
+    //   orangeicon: "/icons/sidebar-orange/5.png",
+    //   whiteicon: "/icons/sidebar-white/7.png",
+    //   href: "/profile-settings-staff",
+    // },
   ];
 
   if (!mounted) return null;
