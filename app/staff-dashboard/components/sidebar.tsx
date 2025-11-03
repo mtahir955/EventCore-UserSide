@@ -298,7 +298,7 @@ export default function Sidebar() {
 
             {/* Help & Support button */}
             <button
-              onClick={() => alert("Open Help & Support modal")}
+              onClick={() => setShowHelpModal(true)}
               className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-[#1a1a1a]"
             >
               <svg
