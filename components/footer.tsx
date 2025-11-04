@@ -13,7 +13,7 @@ export function Footer() {
               alt="Good Life Trainings"
               width={180}
               height={50}
-              className="h-12 w-auto mb-4 "
+              className="h-20 w-[240px] mb-4 mr-2"
             />
             <p className="text-gray-400 text-sm leading-relaxed mb-2 max-w-[260px]">
               Vivamus tristique odio sit amet velit semper,

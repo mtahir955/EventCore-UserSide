@@ -156,13 +156,13 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 pt-4">
           <button
             onClick={handleGoBack}
-            className="h-11 sm:h-12 px-6 sm:px-8 rounded-full text-[13px] sm:text-[14px] font-semibold bg-[#FFF5E6] text-[#D19537]"
+            className="h-11 sm:h-12 px-6 sm:px-8 rounded-lg text-[13px] sm:text-[14px] font-semibold bg-[#FFF5E6] text-[#D19537]"
           >
             Go Back
           </button>
           <button
             onClick={handleSaveAndContinue}
-            className="h-11 sm:h-12 px-6 sm:px-8 rounded-full text-[13px] sm:text-[14px] font-semibold bg-[#D19537] text-white"
+            className="h-11 sm:h-12 px-6 sm:px-8 rounded-lg text-[13px] sm:text-[14px] font-semibold bg-[#D19537] text-white"
           >
             Save & Continue
           </button>
