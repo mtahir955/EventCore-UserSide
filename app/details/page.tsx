@@ -9,6 +9,7 @@ import { ExploreEvents } from "../details/components/explore-events";
 import { Footer } from "../../components/footer";
 import { CalendarModal } from "../details/components/calendar-modal";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function EventDetailPage({
   params,
@@ -120,6 +121,14 @@ export default function EventDetailPage({
                   </ol>
                 </div>
               </div>
+
+              <Link href="/terms-of-services">
+              <Button
+                className="bg-[#0077F7] hover:bg-[#0066D6] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-light"
+              >
+                Terms of Services
+              </Button>
+              </Link>
 
               {/* Hosted By */}
               <div className="mt-6 sm:mt-8">

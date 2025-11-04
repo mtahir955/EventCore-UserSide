@@ -27,7 +27,7 @@ const allEvents = [
     audience: 150,
     time: "08:00 PM - 09:00 PM",
     price: "$99.99",
-    status: "upcoming",
+    status: "training",
     mode: "offline",
     priceType: "paid",
   },
@@ -43,7 +43,7 @@ const allEvents = [
     audience: 400,
     time: "07:00 PM - 10:00 PM",
     price: "Free",
-    status: "ongoing",
+    status: "fun",
     mode: "offline",
     priceType: "free",
   },
@@ -60,7 +60,7 @@ const allEvents = [
     audience: 1200,
     time: "05:00 PM - 07:00 PM",
     price: "$49.00",
-    status: "upcoming",
+    status: "training",
     mode: "online",
     priceType: "paid",
   },
@@ -76,7 +76,7 @@ const allEvents = [
     audience: 200,
     time: "06:00 PM - 08:00 PM",
     price: "$79.00",
-    status: "past",
+    status: "trips",
     mode: "offline",
     priceType: "paid",
   },
@@ -92,7 +92,7 @@ const allEvents = [
     audience: 300,
     time: "04:00 PM - 06:00 PM",
     price: "Free",
-    status: "upcoming",
+    status: "training",
     mode: "online",
     priceType: "free",
   },
@@ -109,7 +109,7 @@ const allEvents = [
     audience: 80,
     time: "03:00 PM - 05:00 PM",
     price: "$29.00",
-    status: "ongoing",
+    status: "trips",
     mode: "hybrid",
     priceType: "paid",
   },
@@ -126,7 +126,7 @@ const allEvents = [
     audience: 150,
     time: "08:00 PM - 09:00 PM",
     price: "$99.99",
-    status: i % 3 === 0 ? "upcoming" : "past",
+    status: i % 3 === 0 ? "fun" : "past",
     mode: i % 2 === 0 ? "online" : "offline",
     priceType: "paid",
   })),
@@ -207,10 +207,10 @@ export function EventsPage() {
               <SelectValue placeholder="Event Status" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border-gray-200 dark:border-gray-700">
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="ongoing">Ongoing</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
+              <SelectItem value="all">All Events</SelectItem>
+              <SelectItem value="training">Training Events</SelectItem>
+              <SelectItem value="trips">Trips</SelectItem>
+              <SelectItem value="fun">Fun Events</SelectItem>
             </SelectContent>
           </Select>
 

@@ -47,11 +47,11 @@ export function Header() {
       href: "/tickets",
       counter: ticketsCount, // ✅ live ticket counter
     },
-    {
-      icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Calendar-icon-ilbfRcUhzwNOhOz3QBIziWCZOK4uDV.png",
-      label: "Calendar",
-      href: "/upcoming-events",
-    },
+    // {
+    //   icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Calendar-icon-ilbfRcUhzwNOhOz3QBIziWCZOK4uDV.png",
+    //   label: "Calendar",
+    //   href: "/upcoming-events",
+    // },
     {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/notifications-icon-YNBdsbLEdRySLL7MtsqsOP5jYisuIh.png",
       label: "Notifications",
@@ -75,8 +75,9 @@ export function Header() {
   const menuItems = [
     { label: "Home", href: "/" },
     { label: "Events", href: "/events" },
+    { label: "Trainers", href: "/trainers" },
     { label: "About", href: "/about-us" },
-    { label: "Contact us", href: "/contact-us" },
+    { label: "Calendar", href: "/upcoming-events" },
   ];
 
   const [mounted, setMounted] = useState(false);
