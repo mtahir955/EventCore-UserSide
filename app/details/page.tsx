@@ -357,9 +357,11 @@ export default function EventDetailPage({
                 ))}
               </div>
 
+              <Link href="/check-out">
               <Button className="w-full sm:w-[180px] h-[44px] sm:h-[50px] bg-[#0077F7] hover:bg-[#0066D6] text-white rounded-lg text-sm sm:text-base font-semibold transition-colors">
                 Save my Spot
               </Button>
+              </Link>
             </div>
           </div>
         </section>
