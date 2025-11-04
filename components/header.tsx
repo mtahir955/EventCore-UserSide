@@ -211,7 +211,7 @@ export function Header() {
             </button>
 
             {/* Desktop Login */}
-            <Link href="/tenant-admin">
+            <Link href="/sign-up">
               <Button className="hidden lg:inline-flex bg-[#0077F7] hover:bg-[#0066D6] text-white px-6 py-2 rounded-full font-medium dark:bg-[#3399FF] dark:hover:bg-[#4DA3FF]">
                 Login
               </Button>
