@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { EventCard } from "./explore-card"
-import { useRouter } from "next/navigation";  
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EventCard } from "./explore-card";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const events = [
   {
@@ -31,31 +32,39 @@ const events = [
     price: "$99.99",
     host: "Eric Grusdonas",
   },
-]
+];
 
 export function ExploreEvents() {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const goToPrevious = () => {
-    setCurrentIndex((prevIndex) => (prevIndex === 0 ? events.length - 1 : prevIndex - 1))
-  }
+    setCurrentIndex((prevIndex) =>
+      prevIndex === 0 ? events.length - 1 : prevIndex - 1
+    );
+  };
 
   const goToNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex === events.length - 1 ? 0 : prevIndex + 1))
-  }
-  
+    setCurrentIndex((prevIndex) =>
+      prevIndex === events.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
   const router = useRouter();
 
   return (
     <section className="py-16 bg-white">
       <div className="max-w-[1440px] mx-auto px-12">
-        <h2 className="text-4xl font-bold text-gray-900 mb-12">Explore More Events</h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-12">
+          Explore More Events
+        </h2>
+
         <div className="relative">
           <div className="grid grid-cols-2 gap-6">
             {events.map((event, index) => (
               <EventCard key={index} {...event} />
             ))}
           </div>
+
           <Button
             variant="ghost"
             size="icon"
@@ -75,5 +84,5 @@ export function ExploreEvents() {
         </div>
       </div>
     </section>
-  )
+  );
 }

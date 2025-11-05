@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { MapPin, Calendar, Users, Clock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface EventCardProps {
   title: string;
@@ -28,6 +29,7 @@ export default function ExploreCard({
 }: EventCardProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl group cursor-pointer">
+      <Link href="/events">
       <div className="relative h-[220px] sm:h-[280px] md:h-[330px]">
         <Image
           src={image || "/placeholder.svg"}
@@ -84,6 +86,7 @@ export default function ExploreCard({
           </div>
         </div>
       </div>
+      </Link>
     </div>
   );
 }

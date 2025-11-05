@@ -94,19 +94,19 @@ export default function TicketDialog({ cta }: { cta: string }) {
             </div>
 
             {/* Buttons */}
-            <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="mt-3 sm:mt-4 grid grid-cols-1 gap-3 sm:gap-4">
               <button className="h-[36px] sm:h-[38px] rounded-[12px] sm:rounded-[16px] text-[13px] sm:text-[16px] font-medium bg-[#0077F7] text-white hover:bg-[#0066D6] transition">
                 Download Ticket
               </button>
-              <button
+              {/* <button
                 className="h-[36px] sm:h-[38px] rounded-[12px] sm:rounded-[16px] text-[13px] sm:text-[16px] font-medium bg-black text-white"
                 onClick={() => {
-                  setIsCalendarOpen(true);
                   setIsShareModalOpen(false);
+                  setTimeout(() => setIsCalendarOpen(true), 150);
                 }}
               >
                 Add to Calendar
-              </button>
+              </button> */}
             </div>
 
             {/* Social Icons */}
@@ -149,14 +149,14 @@ export default function TicketDialog({ cta }: { cta: string }) {
                   Event URL
                 </p>
                 <p className="mt-[2px] text-[12px] sm:text-[14px] text-black truncate">
-                  https://viagoevents.com/v2/events/928
+                  https://eventcore.com/v2/events/928
                 </p>
               </div>
               <button
                 aria-label="Copy event URL"
                 onClick={() =>
                   navigator.clipboard.writeText(
-                    "https://viagoevents.com/v2/events/928"
+                    "https://eventcore.com/v2/events/928"
                   )
                 }
                 className="h-[38px] sm:h-[44px] w-[40px] sm:w-[45px] rounded-full grid place-items-center border bg-gray-50 hover:bg-gray-100 transition"
@@ -173,14 +173,14 @@ export default function TicketDialog({ cta }: { cta: string }) {
       </Dialog>
 
       {/* Calendar Modal */}
-      <CalendarModal
+      {/* <CalendarModal
         isOpen={isCalendarOpen}
         onClose={() => setIsCalendarOpen(false)}
         eventTitle="Starry Nights Music Fest"
         eventDescription="A magical evening under the stars with live bands, food stalls, and an electric crowd."
         eventImage="/images/hero-image.png"
         initialDate={new Date(2025, 5, 10)}
-      />
+      /> */}
     </Dialog>
   );
 }
