@@ -125,7 +125,7 @@ export default function CreateEventPage() {
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
               {/* Light/Dark toggle */}
-              {/* <Button
+              <Button
                 onClick={() =>
                   setTheme(resolvedTheme === "light" ? "dark" : "light")
                 }
@@ -142,10 +142,10 @@ export default function CreateEventPage() {
                     <Sun className="h-4 w-4" /> Light Mode
                   </>
                 )}
-              </Button> */}
+              </Button>
 
               {/* Mobile toggle */}
-              {/* <button
+              <button
                 onClick={() =>
                   setTheme(resolvedTheme === "light" ? "dark" : "light")
                 }
@@ -156,7 +156,7 @@ export default function CreateEventPage() {
                 ) : (
                   <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
                 )}
-              </button> */}
+              </button>
               {/* Notification icon */}
               <div ref={notificationsRef} className="relative">
                 <button

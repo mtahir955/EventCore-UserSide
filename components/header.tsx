@@ -134,7 +134,7 @@ export function Header() {
             className="flex items-center gap-2 sm:gap-5 md:gap-10 relative"
           >
             {/* Light/Dark toggle */}
-            {/* <Button
+            <Button
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
@@ -151,10 +151,10 @@ export function Header() {
                   <Sun className="h-4 w-4" /> Light Mode
                 </>
               )}
-            </Button> */}
+            </Button>
 
             {/* Mobile toggle */}
-            {/* <button
+            <button
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
@@ -165,7 +165,7 @@ export function Header() {
               ) : (
                 <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
-            </button> */}
+            </button>
 
             {/* Star */}
             <Link href="/interested" className="flex-shrink-0">
