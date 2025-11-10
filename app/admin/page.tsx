@@ -140,40 +140,12 @@ export default function DashboardPage() {
         <div className="lg:hidden h-[56px]" /> {/* spacer for mobile navbar */}
         {/* ===== Page Content ===== */}
         <div className="p-4 sm:p-6 md:p-8">
-          <DropdownMenu>
-            {/* Button trigger */}
-            <DropdownMenuTrigger asChild>
-              <Button className="h-10 mb-3 w-24 bg-[#0077F7] hover:bg-[#0066D6] text-white">
-                Create
-              </Button>
-            </DropdownMenuTrigger>
+          <Link href="/tenant-form">
+          <Button className="h-10 mb-3 w-34 bg-[#0077F7] hover:bg-[#0066D6] text-white">
+            Create tenant
+          </Button>
+          </Link>
 
-            {/* Dropdown content — positioned to the right */}
-            <DropdownMenuContent
-              side="right" // ✅ opens to the right of the button
-              align="start" // ✅ aligns with the top edge of the button
-              sideOffset={6} // ✅ small gap between button and dropdown
-              className="w-44 bg-white dark:bg-[#1E1E1E] rounded-xl shadow-md border border-gray-200 dark:border-gray-700"
-            >
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/profile-settings-admin"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-md transition"
-                >
-                  Create Host
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/profile-settings-admin"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-md transition"
-                >
-                  Create Staff
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           {/* ===== Stats Section ===== */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatCard

@@ -21,18 +21,25 @@ const menuItems = [
     href: "/admin",
   },
   {
-    name: "User Management",
+    name: "Create Tenant",
     icon: "/icons/sidebar/3.png",
     orangeicon: "/icons/sidebar-orange/7.png",
     whiteicon: "/icons/sidebar-white/2.png",
-    href: "/user-management",
+    href: "/tenant-form",
   },
   {
-    name: "Host Management",
+    name: "Tenant Host",
     icon: "/icons/sidebar/4.png",
     orangeicon: "/icons/sidebar-orange/2.png",
     whiteicon: "/icons/sidebar-white/3.png",
     href: "/host-management",
+  },
+  {
+    name: "Tenant User",
+    icon: "/icons/sidebar/3.png",
+    orangeicon: "/icons/sidebar-orange/7.png",
+    whiteicon: "/icons/sidebar-white/2.png",
+    href: "/user-management",
   },
   // {
   //   name: "Host Request",
@@ -41,13 +48,14 @@ const menuItems = [
   //   whiteicon: "/icons/sidebar-white/4.png",
   //   href: "/host-request",
   // },
-  {
-    name: "Profile & Settings",
-    icon: "/icons/sidebar/2.png",
-    orangeicon: "/icons/sidebar-orange/5.png",
-    whiteicon: "/icons/sidebar-white/7.png",
-    href: "/profile-settings-admin",
-  },
+
+  // {
+  //   name: "Profile & Settings",
+  //   icon: "/icons/sidebar/2.png",
+  //   orangeicon: "/icons/sidebar-orange/5.png",
+  //   whiteicon: "/icons/sidebar-white/7.png",
+  //   href: "/profile-settings-admin",
+  // },
   {
     name: "Payment Withdrawal",
     icon: "/icons/sidebar/7.png",

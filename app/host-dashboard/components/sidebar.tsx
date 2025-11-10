@@ -35,6 +35,11 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       href: "/payment-setup",
     },
     {
+      label: "Ticket Check",
+      icon: "/images/icons/5.png",
+      href: "/ticket-check-host",
+    },
+    {
       label: "Completed Events",
       icon: "/images/icons/12.png",
       href: "/completed-events",
