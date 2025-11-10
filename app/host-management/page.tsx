@@ -47,13 +47,13 @@ export default function HostManagementPage() {
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar (responsive handled inside component) */}
-      <Sidebar activePage="Host Management" />
+      <Sidebar activePage="Tenant Host" />
 
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* ===== Desktop Header ===== */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
           <h1 className="text-3xl font-semibold text-foreground">
-            Host Management
+            Tenant Host
           </h1>
           <div className="flex items-center gap-4">
             {/* Light/Dark toggle */}
