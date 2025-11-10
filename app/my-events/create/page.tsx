@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SetImagesPage from "./set-images/page";
 import TicketingDetailsPage from "./ticketing-details/page";
+import AddTrainersSection from "./add-trainers/page";
 import PreviewEventPage from "./preview-event/page";
 import Link from "next/link";
 import { X, LogOut, Moon, Sun } from "lucide-react";
@@ -81,13 +82,14 @@ export default function CreateEventPage() {
 
   const steplist = [
     { num: 1, label: "Event Details", active: ActivePage === "create" },
-    { num: 2, label: "Set Images", active: ActivePage === "set-images" },
+    { num: 2, label: "Add Trainers", active: ActivePage === "set-ticketingdetailsT" },
+    { num: 3, label: "Set Images", active: ActivePage === "set-images" },
     {
-      num: 3,
+      num: 4,
       label: "Ticketing Details",
       active: ActivePage === "set-ticketingdetails",
     },
-    { num: 4, label: "Preview Event", active: ActivePage === "preview-event" },
+    { num: 5, label: "Preview Event", active: ActivePage === "preview-event" },
   ].map((step, index) => {
     const currentIndex = stepOrder.indexOf(ActivePage);
     return { ...step, isdone: index < currentIndex };
@@ -107,7 +109,7 @@ export default function CreateEventPage() {
       return;
     }
     setError("");
-    setActivePage("set-images");
+    setActivePage("set-ticketingdetailsT");
   };
 
   return (
@@ -524,6 +526,9 @@ export default function CreateEventPage() {
           </div>
         )}
 
+        {ActivePage === "set-ticketingdetailsT" && (
+          <AddTrainersSection setActivePage={setActivePage} />
+        )}
         {ActivePage === "set-images" && (
           <SetImagesPage setActivePage={setActivePage} />
         )}

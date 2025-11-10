@@ -5,6 +5,7 @@ import { EventSuccessModal } from "../../../host-dashboard/components/event-succ
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { EditStaffModal } from "../../../host-dashboard/components/edit-staff-modal";
+import { Facebook, Instagram, Linkedin } from "lucide-react";
 
 type SetImagesPageProps = {
   setActivePage: React.Dispatch<React.SetStateAction<string>>;
@@ -184,6 +185,105 @@ export default function PreviewEventPage({
                   Dummy location generation model by RSU ... Our approach
                   generates more realistic dummy locations
                 </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  Trainers
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                  {[
+                    {
+                      name: "Ethan Brooks",
+                      role: "Lead Motivational Coach",
+                      image: "/images/pic1.png",
+                      bio: "Certified personal trainer with 8 years of experience helping athletes improve endurance and muscle strength.",
+                      socials: {
+                        facebook: "https://facebook.com/",
+                        instagram: "https://instagram.com/",
+                        linkedin: "https://linkedin.com/",
+                      },
+                    },
+                    {
+                      name: "Sophia Hayes",
+                      role: "Wellness & Lifestyle Mentor",
+                      image: "/images/pic2.png",
+                      bio: "Passionate about holistic fitness, mindfulness, and flexibility training. Certified Yoga instructor since 2016.",
+                      socials: {
+                        facebook: "https://facebook.com/",
+                        instagram: "https://instagram.com/",
+                        linkedin: "https://linkedin.com/",
+                      },
+                    },
+                    {
+                      name: "Olivia Grant",
+                      role: "Corporate Leadership Coach",
+                      image: "/images/pic4.png",
+                      bio: "Nutrition specialist focusing on balanced diets, weight management, and overall wellness transformation.",
+                      socials: {
+                        facebook: "https://facebook.com/",
+                        instagram: "https://instagram.com/",
+                        linkedin: "https://linkedin.com/",
+                      },
+                    },
+                    {
+                      name: "Daniel Carter",
+                      role: "Fitness & Performance Trainer",
+                      image: "/images/pic5.png",
+                      bio: "Energetic HIIT coach dedicated to helping clients achieve peak physical performance through high-intensity training.",
+                      socials: {
+                        facebook: "https://facebook.com/",
+                        instagram: "https://instagram.com/",
+                        linkedin: "https://linkedin.com/",
+                      },
+                    },
+                  ].map((trainer, i) => (
+                    <div
+                      key={i}
+                      className="bg-white dark:bg-[#191919] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5 flex flex-col items-center text-center transition hover:shadow-md hover:-translate-y-1 duration-300"
+                    >
+                      <img
+                        src={trainer.image}
+                        alt={trainer.name}
+                        className="h-12 w-12 rounded-full object-cover mb-3"
+                      />
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {trainer.name}
+                      </h4>
+                      <p className="text-sm text-[#D19537] mb-2">
+                        {trainer.role}
+                      </p>
+                      {/* <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        {trainer.bio}
+                      </p> */}
+
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={trainer.socials.facebook}
+                          target="_blank"
+                          className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
+                        >
+                          <Facebook className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
+                        </a>
+                        <a
+                          href={trainer.socials.instagram}
+                          target="_blank"
+                          className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
+                        >
+                          <Instagram className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
+                        </a>
+                        <a
+                          href={trainer.socials.linkedin}
+                          target="_blank"
+                          className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
+                        >
+                          <Linkedin className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Share with friends */}
