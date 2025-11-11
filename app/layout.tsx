@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "react-hot-toast"; // ✅ Added Toast import
 
 export const metadata: Metadata = {
   title: "Event Core - Good Life Trainings",
@@ -32,6 +33,8 @@ export default function RootLayout({
           <Suspense fallback={<div>Loading...</div>}>
             {children}
             <Analytics />
+            {/* ✅ Toast container at bottom-right */}
+            <Toaster position="bottom-right" reverseOrder={false} />
           </Suspense>
         </ThemeProvider>
       </body>
