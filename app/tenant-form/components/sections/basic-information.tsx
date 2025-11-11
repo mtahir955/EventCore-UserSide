@@ -121,7 +121,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Tenant Name */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Tenant Name:
+          Tenant Name <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -141,7 +141,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Email */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Email:
+          Email <span className="text-red-500">*</span>
         </label>
         <input
           type="email"
@@ -161,7 +161,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Logo Upload */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Logo:
+          Logo <span className="text-red-500">*</span>
         </label>
 
         {formData.logo ? (
@@ -213,7 +213,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Banner Upload */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Banner (1425 × 500px):
+          Banner (1425 × 500px) <span className="text-red-500">*</span>
         </label>
 
         {formData.banner ? (
@@ -265,7 +265,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Description */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description:
+          Description <span className="text-red-500">*</span>
         </label>
         <textarea
           name="description"
@@ -285,7 +285,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Subdomain */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Subdomain:
+          Subdomain <span className="text-red-500">*</span>
         </label>
         <input
           type="text"

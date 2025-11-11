@@ -63,7 +63,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
       {/* Database Name */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
-          Database Name:
+          Database Name <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -83,7 +83,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
       {/* Database Username */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
-          Database Username:
+          Database Username <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -103,7 +103,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
       {/* Database Password (Optional) */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
-          Database Password (optional):
+          Database Password (optional)
         </label>
         <input
           type="password"
@@ -118,7 +118,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
       {/* Database SMTP (Optional) */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
-          Database SMTP (optional):
+          Database SMTP (optional)
         </label>
         <input
           type="text"
