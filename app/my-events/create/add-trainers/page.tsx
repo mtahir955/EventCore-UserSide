@@ -135,7 +135,7 @@ export default function AddTrainersSection({
           {/* Upload Image */}
           <div className="space-y-2">
             <label className="block text-[14px] font-medium mb-2">
-              Upload Trainer Image <span className="text-[#D6111A]">*</span>
+              Upload Trainer Image "192 * 256 px" <span className="text-[#D6111A]">*</span>
             </label>
 
             {currentTrainer.image ? (

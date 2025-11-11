@@ -87,7 +87,7 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
         {/* Upload Image Section */}
         <div className="mb-10">
           <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
-            Upload Image
+            Upload Image "1329 * 400 px"
           </h4>
 
           {/* Upload Area */}

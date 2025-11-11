@@ -40,6 +40,26 @@ export default function SystemSettingsPage() {
 
   const { resolvedTheme, theme, setTheme } = useTheme();
 
+  // 🔹 Apply theme automatically when adminTheme changes
+  useEffect(() => {
+    if (adminTheme === "Dark Theme") setTheme("dark");
+    else setTheme("light");
+  }, [adminTheme, setTheme]);
+
+  // 🔹 Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-[#FAFAFB]">
       {/* Sidebar */}
@@ -56,7 +76,7 @@ export default function SystemSettingsPage() {
 
           <div className="flex items-center gap-2 sm:gap-4 mt-2 sm:mt-0">
             {/* Light/Dark toggle */}
-            <Button
+            {/* <Button
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
@@ -73,10 +93,10 @@ export default function SystemSettingsPage() {
                   <Sun className="h-4 w-4" /> Light Mode
                 </>
               )}
-            </Button>
+            </Button> */}
 
             {/* Mobile toggle */}
-            <button
+            {/* <button
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
@@ -87,7 +107,7 @@ export default function SystemSettingsPage() {
               ) : (
                 <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
-            </button>
+            </button> */}
             <Link href="/push-notification">
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
                 <Bell className="h-5 w-5 text-gray-600" />
@@ -322,7 +342,7 @@ export default function SystemSettingsPage() {
                     <select
                       value={adminTheme}
                       onChange={(e) => setAdminTheme(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-gray-300 bg-gray-50 dark:bg-[#101010] dark:text-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:border-[#D19537] focus:ring-1 focus:ring-[#D19537] outline-none"
+                      className="w-full appearance-none rounded-lg border border-gray-300 bg-gray-50 dark:bg-[#101010] dark:text-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:border-[#D19537] focus:ring-1 focus:ring-[#D19537] outline-none transition"
                     >
                       <option value="Light Theme">Light Theme</option>
                       <option value="Dark Theme">Dark Theme</option>
@@ -364,24 +384,6 @@ export default function SystemSettingsPage() {
 
               {/* === Default Theme & Notifications === */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                {/* Default Theme */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-900 dark:text-gray-300">
-                    Default Theme for Users
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={defaultTheme}
-                      onChange={(e) => setDefaultTheme(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-gray-300 bg-gray-50 dark:bg-[#101010] dark:text-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:border-[#D19537] focus:ring-1 focus:ring-[#D19537] outline-none"
-                    >
-                      <option value="Light Theme">Light Theme</option>
-                      <option value="Dark Theme">Dark Theme</option>
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
-                  </div>
-                </div>
-
                 {/* Notifications */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-900 dark:text-gray-300">

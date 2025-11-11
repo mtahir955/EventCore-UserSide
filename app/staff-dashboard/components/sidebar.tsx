@@ -130,7 +130,7 @@ export default function Sidebar() {
 
         <div className="flex items-center gap-4">
           {/* Theme toggle */}
-          <button
+          {/* <button
             onClick={toggleTheme}
             className="h-9 w-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-[#1f1f1f] hover:opacity-80"
           >
@@ -139,7 +139,7 @@ export default function Sidebar() {
             ) : (
               <Sun className="h-5 w-5 text-yellow-400" />
             )}
-          </button>
+          </button> */}
 
           {/* Notification icon */}
           <div ref={notificationsRef} className="relative">
@@ -212,11 +212,6 @@ export default function Sidebar() {
                 <Link href="/ticket-check-staff">
                   <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
                     Ticket Check
-                  </button>
-                </Link>
-                <Link href="/profile-settings-staff">
-                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                    Profile & Settings
                   </button>
                 </Link>
                 <button

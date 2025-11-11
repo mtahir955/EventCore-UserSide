@@ -118,7 +118,7 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
 
         <div className="flex items-center gap-4">
           {/* Mobile toggle */}
-          <button
+          {/* <button
             onClick={() =>
               setTheme(resolvedTheme === "light" ? "dark" : "light")
             }
@@ -129,7 +129,7 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
             ) : (
               <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
             )}
-          </button>
+          </button> */}
           <Link href="/push-notification">
             <button className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
               <Bell className="h-4 w-4 text-gray-600" />
