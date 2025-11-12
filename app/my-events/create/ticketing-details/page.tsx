@@ -6,6 +6,8 @@ interface Ticket {
   id: string;
   name: string;
   price: string;
+  couponCode?: string;
+  discount?: string;
 }
 
 type SetImagesPageProps = {
@@ -17,8 +19,14 @@ export default function TicketingDetailsPage({
 }: SetImagesPageProps) {
   const [eventType, setEventType] = useState<"ticketed" | "free">("ticketed");
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [currentTicket, setCurrentTicket] = useState({ name: "", price: "" });
+  const [currentTicket, setCurrentTicket] = useState({
+    name: "",
+    price: "",
+    couponCode: "",
+    discount: "",
+  });
   const [error, setError] = useState("");
+  const [enableCoupon, setEnableCoupon] = useState(false);
 
   const handleGoBack = () => setActivePage("set-images");
 
@@ -39,9 +47,12 @@ export default function TicketingDetailsPage({
           id: Date.now().toString(),
           name: currentTicket.name,
           price: currentTicket.price,
+          couponCode: enableCoupon ? currentTicket.couponCode : undefined,
+          discount: enableCoupon ? currentTicket.discount : "",
         },
       ]);
-      setCurrentTicket({ name: "", price: "" });
+      setCurrentTicket({ name: "", price: "", couponCode: "", discount: "" });
+      setEnableCoupon(false);
       setError("");
     } else {
       setError("Please fill in both ticket name and price.");
@@ -75,7 +86,6 @@ export default function TicketingDetailsPage({
               className="rounded-xl border-2 p-6 sm:p-8 flex flex-col items-center bg-white dark:bg-[#101010] justify-center gap-3 sm:gap-4 transition-all"
               style={{
                 borderColor: eventType === "ticketed" ? "#D19537" : "#E8E8E8",
-                // background: "#FFFFFF",
                 minHeight: 160,
               }}
             >
@@ -106,7 +116,6 @@ export default function TicketingDetailsPage({
               className="rounded-xl border-2 p-6 sm:p-8 flex flex-col items-center bg-white dark:bg-[#101010] justify-center gap-3 sm:gap-4 transition-all"
               style={{
                 borderColor: eventType === "free" ? "#D19537" : "#E8E8E8",
-                // background: "#FFFFFF",
                 minHeight: 160,
               }}
             >
@@ -133,7 +142,7 @@ export default function TicketingDetailsPage({
           </div>
         </div>
 
-        {/* Ticket form */}
+        {/* Ticket Form */}
         {eventType === "ticketed" && (
           <div className="mb-10">
             <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
@@ -175,6 +184,64 @@ export default function TicketingDetailsPage({
               </div>
             </div>
 
+            {/* Coupon Toggle */}
+            <div className="mb-6 flex items-center justify-between border border-[#E8E8E8] rounded-lg px-4 py-3 bg-[#FAFAFB] dark:bg-[#101010]">
+              <span className="text-[14px] font-medium text-gray-800 dark:text-gray-200">
+                Add Coupon & Discount
+              </span>
+              <button
+                onClick={() => setEnableCoupon(!enableCoupon)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  enableCoupon ? "bg-[#D19537]" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-[22px] w-[22px] transform rounded-full bg-white transition-transform ${
+                    enableCoupon ? "translate-x-[20px]" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Coupon + Discount Inputs (Visible when toggled on) */}
+            {enableCoupon && (
+              <div className="mb-6 transition-all">
+                <label className="block text-[14px] font-medium mb-2">
+                  Coupon Code & Discount (%)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Coupon Code */}
+                  <input
+                    type="text"
+                    value={currentTicket.couponCode}
+                    onChange={(e) =>
+                      setCurrentTicket({
+                        ...currentTicket,
+                        couponCode: e.target.value,
+                      })
+                    }
+                    placeholder="Enter coupon code e.g. SAVE20"
+                    className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+                  />
+
+                  {/* Discount Percentage */}
+                  <input
+                    type="number"
+                    value={currentTicket.discount || ""}
+                    onChange={(e) =>
+                      setCurrentTicket({
+                        ...currentTicket,
+                        discount: e.target.value,
+                      })
+                    }
+                    placeholder="Discount % e.g. 10"
+                    className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Add Ticket Button */}
             <div className="flex justify-end">
               <button
                 onClick={handleAddTicket}
@@ -189,6 +256,7 @@ export default function TicketingDetailsPage({
               </button>
             </div>
 
+            {/* Ticket List */}
             {tickets.length > 0 && (
               <div className="mt-6 space-y-3">
                 {tickets.map((ticket) => (
@@ -203,7 +271,20 @@ export default function TicketingDetailsPage({
                       <div className="text-[13px] sm:text-[14px] text-[#666666]">
                         {ticket.price}
                       </div>
+
+                      {/* Show coupon + discount if present */}
+                      {(ticket.couponCode || ticket.discount) && (
+                        <div className="text-[13px] text-[#D19537]">
+                          {ticket.couponCode && (
+                            <>Coupon: {ticket.couponCode}</>
+                          )}
+                          {ticket.discount && (
+                            <> | Discount: {ticket.discount}%</>
+                          )}
+                        </div>
+                      )}
                     </div>
+
                     <button
                       onClick={() =>
                         setTickets(tickets.filter((t) => t.id !== ticket.id))

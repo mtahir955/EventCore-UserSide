@@ -30,10 +30,16 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
     },
     { label: "My Events", icon: "/images/icons/10.png", href: "/my-events" },
     {
+      label: "Ticket Manager",
+      icon: "/images/icons/5.png",
+      href: "/ticket-manager",
+    },
+    {
       label: "Payment Setup",
       icon: "/images/icons/11.png",
       href: "/payment-setup",
     },
+    
     {
       label: "Ticket Check",
       icon: "/images/icons/5.png",
@@ -261,7 +267,7 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
 
         {/* Nav Items */}
         <nav className="px-4 mt-20 md:mt-2">
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-0">
             {items.map((item) => {
               const isActive = item.label === active;
               const Element = item.href ? "a" : "button";
