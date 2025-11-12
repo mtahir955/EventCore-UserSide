@@ -224,10 +224,10 @@ export function HostRequestTable({
                       className="rounded-full px-6 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
                       style={{ background: "rgba(209, 149, 55, 1)" }}
                     >
-                      Accept
+                      Approve
                     </button>
                     <button className="rounded-full bg-accent px-6 py-1.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90">
-                      Reject
+                      Suspend
                     </button>
                   </div>
                 </td>

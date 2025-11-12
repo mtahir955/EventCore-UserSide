@@ -134,14 +134,14 @@ export function HostRequestModal({ isOpen, onClose }: HostRequestModalProps) {
               className="py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-opacity hover:opacity-80"
               style={{ backgroundColor: "#F5EDE5", color: "#000000" }}
             >
-              Reject
+              Suspend
             </button>
             <button
               onClick={handleAccept}
               className="py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: "#D19537" }}
             >
-              Accept
+              Approve
             </button>
           </div>
         </div>

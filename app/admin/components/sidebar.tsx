@@ -34,20 +34,20 @@ const menuItems = [
     whiteicon: "/icons/sidebar-white/3.png",
     href: "/host-management",
   },
-  {
-    name: "Tenant User",
-    icon: "/icons/sidebar/3.png",
-    orangeicon: "/icons/sidebar-orange/7.png",
-    whiteicon: "/icons/sidebar-white/2.png",
-    href: "/user-management",
-  },
   // {
-  //   name: "Host Request",
-  //   icon: "/icons/sidebar/5.png",
-  //   orangeicon: "/icons/sidebar-orange/3.png",
-  //   whiteicon: "/icons/sidebar-white/4.png",
-  //   href: "/host-request",
+  //   name: "Tenant User",
+  //   icon: "/icons/sidebar/3.png",
+  //   orangeicon: "/icons/sidebar-orange/7.png",
+  //   whiteicon: "/icons/sidebar-white/2.png",
+  //   href: "/user-management",
   // },
+  {
+    name: "Tenant Management",
+    icon: "/icons/sidebar/12.png",
+    orangeicon: "/icons/sidebar-orange/3.png",
+    whiteicon: "/icons/sidebar-white/4.png",
+    href: "/tenant-management",
+  },
 
   // {
   //   name: "Profile & Settings",

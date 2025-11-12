@@ -43,18 +43,18 @@ export default function HostManagementPage() {
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar */}
-      <Sidebar activePage="Host Request" />
+      <Sidebar activePage="Tenant Management" />
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* ===== Header ===== */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
           <h1 className="text-3xl font-semibold text-foreground">
-            Host Request
+            Tenant Management
           </h1>
           <div className="flex items-center gap-4">
             {/* Light/Dark toggle */}
-            <Button
+            {/* <Button
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
@@ -71,10 +71,10 @@ export default function HostManagementPage() {
                   <Sun className="h-4 w-4" /> Light Mode
                 </>
               )}
-            </Button>
+            </Button> */}
 
             {/* Mobile toggle */}
-            <button
+            {/* <button
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
@@ -85,7 +85,7 @@ export default function HostManagementPage() {
               ) : (
                 <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
-            </button>
+            </button> */}
             <Link href="/push-notification">
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
                 <Bell className="h-5 w-5 text-gray-600" />
