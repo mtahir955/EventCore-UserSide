@@ -42,11 +42,11 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
     <div className="w-full max-w-[596px] h-auto md:h-[640px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-8 font-sans">
       {/* Header */}
       <div className="mb-2 text-center md:text-left">
-        <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-2">
-          Event Core
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#0077F7] dark:text-white mb-2">
+          Sign Up
         </h1>
         <h2 className="text-sm sm:text-base font-bold text-black dark:text-white leading-tight mb-4">
-          <span style={{ color: "#0077F7" }}>Sign Up</span> for Free and Start
+          Free and Start
           Exploring Amazing Events Today
         </h2>
         <p className="text-gray-700 dark:text-gray-400 text-[11px] sm:text-[12px] leading-relaxed">
@@ -197,7 +197,7 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
 
       {/* Legal Text */}
       <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-gray-400 text-center mt-2 leading-relaxed">
-        By Signing up to uBrand, means you agree to our Privacy Policy and Terms
+        By Signing up to us, means you agree to our Privacy Policy and Terms
         of Service
       </p>
 

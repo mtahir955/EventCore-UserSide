@@ -5,6 +5,8 @@ import BasicInformationSection from "./sections/basic-information";
 import DatabaseConfigurationSection from "./sections/database-configuration";
 import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
+import OtherPagesDataSection from "./sections/other-pages-data";
+import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 
@@ -19,6 +21,8 @@ export default function HostManagementForm() {
   const dbConfigRef = useRef<{ validate: () => boolean }>(null);
   const accountSettingsRef = useRef<{ validate: () => boolean }>(null);
   const contactDetailsRef = useRef<{ validate: () => boolean }>(null);
+  const otherPagesDataSectionRef = useRef<{ validate: () => boolean }>(null);
+  const socialMediaLinksRef = useRef<{ validate: () => boolean }>(null);
 
   const handleCreateTenant = () => {
     // Run validation for each section
@@ -85,6 +89,12 @@ export default function HostManagementForm() {
 
       {/* Contact Details */}
       <ContactDetailsSection ref={contactDetailsRef} />
+
+      {/* Other Pages Data */}
+      <OtherPagesDataSection ref={otherPagesDataSectionRef} />
+
+       {/* Social Links */}
+       <SocialMediaLinksSection ref={socialMediaLinksRef} />
 
       {/* Create Button */}
       <div className="flex justify-end">

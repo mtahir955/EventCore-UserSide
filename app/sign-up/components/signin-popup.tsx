@@ -39,14 +39,14 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
     <div className="w-full max-w-[596px] h-auto md:h-[580px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
       {/* Header */}
       <div className="mb-2 text-center md:text-left">
-        <h1 className="text-2xl sm:text-4xl font-bold text-black dark:text-white mb-2">
-          Event Core
+        <h1 className="text-2xl sm:text-4xl font-bold text-[#0077F7] dark:text-white mb-2">
+          Sign In
         </h1>
         <p className="text-[12px] sm:text-[16px] text-gray-600 dark:text-gray-400 mb-2">
           WELCOME BACK 👋
         </p>
         <h2 className="text-sm sm:text-base font-bold text-black dark:text-white leading-tight">
-          <span style={{ color: "#0077F7" }}>Sign In</span> to Continue your
+          Continue your
           Account.
         </h2>
       </div>

@@ -2,6 +2,8 @@
 import BasicInformationSection from "./sections/basic-information";
 import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
+import OtherPagesDataSection from "./sections/other-pages-data";
+import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -21,7 +23,7 @@ export default function HostManagementForm() {
       {/* Save Button */}
       <div className="flex justify-end">
         <Link href="/host-settings/edit">
-        <Button className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-6 rounded-lg transition">
+        <Button className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-4 rounded-lg transition">
           Edit
         </Button>
         </Link>
@@ -34,6 +36,12 @@ export default function HostManagementForm() {
 
       {/* Contact Details */}
       <ContactDetailsSection />
+
+      {/* Other Pages Data */}
+      <OtherPagesDataSection />
+
+       {/* Social Links */}
+       <SocialMediaLinksSection />
     </div>
   );
 }

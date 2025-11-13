@@ -44,18 +44,23 @@ export default function ResetPasswordPopup({
   return (
     <div className="w-full max-w-[596px] h-auto md:h-[435px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
       {/* Header */}
-      <div className="mb-6 sm:mb-8 text-center md:text-left">
-        <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-2">
-          Event Core
-        </h1>
-        <h2 className="text-sm sm:text-base font-bold text-gray-700 dark:text-gray-300 leading-tight mb-2">
+      <div className="mb-6 sm:mb-8 flex items-center justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#0077F7] dark:text-white">
           Reset your password
-        </h2>
+        </h1>
+
+        {/* 🔙 Back Button */}
+        <button
+          onClick={() => onNavigate("forgot-password")}
+          className="text-[#0077F7] dark:text-[#D19537] text-sm font-medium hover:underline"
+        >
+          ← Back
+        </button>
       </div>
 
       {/* Form */}
       <form className="space-y-4" onSubmit={handleSubmit}>
-        {/* New Password Field */}
+        {/* New Password */}
         <div>
           <label className="block text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
             New Password
@@ -82,7 +87,6 @@ export default function ResetPasswordPopup({
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               {showPassword ? (
-                // Hide (eye with slash)
                 <svg
                   width="20"
                   height="20"
@@ -95,7 +99,6 @@ export default function ResetPasswordPopup({
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               ) : (
-                // Show (open eye)
                 <svg
                   width="20"
                   height="20"
@@ -112,7 +115,7 @@ export default function ResetPasswordPopup({
           </div>
         </div>
 
-        {/* Confirm Password Field */}
+        {/* Confirm Password */}
         <div>
           <label className="block text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
             Confirm Password
@@ -139,7 +142,6 @@ export default function ResetPasswordPopup({
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               {showResetPassword ? (
-                // Hide (eye with slash)
                 <svg
                   width="20"
                   height="20"
@@ -152,7 +154,6 @@ export default function ResetPasswordPopup({
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               ) : (
-                // Show (open eye)
                 <svg
                   width="20"
                   height="20"
@@ -179,6 +180,7 @@ export default function ResetPasswordPopup({
         </button>
       </form>
 
+      {/* Signup Link */}
       <p className="text-center text-xs sm:text-sm text-gray-700 dark:text-gray-400 mt-6 sm:mt-8">
         Are you a Newbie?{" "}
         <button

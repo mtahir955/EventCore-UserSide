@@ -14,7 +14,20 @@ export default function CalendarView({
   const [checkIn, setCheckIn] = useState<number | null>(null);
   const [checkOut, setCheckOut] = useState<number | null>(null);
 
-  // 🧠 All events organized by month and year
+  // 🎟️ Hover state
+  const [hoveredEvent, setHoveredEvent] = useState<{
+    id: number;
+    title: string;
+    type: "in-person" | "virtual";
+    date: number;
+    location: string;
+  } | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // 🧠 Events data
   const monthlyEvents: Record<
     string,
     Record<
@@ -148,12 +161,11 @@ export default function CalendarView({
     },
   };
 
-  // 🔄 Get current month's events from data
   const currentYear = currentDate.getFullYear().toString();
-  const currentMonth = currentDate.getMonth().toString(); // 0-indexed (0 = Jan)
+  const currentMonth = currentDate.getMonth().toString();
   const eventsMap = monthlyEvents[currentYear]?.[currentMonth] || [];
 
-  // 🧮 Calendar structure
+  // 🗓️ Calendar setup
   const daysInMonth = new Date(
     currentDate.getFullYear(),
     currentDate.getMonth() + 1,
@@ -175,13 +187,11 @@ export default function CalendarView({
     return days;
   });
 
-  // 🔁 Month navigation
   const handlePrevMonth = () =>
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1));
   const handleNextMonth = () =>
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
 
-  // 🧭 Range logic
   const handleDateClick = (day: string) => {
     const dayNum = parseInt(day);
     if (!dayNum) return;
@@ -208,7 +218,6 @@ export default function CalendarView({
     onDateRangeSelect?.({ checkIn, checkOut });
   }, [checkIn, checkOut]);
 
-  // 🎯 Get events within range
   const getEventsInRange = () => {
     if (!checkIn || !checkOut) return [];
     return eventsMap.filter(
@@ -222,9 +231,9 @@ export default function CalendarView({
   const year = currentDate.getFullYear();
 
   return (
-    <section className="mx-auto mt-6 sm:mt-8 max-w-full">
+    <section className="mx-auto mt-6 sm:mt-8 max-w-full relative">
       <div className="rounded-2xl border bg-card p-4 sm:p-6 md:p-8 shadow-sm transition-all">
-        {/* Month header */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <button onClick={handlePrevMonth} className="text-xl sm:text-2xl">
             ‹
@@ -255,7 +264,7 @@ export default function CalendarView({
         </div>
 
         {/* Calendar grid */}
-        <div className="mt-2 grid grid-cols-7 gap-1 sm:gap-3">
+        <div className="mt-2 grid grid-cols-7 gap-1 sm:gap-3 relative">
           {calendarDays.flatMap((week, wi) =>
             week.map((d, di) => {
               const dayNum = parseInt(d as string);
@@ -289,6 +298,15 @@ export default function CalendarView({
                     {eventsForDay.map((event) => (
                       <div
                         key={event.id}
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setHoveredEvent(event);
+                          setHoverPosition({
+                            x: rect.left + rect.width / 2,
+                            y: rect.top,
+                          });
+                        }}
+                        onMouseLeave={() => setHoveredEvent(null)}
                         className={`px-1 py-[2px] rounded-md text-[9px] sm:text-xs truncate font-medium ${
                           event.type === "in-person"
                             ? "bg-[#6D10F5] text-white"
@@ -304,17 +322,31 @@ export default function CalendarView({
             })
           )}
         </div>
-
-        {/* Range Info */}
-        {(checkIn || checkOut) && (
-          <div className="mt-5 text-center text-sm font-medium text-gray-600 dark:text-gray-300">
-            {checkIn && !checkOut && `Check-in: ${checkIn} ${monthName}`}
-            {checkIn &&
-              checkOut &&
-              `Start Date: ${checkIn} ${monthName} → End Date: ${checkOut} ${monthName}`}
-          </div>
-        )}
       </div>
+
+      {/* 🟡 Hover Event Card */}
+      {hoveredEvent && hoverPosition && (
+        <div
+          className="absolute z-50 bg-white dark:bg-[#101010] border border-gray-300 dark:border-gray-700 rounded-xl shadow-lg p-3 w-[220px] transition-all"
+          style={{
+            top: hoverPosition.y - 100,
+            left: hoverPosition.x - 110,
+          }}
+        >
+          <h3 className="font-semibold text-sm mb-1 text-[#0077F7]">
+            {hoveredEvent.title}
+          </h3>
+          <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 capitalize">
+            Type: {hoveredEvent.type}
+          </p>
+          <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+            Location: {hoveredEvent.location}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Date: {hoveredEvent.date} {monthName} {year}
+          </p>
+        </div>
+      )}
 
       {/* Event cards under calendar */}
       {checkIn && checkOut && selectedEvents.length > 0 && (
@@ -354,8 +386,10 @@ export default function CalendarView({
 //   const [checkIn, setCheckIn] = useState<number | null>(null);
 //   const [checkOut, setCheckOut] = useState<number | null>(null);
 
-//   // 🗓 Events data
-//   const eventsMap: Record<
+//   // 🧠 All events organized by month and year
+// const monthlyEvents: Record<
+//   string,
+//   Record<
 //     string,
 //     {
 //       id: number;
@@ -364,95 +398,162 @@ export default function CalendarView({
 //       date: number;
 //       location: string;
 //     }[]
-//   > = {
+//   >
+// > = {
+//   "2025": {
+//     // ✅ May 2025 (Previous)
 //     "4": [
 //       {
 //         id: 1,
+//         title: "Spring Music Bash",
+//         type: "in-person",
+//         date: 3,
+//         location: "Berlin",
+//       },
+//       {
+//         id: 2,
+//         title: "Tech Leaders Meetup",
+//         type: "virtual",
+//         date: 12,
+//         location: "Online",
+//       },
+//       {
+//         id: 3,
+//         title: "Art & Wine Festival",
+//         type: "in-person",
+//         date: 20,
+//         location: "Rome",
+//       },
+//     ],
+
+//     // ✅ June 2025 (Current)
+//     "5": [
+//       {
+//         id: 4,
 //         title: "Starry Nights Music Fest",
 //         type: "in-person",
 //         date: 4,
 //         location: "California",
 //       },
-//     ],
-//     "6": [
 //       {
-//         id: 2,
+//         id: 5,
 //         title: "Food Carnival",
 //         type: "virtual",
 //         date: 6,
 //         location: "Miami",
 //       },
-//     ],
-//     "10": [
 //       {
-//         id: 3,
+//         id: 6,
 //         title: "Tech Expo",
 //         type: "in-person",
 //         date: 10,
 //         location: "Austin",
 //       },
-//     ],
-//     "14": [
 //       {
-//         id: 4,
+//         id: 7,
 //         title: "Wellness Retreat",
 //         type: "virtual",
 //         date: 14,
 //         location: "Denver",
 //       },
 //       {
-//         id: 5,
+//         id: 8,
 //         title: "Startup Pitch Night",
 //         type: "in-person",
 //         date: 14,
 //         location: "New York",
 //       },
-//     ],
-//     "18": [
 //       {
-//         id: 6,
+//         id: 9,
 //         title: "AI Conference",
 //         type: "virtual",
 //         date: 18,
 //         location: "San Francisco",
 //       },
-//     ],
-//     "22": [
 //       {
-//         id: 7,
+//         id: 10,
 //         title: "Fashion Week",
 //         type: "in-person",
 //         date: 22,
 //         location: "Paris",
 //       },
-//     ],
-//     "25": [
 //       {
-//         id: 8,
+//         id: 11,
 //         title: "Charity Gala",
 //         type: "virtual",
 //         date: 25,
 //         location: "London",
 //       },
 //     ],
-//   };
 
-//   const days = [
-//     ["1", "2", "3", "4", "5", "6", "7"],
-//     ["8", "9", "10", "11", "12", "13", "14"],
-//     ["15", "16", "17", "18", "19", "20", "21"],
-//     ["22", "23", "24", "25", "26", "27", "28"],
-//     ["29", "30", "", "", "", "", ""],
-//   ];
+//     // ✅ July 2025 (Upcoming)
+//     "6": [
+//       {
+//         id: 12,
+//         title: "Blockchain Summit",
+//         type: "virtual",
+//         date: 3,
+//         location: "Singapore",
+//       },
+//       {
+//         id: 13,
+//         title: "Summer Fashion Gala",
+//         type: "in-person",
+//         date: 8,
+//         location: "Milan",
+//       },
+//       {
+//         id: 14,
+//         title: "Coding Bootcamp",
+//         type: "virtual",
+//         date: 18,
+//         location: "Toronto",
+//       },
+//       {
+//         id: 15,
+//         title: "Designers Expo",
+//         type: "in-person",
+//         date: 24,
+//         location: "London",
+//       },
+//     ],
+//   },
+// };
 
-//   const monthName = currentDate.toLocaleString("default", { month: "long" });
-//   const year = currentDate.getFullYear();
+//   // 🔄 Get current month's events from data
+//   const currentYear = currentDate.getFullYear().toString();
+//   const currentMonth = currentDate.getMonth().toString(); // 0-indexed (0 = Jan)
+//   const eventsMap = monthlyEvents[currentYear]?.[currentMonth] || [];
 
+//   // 🧮 Calendar structure
+//   const daysInMonth = new Date(
+//     currentDate.getFullYear(),
+//     currentDate.getMonth() + 1,
+//     0
+//   ).getDate();
+//   const firstDay = new Date(
+//     currentDate.getFullYear(),
+//     currentDate.getMonth(),
+//     1
+//   ).getDay();
+//   const totalWeeks = Math.ceil((firstDay + daysInMonth) / 7);
+
+//   const calendarDays = Array.from({ length: totalWeeks }, (_, weekIndex) => {
+//     const days = [];
+//     for (let i = 1; i <= 7; i++) {
+//       const dateNumber = weekIndex * 7 + i - firstDay;
+//       days.push(dateNumber > 0 && dateNumber <= daysInMonth ? dateNumber : "");
+//     }
+//     return days;
+//   });
+
+//   // 🔁 Month navigation
 //   const handlePrevMonth = () =>
 //     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1));
 //   const handleNextMonth = () =>
 //     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
 
+//   // 🧭 Range logic
 //   const handleDateClick = (day: string) => {
 //     const dayNum = parseInt(day);
 //     if (!dayNum) return;
@@ -475,25 +576,26 @@ export default function CalendarView({
 //   const isInRange = (day: number) =>
 //     checkIn && checkOut && day >= checkIn && day <= checkOut;
 
-//   // 🔔 send selected range to parent
 //   useEffect(() => {
 //     onDateRangeSelect?.({ checkIn, checkOut });
 //   }, [checkIn, checkOut]);
 
-//   // show events in range under calendar
+//   // 🎯 Get events within range
 //   const getEventsInRange = () => {
 //     if (!checkIn || !checkOut) return [];
-//     let result: any[] = [];
-//     for (let d = checkIn; d <= checkOut; d++) {
-//       if (eventsMap[d]) result.push(...eventsMap[d]);
-//     }
-//     return result;
+//     return eventsMap.filter(
+//       (event) => event.date >= checkIn && event.date <= checkOut
+//     );
 //   };
+
 //   const selectedEvents = getEventsInRange();
+
+//   const monthName = currentDate.toLocaleString("default", { month: "long" });
+//   const year = currentDate.getFullYear();
 
 //   return (
 //     <section className="mx-auto mt-6 sm:mt-8 max-w-full">
-//       <div className="rounded-2xl border bg-card p-4 sm:p-6 md:p-8 shadow-sm">
+//       <div className="rounded-2xl border bg-card p-4 sm:p-6 md:p-8 shadow-sm transition-all">
 //         {/* Month header */}
 //         <div className="flex items-center justify-between">
 //           <button onClick={handlePrevMonth} className="text-xl sm:text-2xl">
@@ -517,7 +619,7 @@ export default function CalendarView({
 //           </span>
 //         </div>
 
-//         {/* Weekdays */}
+//         {/* Week headers */}
 //         <div className="mt-4 grid grid-cols-7 text-center text-[10px] sm:text-sm text-gray-500">
 //           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
 //             <span key={d}>{d}</span>
@@ -526,10 +628,10 @@ export default function CalendarView({
 
 //         {/* Calendar grid */}
 //         <div className="mt-2 grid grid-cols-7 gap-1 sm:gap-3">
-//           {days.flatMap((week, wi) =>
+//           {calendarDays.flatMap((week, wi) =>
 //             week.map((d, di) => {
-//               const dayNum = parseInt(d);
-//               const eventsForDay = eventsMap[d] || [];
+//               const dayNum = parseInt(d as string);
+//               const eventsForDay = eventsMap.filter((e) => e.date === dayNum);
 //               const selected =
 //                 (checkIn === dayNum && !checkOut) ||
 //                 (checkOut === dayNum && checkIn);
@@ -538,7 +640,7 @@ export default function CalendarView({
 //               return (
 //                 <div
 //                   key={`${wi}-${di}`}
-//                   onClick={() => handleDateClick(d)}
+//                   onClick={() => handleDateClick(String(d))}
 //                   className={`relative h-[70px] sm:h-[90px] md:h-[100px] rounded-lg border p-2 text-[10px] sm:text-sm cursor-pointer transition-all ${
 //                     selected
 //                       ? "border-[#0077F7] bg-[#0077F711]"
@@ -555,7 +657,6 @@ export default function CalendarView({
 //                     {d}
 //                   </span>
 
-//                   {/* always show events */}
 //                   <div className="mt-5 space-y-1">
 //                     {eventsForDay.map((event) => (
 //                       <div
@@ -576,7 +677,7 @@ export default function CalendarView({
 //           )}
 //         </div>
 
-//         {/* Selected range info */}
+//         {/* Range Info */}
 //         {(checkIn || checkOut) && (
 //           <div className="mt-5 text-center text-sm font-medium text-gray-600 dark:text-gray-300">
 //             {checkIn && !checkOut && `Check-in: ${checkIn} ${monthName}`}

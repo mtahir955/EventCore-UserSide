@@ -22,13 +22,11 @@ export default function ForgotPasswordPopup({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // If email is empty → mark as error
     if (formData.email.trim() === "") {
       setError(true);
       return;
     }
 
-    // If filled → proceed normally
     setError(false);
     onNavigate("reset-password");
   };
@@ -36,13 +34,18 @@ export default function ForgotPasswordPopup({
   return (
     <div className="w-full max-w-[596px] h-auto md:h-[450px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
       {/* Header */}
-      <div className="mb-6 sm:mb-8 text-center md:text-left">
-        <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-2">
-          Event Core
-        </h1>
-        <h2 className="text-sm sm:text-base font-bold text-gray-700 dark:text-gray-300 leading-tight mb-2">
+      <div className="mb-6 sm:mb-8 flex items-center justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#0077F7] dark:text-white">
           Forgot your password?
-        </h2>
+        </h1>
+
+        {/* 🔙 Back Button */}
+        <button
+          onClick={() => onNavigate("signin")}
+          className="text-[#0077F7] dark:text-[#D19537] text-sm font-medium hover:underline transition-colors"
+        >
+          ← Back
+        </button>
       </div>
 
       {/* Social Login Buttons */}
@@ -88,7 +91,7 @@ export default function ForgotPasswordPopup({
             value={formData.email}
             onChange={(e) => {
               setFormData({ ...formData, email: e.target.value });
-              if (e.target.value.trim() !== "") setError(false); // ✅ remove red as user types
+              if (e.target.value.trim() !== "") setError(false);
             }}
             placeholder="Enter your email"
             className={`w-full h-10 rounded-lg px-4 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-medium text-sm sm:text-base focus:outline-none focus:ring-2 ${
@@ -108,6 +111,7 @@ export default function ForgotPasswordPopup({
         </button>
       </form>
 
+      {/* Signup Link */}
       <p className="text-center text-xs sm:text-sm text-gray-700 dark:text-gray-400 mt-3">
         Are you a Newbie?{" "}
         <button

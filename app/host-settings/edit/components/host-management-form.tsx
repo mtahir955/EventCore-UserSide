@@ -1,14 +1,19 @@
 "use client";
+
+import { useRouter } from "next/navigation";
 import BasicInformationSection from "./sections/basic-information";
 import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
+import OtherPagesDataSection from "./sections/other-pages-data";
+import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function HostManagementForm() {
+  const router = useRouter();
+
   const handleCreateTenant = () => {
-    // 🔹 Normally you’d check that all required sections are valid or saved
-    // For demo, we’ll just show the success toast
     toast.success("Save changes successfully 🎉", {
       duration: 4000,
       position: "bottom-right",
@@ -24,28 +29,50 @@ export default function HostManagementForm() {
     });
   };
 
+  const handleBack = () => {
+    router.push("/host-settings");
+  };
+
   return (
     <div
       className="
-    w-[329px]
-    px-4 sm:px-6 lg:px-8 
-    py-6 sm:py-8 
-    mx-auto 
-    space-y-6 
-    sm:w-[95%] lg:w-[1170px] 
-    sm:ml-0 lg:ml-[250px]
-  "
+        w-[329px]
+        px-4 sm:px-6 lg:px-8 
+        py-6 sm:py-8 
+        mx-auto 
+        space-y-6 
+        sm:w-[95%] lg:w-[1170px] 
+        sm:ml-0 lg:ml-[250px]
+      "
     >
-      {/* Basic Information */}
+      {/* 🔙 Back Button */}
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          onClick={handleBack}
+          variant="outline"
+          className="flex items-center gap-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-white hover:bg-[#D19537]/10"
+        >
+          <ArrowLeft size={18} />
+          Back
+        </Button>
+      </div>
+
+      {/* 🧩 Basic Information */}
       <BasicInformationSection />
-      
-      {/* Account Settings */}
+
+      {/* ⚙️ Account Settings */}
       <AccountSettingsSection />
 
-      {/* Contact Details */}
+      {/* ☎️ Contact Details */}
       <ContactDetailsSection />
 
-      {/* Save Button */}
+      {/* 📄 Other Pages Data */}
+      <OtherPagesDataSection />
+
+      {/* 🌐 Social Links */}
+      <SocialMediaLinksSection />
+
+      {/* 💾 Save Button */}
       <div className="flex justify-end">
         <Button
           onClick={handleCreateTenant}
