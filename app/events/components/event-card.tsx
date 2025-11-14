@@ -61,7 +61,7 @@ export function EventCard({ event }: EventCardProps) {
         {/* Card Content */}
         <div
           className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-white"
-          onClick={(e) => e.stopPropagation()} // prevent navigating when clicking inside favorite button
+          // onClick={(e) => e.stopPropagation()} // prevent navigating when clicking inside favorite button
         >
           {/* Host + Favorite */}
           <div className="flex items-center justify-between mb-2">

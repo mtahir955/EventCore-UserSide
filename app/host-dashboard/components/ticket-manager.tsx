@@ -118,6 +118,10 @@ export default function TicketManager() {
     setTimeout(() => setShowToast(false), 3000); // hide after 3s
   };
 
+  const [earlyBirdQuantity, setEarlyBirdQuantity] = useState<number | null>(
+    null
+  );
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans dark:bg-[#101010]">
       <div className="md:block">
@@ -447,8 +451,29 @@ export default function TicketManager() {
               <ToggleRow
                 label="Early Bird Option"
                 enabled={isEarlyBird}
-                onToggle={() => setIsEarlyBird(!isEarlyBird)}
+                onToggle={() => {
+                  setIsEarlyBird(!isEarlyBird);
+                  setEarlyBirdQuantity(!isEarlyBird ? 0 : null); // default 10 when ON
+                }}
               />
+
+              {isEarlyBird && (
+                <div className="col-span-1 sm:col-span-2">
+                  <label className="text-sm font-medium mb-2 block">
+                    Early Bird Quantity (Limited Seats)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={earlyBirdQuantity ?? ""}
+                    onChange={(e) =>
+                      setEarlyBirdQuantity(Number(e.target.value))
+                    }
+                    placeholder="Enter Early Bird Quantity"
+                    className="w-full h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
+                  />
+                </div>
+              )}
 
               {/* Max Orders */}
               <div className="col-span-1 sm:col-span-2">

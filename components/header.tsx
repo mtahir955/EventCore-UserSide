@@ -53,6 +53,11 @@ export function Header() {
     //   href: "/upcoming-events",
     // },
     {
+      icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Star%201-KuLCEwN2eSN8JadnILyztdDuDq6Imj.png",
+      label: "My Favorites",
+      href: "/interested",
+    },
+    {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/notifications-icon-YNBdsbLEdRySLL7MtsqsOP5jYisuIh.png",
       label: "Notifications",
       href: "/notifications",
@@ -168,7 +173,7 @@ export function Header() {
             </button> */}
 
             {/* Star */}
-            <Link href="/interested" className="flex-shrink-0">
+            {/* <Link href="/interested" className="flex-shrink-0">
               <button className="p-1 sm:p-2 hover:bg-gray-100 dark:hover:bg-[#2E2E2E] rounded-full transition-colors">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Star%201-KuLCEwN2eSN8JadnILyztdDuDq6Imj.png"
@@ -178,7 +183,7 @@ export function Header() {
                   className="sm:w-6 sm:h-6 dark:invert"
                 />
               </button>
-            </Link>
+            </Link> */}
 
             {/* Profile dropdown trigger */}
             <button

@@ -57,7 +57,7 @@ const menuItems = [
   //   href: "/profile-settings-admin",
   // },
   {
-    name: "Payment Withdrawal",
+    name: "Payment",
     icon: "/icons/sidebar/7.png",
     orangeicon: "/icons/sidebar-orange/6.png",
     whiteicon: "/icons/sidebar-white/5.png",

@@ -8,6 +8,7 @@ import { PaymentWithdrawalTable } from "../admin/components/payment-withdrawal-t
 import { Bell, User, X, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { PaymentSuccessTable } from "../admin/components/payment-success-table";
 
 interface WithdrawalRequest {
   id: string;
@@ -91,15 +92,13 @@ export default function PaymentWithdrawalPage() {
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar */}
-      <Sidebar activePage="Payment Withdrawal" />
+      <Sidebar activePage="Payment" />
 
       {/* Main Section */}
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* ===== Header ===== */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
-          <h1 className="text-3xl font-semibold text-foreground">
-            Payment Withdrawal
-          </h1>
+          <h1 className="text-3xl font-semibold text-foreground">Payment</h1>
           <div className="flex items-center gap-4">
             {/* Light/Dark toggle */}
             {/* <Button
@@ -291,8 +290,25 @@ export default function PaymentWithdrawalPage() {
           </div>
 
           {/* ===== Payment Withdrawal Table ===== */}
-          <div className="overflow-x-auto rounded-lg border border-border bg-background">
-            <PaymentWithdrawalTable />
+          <div className="mt-8 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Payment Requests
+            </h3>
+
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
+              <PaymentWithdrawalTable />
+            </div>
+          </div>
+
+          {/* ===== Payment Withdrawal Table ===== */}
+          <div className="mt-8 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Payments History
+            </h3>
+
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
+              <PaymentSuccessTable />
+            </div>
           </div>
         </div>
       </main>
