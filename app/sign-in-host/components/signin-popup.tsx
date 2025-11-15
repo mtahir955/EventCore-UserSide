@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 
-type AuthView = "signup" | "signin" | "forgot-password" | "reset-password";
+type AuthView = "signin" | "signup" | "forgot-password" | "reset-password";
 
 interface SigninPopupProps {
   onNavigate: (view: AuthView) => void;
@@ -36,23 +36,23 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
   };
 
   return (
-    <div className="w-full max-w-[596px] h-auto md:h-[580px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
+    <div className="w-full max-w-[596px] h-auto md:h-[420px] bg-white dark:bg-[#212121] rounded-lg shadow-xl p-4 sm:p-6 md:p-10 font-sans">
       {/* Header */}
       <div className="mb-2 text-center md:text-left">
-        <h1 className="text-2xl sm:text-4xl font-bold text-[#0077F7] dark:text-white mb-2">
-          Sign In
+        <h1 className="text-2xl sm:text-4xl text-center font-bold text-[#0077F7] dark:text-white mb-2">
+          Log In
         </h1>
-        <p className="text-[12px] sm:text-[16px] text-gray-600 dark:text-gray-400 mb-2">
-          WELCOME BACK 👋
+        <p className="text-[12px] sm:text-[16px] text-center text-gray-600 dark:text-gray-400 mb-2">
+          WELCOME BACK HOST 👋
         </p>
-        <h2 className="text-sm sm:text-base font-bold text-black dark:text-white leading-tight">
+        {/* <h2 className="text-sm sm:text-base font-bold text-center text-black dark:text-white leading-tight">
           Continue your
           Account.
-        </h2>
+        </h2> */}
       </div>
 
       {/* Social Login Buttons */}
-      <div className="space-y-3 sm:space-y-4 mb-2">
+      {/* <div className="space-y-3 sm:space-y-4 mb-2">
         <button className="w-full h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center justify-center gap-3 transition-colors">
           <Image
             src="/images/google-icon.png"
@@ -76,12 +76,12 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
             Sign In with Apple
           </span>
         </button>
-      </div>
+      </div> */}
 
       {/* Divider */}
-      <div className="text-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2">
-        Or
-      </div>
+      {/* <div className="text-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2">
+        Or use Email
+      </div> */}
 
       {/* Form */}
       <form className="space-y-2" onSubmit={handleSubmit}>
@@ -164,7 +164,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
         </div>
 
         {/* Forgot Password Link */}
-        <div className="text-right">
+        {/* <div className="text-right">
           <button
             type="button"
             className="text-xs sm:text-sm text-gray-700 dark:text-gray-400 hover:underline"
@@ -172,12 +172,12 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
           >
             Forgot Password?
           </button>
-        </div>
+        </div> */}
 
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full h-12 rounded-lg font-bold text-white uppercase tracking-wide transition-colors text-sm sm:text-base"
+          className="w-full h-12 mt-3 rounded-lg font-bold text-white uppercase tracking-wide transition-colors text-sm sm:text-base"
           style={{ backgroundColor: "#0077F7" }}
         >
           Login
@@ -185,7 +185,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       </form>
 
       {/* Sign Up Link */}
-      <p className="text-center text-xs sm:text-sm text-gray-700 dark:text-gray-400 mt-2 sm:mt-4">
+      {/* <p className="text-center text-xs sm:text-sm text-gray-700 dark:text-gray-400 mt-2 sm:mt-4">
         Are you a Newbie?{" "}
         <button
           className="font-medium hover:underline"
@@ -194,7 +194,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
         >
           GET STARTED - IT'S FREE
         </button>
-      </p>
+      </p> */}
     </div>
   );
 }

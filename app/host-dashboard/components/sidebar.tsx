@@ -39,11 +39,16 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       icon: "/images/icons/11.png",
       href: "/payment-setup",
     },
-    
+
     {
       label: "Ticket Check",
       icon: "/images/icons/5.png",
       href: "/ticket-check-host",
+    },
+    {
+      label: "Payment",
+      icon: "/icons/sidebar/7.png",
+      href: "/host-payment",
     },
     {
       label: "Completed Events",
@@ -266,76 +271,84 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
         </div>
 
         {/* Nav Items */}
-        <nav className="px-4 mt-20 md:mt-2">
-          <ul className="flex flex-col gap-0">
-            {items.map((item) => {
-              const isActive = item.label === active;
-              const Element = item.href ? "a" : "button";
+        {/* Scrollable Sidebar Content */}
+        <div
+          className="
+  flex flex-col h-full overflow-y-auto 
+  px-4 pt-20 md:pt-2 pb-24
+  scrollbar-hide
+"
+        >
+          {" "}
+          {/* Nav Items */}
+          <nav>
+            <ul className="flex flex-col gap-0">
+              {items.map((item) => {
+                const isActive = item.label === active;
+                const Element = item.href ? "a" : "button";
 
-              return (
-                <li key={item.label}>
-                  <Element
-                    {...(item.href
-                      ? { href: item.href }
-                      : { onClick: item.onClick, type: "button" })}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-4 text-[14px] font-medium w-full text-left"
-                    )}
-                    style={{
-                      background: isActive
-                        ? "var(--brand-soft)"
-                        : "transparent",
-                      color: "var(--sidebar-fg, var(--foreground))",
-                      borderLeft: isActive ? "4px solid #D19537" : "none",
-                    }}
-                    aria-current={isActive ? "page" : undefined}
-                    onClick={(e: React.MouseEvent) => {
-                      if (item.onClick) {
-                        e.preventDefault();
-                        item.onClick();
-                      }
-                      setIsSidebarOpen(false); // auto-close on mobile
-                    }}
-                  >
-                    <img
-                      src={
-                        isActive
-                          ? `/images/icons/orange-sidebar-icons/${item.icon
-                              .split("/")
-                              .pop()}`
-                          : item.icon || "/placeholder.svg"
-                      }
-                      alt={item.label}
-                      className={`h-5 w-5 transition ${
-                        theme === "dark" && !isActive
-                          ? "invert brightness-50"
-                          : ""
-                      }`}
-                    />
-
-                    {item.label}
-                  </Element>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* --- Bottom Section (Logout + Theme Toggle) --- */}
-        <div className="absolute left-0 right-0 bottom-6 px-4 space-y-3">
+                return (
+                  <li key={item.label}>
+                    <Element
+                      {...(item.href
+                        ? { href: item.href }
+                        : { onClick: item.onClick, type: "button" })}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-4 text-[14px] font-medium w-full text-left"
+                      )}
+                      style={{
+                        background: isActive
+                          ? "var(--brand-soft)"
+                          : "transparent",
+                        color: "var(--sidebar-fg, var(--foreground))",
+                        borderLeft: isActive ? "4px solid #D19537" : "none",
+                      }}
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={(e: React.MouseEvent) => {
+                        if (item.onClick) {
+                          e.preventDefault();
+                          item.onClick();
+                        }
+                        setIsSidebarOpen(false); // mobile auto-close
+                      }}
+                    >
+                      <img
+                        src={
+                          isActive
+                            ? `/images/icons/orange-sidebar-icons/${item.icon
+                                .split("/")
+                                .pop()}`
+                            : item.icon
+                        }
+                        alt={item.label}
+                        className={`h-5 w-5 transition ${
+                          theme === "dark" && !isActive
+                            ? "invert brightness-50"
+                            : ""
+                        }`}
+                      />
+                      {item.label}
+                    </Element>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
           {/* Logout Button */}
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-[14px]"
-            style={{ background: "#E8E8E866", color: "var(--foreground)" }}
-          >
-            <img
-              src="/images/icons/logout-icon-dark.png"
-              alt="logout"
-              className="h-5 w-5"
-            />
-            Logout
-          </button>
+          <div className="mt-6 mb-4">
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-[14px]"
+              style={{ background: "#E8E8E866", color: "var(--foreground)" }}
+            >
+              <img
+                src="/images/icons/logout-icon-dark.png"
+                alt="logout"
+                className="h-5 w-5"
+              />
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 

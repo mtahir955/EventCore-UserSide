@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 
 interface Host {
   id: string;
-  name: string;
+  tenantName: string;
   email: string;
   category: string;
-  address: string;
+  subdomain: string;
   status: "Active" | "Banned";
   avatar: string;
 }
@@ -17,119 +17,51 @@ interface Host {
 const hosts: Host[] = [
   {
     id: "1",
-    name: "Daniel Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Banned",
+    tenantName: "Tenant name",
+    email: "info@example.com",
+    category: "Event Organizer/Host",
+    subdomain: "example.eventcore.com",
+    status: "Active",
     avatar: "/avatars/avatar-1.png",
   },
+
   {
     id: "2",
-    name: "Sarah Mitchell",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
+    tenantName: "Tenant name",
+    email: "info@example.com",
+    category: "Event Organizer/Host",
+    subdomain: "example.eventcore.com",
+    status: "Banned",
     avatar: "/avatars/avatar-1.png",
   },
+
   {
     id: "3",
-    name: "Emily Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    tenantName: "Tenant name",
+    email: "info@example.com",
+    category: "Event Organizer/Host",
+    subdomain: "example.eventcore.com",
     status: "Active",
     avatar: "/avatars/avatar-1.png",
   },
+
   {
     id: "4",
-    name: "Nathan Blake",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Banned",
+    tenantName: "Tenant name",
+    email: "info@example.com",
+    category: "Event Organizer/Host",
+    subdomain: "example.eventcore.com",
+    status: "Active",
     avatar: "/avatars/avatar-1.png",
   },
+
   {
     id: "5",
-    name: "Taylor Morgan",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    tenantName: "Tenant name",
+    email: "info@example.com",
+    category: "Event Organizer/Host",
+    subdomain: "example.eventcore.com",
     status: "Banned",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "6",
-    name: "Daniel Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "7",
-    name: "Sarah Mitchell",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "8",
-    name: "Emily Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Banned",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "9",
-    name: "Nathan Blake",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "10",
-    name: "Taylor Morgan",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "11",
-    name: "Daniel Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Banned",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "12",
-    name: "Daniel Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
-    avatar: "/avatars/avatar-1.png",
-  },
-  {
-    id: "13",
-    name: "Sarah Mitchell",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    status: "Active",
     avatar: "/avatars/avatar-1.png",
   },
 ];
@@ -148,7 +80,7 @@ export function HostManagementTable({
   const filteredHosts = hosts.filter((host) => {
     const matchesSearch =
       searchQuery === "" ||
-      host.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      host.tenantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       host.id.includes(searchQuery);
     const matchesStatus =
       statusFilter === "all" ||
@@ -165,7 +97,7 @@ export function HostManagementTable({
             style={{ background: "rgba(245, 237, 229, 1)" }}
           >
             <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-              Name
+              Tenant Name
             </th>
             <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Email
@@ -174,7 +106,7 @@ export function HostManagementTable({
               Category
             </th>
             <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-              Address
+              Sub-domain
             </th>
             <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Status
@@ -193,14 +125,14 @@ export function HostManagementTable({
                   <div className="w-10 h-10 rounded-full bg-foreground overflow-hidden flex-shrink-0">
                     <Image
                       src={host.avatar || "/placeholder.svg"}
-                      alt={host.name}
+                      alt={host.tenantName}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <span className="text-sm text-foreground font-medium">
-                    {host.name}
+                    {host.tenantName}
                   </span>
                 </div>
               </td>
@@ -211,7 +143,14 @@ export function HostManagementTable({
                 {host.category}
               </td>
               <td className="px-6 py-4 text-sm text-foreground">
-                {host.address}
+                <a
+                  href={`https://${host.subdomain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#0077F7] font-medium hover:underline"
+                >
+                  {host.subdomain}
+                </a>
               </td>
               <td className="px-6 py-4">
                 <span
