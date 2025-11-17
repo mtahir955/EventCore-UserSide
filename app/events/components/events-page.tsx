@@ -518,7 +518,7 @@ export function EventsPage() {
               <SelectValue placeholder="Event Status" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border-gray-200 dark:border-gray-700">
-              <SelectItem value="all">All Events</SelectItem>
+              <SelectItem value="all">Events</SelectItem>
               <SelectItem value="training">Trainings</SelectItem>
               <SelectItem value="trips">Escapes</SelectItem>
               <SelectItem value="fun">Traincations</SelectItem>
@@ -542,7 +542,7 @@ export function EventsPage() {
               <SelectValue placeholder="Market (State)" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
-              <SelectItem value="all">All Markets</SelectItem>
+              <SelectItem value="all">Markets</SelectItem>
               {Object.entries(usMarkets).map(([slug, market]) => (
                 <SelectItem key={slug} value={slug}>
                   {market.label}
@@ -562,7 +562,7 @@ export function EventsPage() {
               <SelectValue placeholder="Location (City)" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
-              <SelectItem value="all">All Cities</SelectItem>
+              <SelectItem value="all">Cities</SelectItem>
               {cityOptions.map((city) => (
                 <SelectItem key={city} value={city}>
                   {city}
@@ -585,7 +585,7 @@ export function EventsPage() {
               <SelectValue placeholder="Price Range" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border-gray-200 dark:border-gray-700">
-              <SelectItem value="all">All Prices</SelectItem>
+              <SelectItem value="all">Prices</SelectItem>
               <SelectItem value="20-50">$20 - $50</SelectItem>
               <SelectItem value="60-100">$60 - $100</SelectItem>
               <SelectItem value="110-150">$110 - $150</SelectItem>
@@ -606,7 +606,7 @@ export function EventsPage() {
               <SelectValue placeholder="Mode" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border-gray-200 dark:border-gray-700">
-              <SelectItem value="all">All Modes</SelectItem>
+              <SelectItem value="all">Modes</SelectItem>
               <SelectItem value="online">Online</SelectItem>
               <SelectItem value="offline">Offline</SelectItem>
               <SelectItem value="hybrid">Hybrid</SelectItem>
