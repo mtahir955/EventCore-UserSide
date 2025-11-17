@@ -100,7 +100,6 @@ export function Sidebar({ className, activePage = "Dashboard" }: SidebarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   const { resolvedTheme, theme, setTheme } = useTheme();
-
   return (
     <>
       {/* ===== Mobile Navbar ===== */}

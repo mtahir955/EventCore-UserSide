@@ -82,6 +82,8 @@ export default function Page() {
     },
   ];
 
+  const [hostName, setHostName] = useState("Host");
+
   return (
     <main className="min-h-screen w-full bg-[var(--bg-base)] relative overflow-x-hidden">
       <Sidebar active="Dashboard" />
@@ -187,39 +189,53 @@ export default function Page() {
                 )}
               </div>
 
-              {/* Profile icon + dropdown */}
-              <div ref={profileRef} className="relative">
-                <button
-                  onClick={() => {
-                    setShowProfileDropdown(!showProfileDropdown);
-                    setShowNotifications(false);
-                  }}
-                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
-                >
-                  <img
-                    src="/images/icons/profile-user.png"
-                    alt="profile"
-                    className="h-4 w-4"
-                  />
-                </button>
+              {/* Profile Name + Icon + Dropdown */}
+              <div
+                className="relative flex items-center gap-2"
+                ref={profileRef}
+              >
+                {/* Host Name */}
+                <span className="hidden sm:block font-semibold text-black dark:text-white">
+                  {hostName}
+                </span>
 
-                {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
+                {/* Profile Icon Wrapper */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(!showProfileDropdown);
+                      setShowNotifications(false);
+                    }}
+                    className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+                  >
+                    <img
+                      src="/images/icons/profile-user.png"
+                      alt="profile"
+                      className="h-4 w-4"
+                    />
+                  </button>
+
+                  {/* Dropdown */}
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
                       <Link href="/my-events">
                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
                           My Events
                         </button>
                       </Link>
+
                       <Link href="/payment-setup">
                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
                           Payment Setup
                         </button>
                       </Link>
+
                       <Link href="/host-settings">
                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
                           System Settings
                         </button>
                       </Link>
+
                       <button
                         onClick={() => setShowLogoutModal(true)}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
@@ -228,6 +244,7 @@ export default function Page() {
                       </button>
                     </div>
                   )}
+                </div>
               </div>
             </div>
 

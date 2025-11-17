@@ -37,6 +37,7 @@ export default function DashboardPage() {
   }, []);
 
   const { resolvedTheme, theme, setTheme } = useTheme();
+  const [adminName, setAdminName] = useState("Admin");
 
   return (
     <div className="flex min-h-screen bg-secondary">
@@ -88,51 +89,62 @@ export default function DashboardPage() {
                 <Bell className="h-5 w-5 text-gray-600" />
               </button>
             </Link>
-            {/* Profile icon + dropdown */}
-            <div ref={profileRef} className="relative">
-              <button
-                onClick={() => {
-                  setShowProfileDropdown(!showProfileDropdown);
-                }}
-                className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
-              >
-                <img
-                  src="/images/icons/profile-user.png"
-                  alt="profile"
-                  className="h-4 w-4"
-                />
-              </button>
+            {/* Profile Name + Icon + Dropdown */}
+            <div className="relative flex items-center gap-2" ref={profileRef}>
+              {/* Admin Name */}
+              <span className="hidden sm:block font-semibold text-black dark:text-white">
+                {adminName}
+              </span>
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
-                  <Link href="/host-management">
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                      Host Management
+              {/* Profile Icon Wrapper for relative dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+                >
+                  <img
+                    src="/images/icons/profile-user.png"
+                    alt="profile"
+                    className="h-4 w-4"
+                  />
+                </button>
+
+                {/* Dropdown — Positioned relative to icon */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
+                    <Link href="/host-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Host Management
+                      </button>
+                    </Link>
+
+                    <Link href="/host-request">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Host Request
+                      </button>
+                    </Link>
+
+                    <Link href="/payment-withdrawal">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Payment Withdrawal
+                      </button>
+                    </Link>
+
+                    <Link href="/system-settings">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        System Settings
+                      </button>
+                    </Link>
+
+                    <button
+                      onClick={() => setShowLogoutModal(true)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
+                    >
+                      Logout
                     </button>
-                  </Link>
-                  <Link href="/host-request">
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                      Host Request
-                    </button>
-                  </Link>
-                  <Link href="/payment-withdrawal">
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                      Payment Withdrawal
-                    </button>
-                  </Link>
-                  <Link href="/system-settings">
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                      System Settings
-                    </button>
-                  </Link>
-                  <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -141,9 +153,9 @@ export default function DashboardPage() {
         {/* ===== Page Content ===== */}
         <div className="p-4 sm:p-6 md:p-8">
           <Link href="/tenant-form">
-          <Button className="h-10 mb-3 w-34 bg-[#0077F7] hover:bg-[#0066D6] text-white">
-            Create tenant
-          </Button>
+            <Button className="h-10 mb-3 w-34 bg-[#0077F7] hover:bg-[#0066D6] text-white">
+              Create tenant
+            </Button>
           </Link>
 
           {/* ===== Stats Section ===== */}

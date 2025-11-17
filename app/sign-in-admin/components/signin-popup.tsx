@@ -4,7 +4,7 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
-type AuthView = "signin" | "signup" | "forgot-password" | "reset-password";
+type AuthView = "signin"
 
 interface SigninPopupProps {
   onNavigate: (view: AuthView) => void;

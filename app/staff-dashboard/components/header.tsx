@@ -44,6 +44,7 @@ export default function Header({ title }: { title: string }) {
   }, []);
 
   const { resolvedTheme, theme, setTheme } = useTheme();
+  const [staffName, setStaffName] = useState("Staff");
 
   return (
     <header className="flex items-center justify-between border-gray-100 px-8 py-4">
@@ -130,42 +131,53 @@ export default function Header({ title }: { title: string }) {
             )}
           </div>
 
-          {/* Profile icon + dropdown */}
-          <div ref={profileRef} className="relative">
-            <button
-              onClick={() => {
-                setShowProfileDropdown(!showProfileDropdown);
-                setShowNotifications(false);
-              }}
-              className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
-            >
-              <img
-                src="/images/icons/profile-user.png"
-                alt="profile"
-                className="h-4 w-4"
-              />
-            </button>
+          {/* Staff Name + Icon + Dropdown */}
+          <div className="relative flex items-center gap-2" ref={profileRef}>
+            {/* Staff Name */}
+            <span className="hidden sm:block font-semibold text-black dark:text-white">
+              {staffName}
+            </span>
 
-            {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 py-2">
-                <Link href="/my-events-staff">
-                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                    My Events
+            {/* Profile Icon Wrapper */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(!showProfileDropdown);
+                  setShowNotifications(false);
+                }}
+                className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+              >
+                <img
+                  src="/images/icons/profile-user.png"
+                  alt="profile"
+                  className="h-4 w-4"
+                />
+              </button>
+
+              {/* Dropdown */}
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
+                  <Link href="/my-events-staff">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                      My Events
+                    </button>
+                  </Link>
+
+                  <Link href="/ticket-check-staff">
+                    <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                      Ticket Check
+                    </button>
+                  </Link>
+
+                  <button
+                    onClick={() => setShowLogoutModal(true)}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
+                  >
+                    Logout
                   </button>
-                </Link>
-                <Link href="/ticket-check-staff">
-                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                    Ticket Check
-                  </button>
-                </Link>
-                <button
-                  onClick={() => setShowLogoutModal(true)}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
