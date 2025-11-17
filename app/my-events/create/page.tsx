@@ -11,6 +11,13 @@ import Link from "next/link";
 import { X, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function CreateEventPage() {
   const [eventType, setEventType] = useState<"in-person" | "virtual">(
@@ -18,6 +25,7 @@ export default function CreateEventPage() {
   );
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
+  const [eventCategory, setEventCategory] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");
@@ -104,6 +112,7 @@ export default function CreateEventPage() {
     if (
       !eventTitle ||
       !eventDescription ||
+      !eventCategory || // ⬅ ADDED
       !eventDate ||
       !startTime ||
       !endTime ||
@@ -355,6 +364,43 @@ export default function CreateEventPage() {
                       onChange={(e) => setEventDescription(e.target.value)}
                       className="w-full h-32 px-4 py-3 rounded-lg border text-[14px] outline-none resize-none dark:bg-[#101010] bg-[#FAFAFB] border-[#E5E5E5]"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Event Categories */}
+              <div className="mb-10">
+                <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
+                  Event Categories
+                </h4>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[14px] font-medium mb-2">
+                      Select Event Category{" "}
+                      <span className="text-[#D6111A]">*</span>
+                    </label>
+
+                    <Select
+                      value={eventCategory}
+                      onValueChange={setEventCategory}
+                    >
+                      <SelectTrigger className="bg-gray-50 dark:bg-[#181818] w-full rounded-lg border border-gray-200 dark:border-gray-700 text-black dark:text-gray-200 font-semibold">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <SelectItem value="trainings">Trainings</SelectItem>
+                        <SelectItem value="escapes">Escapes</SelectItem>
+                        <SelectItem value="traincations">
+                          Traincations
+                        </SelectItem>
+                        <SelectItem value="excursions">Excursions</SelectItem>
+                        <SelectItem value="roomBlocks">
+                          Training Room Blocks
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

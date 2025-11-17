@@ -51,30 +51,48 @@ export default function AboutPage() {
             </h2>
 
             <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed mb-4 sm:mb-6">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce
-              varius faucibus massa sollicitudin amet augue. Nibh metus a semper
-              purus mauris duis. Lorem eu neque, tristique quis duis. Nibh
-              scelerisque ac adipiscing velit non nulla in amet pellentesque.
-              Sit turpis pretium eget maecenas. Vestibulum dolor mattis
-              consectetur eget commodo vitae.
+              Goodlife Trainings is an international movement built to elevate
+              the way you think, work, and live — all while exploring the world.
+              Our mission is to empower individuals to unlock their potential
+              through transformative education rooted in clarity, confidence,
+              and personal evolution.
             </p>
 
             <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
-              Amet pellentesque sit pulvinar lorem mi a, euismod risus rhoncus.
-              Elementum ullamcorper nec, habitasse vulputate. Eget dictum quis
-              est sed egestas tellus, a lectus. Quam ullamcorper in fringilla
-              arcu aliquet tomes arcu. Lacinia eget faucibus urna, nam risus nec
-              elementum cras porta. Sed elementum, sed dolor purus dolor dui. Ut
-              dictum nulla pulvinar vulputate sit sagittis in eleifend
-              dignissim. Natoque mauris cras molestie velit. Maecenas eget
-              adipiscing quisque viverra lectus arcu, tincidunt ultrices
-              pellentesque.
+              We deliver powerful, results-driven trainings across business,
+              personal development, and mental mastery, paired with immersive
+              global experiences. From world-class seminars to destination-based
+              events, every program is designed to help you grow while
+              connecting with new cultures, new perspectives, and new levels of
+              yourself.
+            </p>
+
+            <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
+              Each training is led by top-tier coaches, mentors, and industry
+              experts — the best in the business — chosen for their proven track
+              records and their ability to inspire true, lasting transformation.
+              Our trainers don’t just teach; they elevate, challenge, and guide
+              you into breakthroughs that carry far beyond the event.
+            </p>
+
+            <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
+              At Goodlife Trainings, we believe growth is not an event — it’s a
+              lifestyle. And travel is one of the greatest catalysts for that
+              growth. Whether you’re scaling your business, strengthening your
+              mindset, expanding your network worldwide, or stepping into your
+              next level of leadership, we provide the tools, environments, and
+              world-class mentorship to help you rise.
+            </p>
+
+            <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
+              This is where your journey to your best life begins — and where
+              extraordinary becomes your new normal.
             </p>
 
             <Link href="/contact-us">
-            <Button className="bg-[#0077F7] hover:bg-[#0066DD] text-white px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg rounded-full">
-              Get Started
-            </Button>
+              <Button className="bg-[#0077F7] hover:bg-[#0066DD] text-white px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg rounded-full">
+                Get Started
+              </Button>
             </Link>
           </div>
 

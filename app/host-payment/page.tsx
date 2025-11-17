@@ -382,7 +382,7 @@ export default function PaymentWithdrawalPage() {
           {/* ===== Payment Withdrawal Table ===== */}
           <div className="mt-8 space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Payment Requests
+              Refund Payment Requests
             </h3>
 
             <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
