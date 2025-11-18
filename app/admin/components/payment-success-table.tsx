@@ -6,8 +6,9 @@ interface Host {
   id: string;
   name: string;
   email: string;
-  category: string;
-  address: string;
+  date: string;
+  time: string;
+  eventName: string;
   amount: number;
   avatar: string;
 }
@@ -17,8 +18,9 @@ const successfulWithdrawals: Host[] = [
     id: "h1",
     name: "Daniel Carter",
     email: "info@gmail.com",
-    category: "Organizer/Host",
-    address: "New York, USA",
+    date: "12 Nov 2025",
+    time: "07:00 PM",
+    eventName: "Starry Nights Music Fest",
     avatar: "/avatars/avatar-1.png",
     amount: 1500,
   },
@@ -26,8 +28,9 @@ const successfulWithdrawals: Host[] = [
     id: "h2",
     name: "Sarah Mitchell",
     email: "host@gmail.com",
-    category: "Organizer/Host",
-    address: "California, USA",
+    date: "18 Nov 2025",
+    time: "06:30 PM",
+    eventName: "Good Life Trainings Meetup",
     avatar: "/avatars/avatar-1.png",
     amount: 2300,
   },
@@ -35,8 +38,9 @@ const successfulWithdrawals: Host[] = [
     id: "h3",
     name: "Emily Carter",
     email: "emily@gmail.com",
-    category: "Organizer/Host",
-    address: "Texas, USA",
+    date: "20 Nov 2025",
+    time: "05:00 PM",
+    eventName: "Tech Innovators Expo",
     avatar: "/avatars/avatar-1.png",
     amount: 3200,
   },
@@ -45,12 +49,7 @@ const successfulWithdrawals: Host[] = [
 export function PaymentSuccessTable() {
   return (
     <div className="flex flex-col w-full gap-10">
-      {/* ========================== Payment History Table ========================== */}
       <div className="flex flex-col w-full">
-        {/* <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          Payment History
-        </h3> */}
-
         <div className="flex justify-center w-full">
           <div className="bg-background rounded-xl border border-border overflow-hidden overflow-x-auto w-full max-w-7xl">
             <table className="w-full text-center">
@@ -66,10 +65,10 @@ export function PaymentSuccessTable() {
                     Email
                   </th>
                   <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                    Category
+                    Date & Time
                   </th>
                   <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                    Address
+                    Event Name
                   </th>
                   <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
                     Amount
@@ -86,6 +85,7 @@ export function PaymentSuccessTable() {
                     key={`${history.id}-${index}`}
                     className="border-b border-border last:border-b-0 hover:bg-secondary/50 transition-colors"
                   >
+                    {/* NAME + AVATAR */}
                     <td className="pl-10 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full overflow-hidden">
@@ -103,19 +103,30 @@ export function PaymentSuccessTable() {
                       </div>
                     </td>
 
+                    {/* EMAIL */}
                     <td className="px-6 py-4 text-sm text-foreground">
                       {history.email}
                     </td>
+
+                    {/* DATE & TIME */}
                     <td className="px-6 py-4 text-sm text-foreground">
-                      {history.category}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-foreground">
-                      {history.address}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-foreground">
-                      {history.amount}
+                      {history.date} <br />
+                      <span className="text-xs text-muted-foreground">
+                        {history.time}
+                      </span>
                     </td>
 
+                    {/* EVENT NAME */}
+                    <td className="px-6 py-4 text-sm text-foreground">
+                      {history.eventName}
+                    </td>
+
+                    {/* AMOUNT */}
+                    <td className="px-6 py-4 text-sm text-foreground">
+                      ${history.amount}
+                    </td>
+
+                    {/* STATUS BADGE */}
                     <td className="px-6 py-4">
                       <span className="rounded-full bg-green-600 text-white px-4 py-1.5 text-sm font-medium">
                         Successful

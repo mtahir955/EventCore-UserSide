@@ -12,13 +12,11 @@ const allEvents = [
     id: 1,
     image: "/images/elegant-venue.jpeg",
     price: "$99.99",
-    host: "Eric Grzybowski",
     title: "Starry Nights Music Fest",
     description:
       "A magical evening under the stars with live bands, food stalls, and an eclectic crowd that will amaze.",
     location: "California",
     date: "13 June 2025",
-    audience: "150 Audience",
     time: "08:00 PM - 09:00 PM",
     type: "This week",
   },
@@ -26,13 +24,11 @@ const allEvents = [
     id: 2,
     image: "/images/concert-crowd.png",
     price: "$120.00",
-    host: "Alex Morrison",
     title: "Live Rock Bash",
     description:
       "Experience electrifying performances from top bands in an unforgettable night of rock and roll.",
     location: "New York",
     date: "21 Oct 2025",
-    audience: "500 Audience",
     time: "07:30 PM - 10:00 PM",
     type: "Today",
   },
@@ -40,13 +36,11 @@ const allEvents = [
     id: 3,
     image: "/images/speaker-presentation.png",
     price: "$49.00",
-    host: "Dr. Hannah Lee",
     title: "Business Growth Seminar",
     description:
       "Join industry leaders for insights on scaling your business successfully this quarter.",
     location: "Online",
     date: "22 Oct 2025",
-    audience: "1000+ Virtual",
     time: "05:00 PM - 06:30 PM",
     type: "Online",
   },
@@ -54,13 +48,11 @@ const allEvents = [
     id: 4,
     image: "/images/elegant-venue.jpeg",
     price: "$89.50",
-    host: "Michael James",
     title: "Tomorrowland Dance Party",
     description:
       "Get ready to dance the night away with world-class DJs and neon vibes.",
     location: "Los Angeles",
     date: "22 Oct 2025",
-    audience: "300 Audience",
     time: "09:00 PM - 12:00 AM",
     type: "Tomorrow",
   },
@@ -68,13 +60,11 @@ const allEvents = [
     id: 5,
     image: "/images/concert-crowd.png",
     price: "$59.00",
-    host: "Sophia Turner",
     title: "Sunday Jazz Vibes",
     description:
       "Unwind with smooth jazz tunes and fine dining under the city skyline.",
     location: "Chicago",
     date: "19 Oct 2025",
-    audience: "250 Audience",
     time: "06:00 PM - 08:00 PM",
     type: "This week",
   },
@@ -82,13 +72,11 @@ const allEvents = [
     id: 6,
     image: "/images/elegant-venue.jpeg",
     price: "$75.00",
-    host: "Riley Carter",
     title: "Mindful Meditation Session",
     description:
       "A guided mindfulness experience to relax your body and refresh your mind.",
     location: "Online",
     date: "18 Oct 2025",
-    audience: "400 Online",
     time: "09:00 AM - 10:30 AM",
     type: "Online",
   },
@@ -221,16 +209,13 @@ export function PopularEvents({
                   {/* Info */}
                   <div className="absolute bottom-4 left-3 right-3">
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                      <div className="flex items-center gap-2 text-white text-xs sm:text-sm">
-                        <span>Host By: {event.host}</span>
-                      </div>
-                      <Button
+                      {/* <Button
                         size="icon"
                         variant="ghost"
                         className="bg-white/90 dark:bg-[#1E1E1E]/80 hover:bg-white dark:hover:bg-[#2A2A2A] rounded-full w-7 h-7 sm:w-8 sm:h-8"
                       >
                         <Star className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                      </Button>
+                      </Button> */}
                     </div>
                     <h3 className="text-white text-lg sm:text-xl font-bold mb-1 line-clamp-2">
                       {event.title}

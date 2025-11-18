@@ -458,12 +458,10 @@ export default function MyEventsPage() {
                 imageSrc={event.imageSrc}
                 price={event.price}
                 isEditEvent={true}
-                hostby={event.hostby}
                 title={event.title}
                 description={event.description}
                 location={event.location}
                 date={event.date}
-                audience={event.audience}
                 time={event.time}
               />
             ))

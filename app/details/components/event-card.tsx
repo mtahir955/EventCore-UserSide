@@ -50,18 +50,6 @@ export function EventCard({
 
         {/* Bottom Info */}
         <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
-          <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <span className="text-[10px] sm:text-xs text-white dark:text-gray-200">
-              Host By: {host}
-            </span>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="bg-white/90 hover:bg-white dark:bg-[#1f1f1f]/90 dark:hover:bg-[#2a2a2a] rounded-full w-6 sm:w-8 h-6 sm:h-8"
-            >
-              <Star className="w-3 sm:w-4 h-3 sm:h-4 text-gray-700 dark:text-gray-300" />
-            </Button>
-          </div>
 
           <h3 className="text-lg sm:text-xl font-bold text-white dark:text-gray-100 mb-1 sm:mb-2">
             {title}
@@ -78,10 +66,6 @@ export function EventCard({
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white dark:text-gray-300" />
               <span>{date}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white dark:text-gray-300" />
-              <span>{audience}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white dark:text-gray-300" />

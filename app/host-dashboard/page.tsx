@@ -248,14 +248,17 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Withdraw button */}
-            <button
-              className="h-10 rounded-2xl px-5 font-medium text-white"
-              style={{ background: "var(--brand, #D19537)" }}
-              onClick={() => setWithdrawOpen(true)}
-            >
-              Withdraw
-            </button>
+            {/* Create events button */}
+            <Link href="/my-events/create">
+              <button className="h-11 rounded-xl px-6 font-semibold flex items-center justify-center gap-2 bg-[#D19537] text-white text-[14px] w-full sm:w-auto">
+                Create
+                <img
+                  src="/images/icons/plus-icon.png"
+                  alt="plus"
+                  className="h-4 w-4"
+                />
+              </button>
+            </Link>
           </div>
         </header>
 

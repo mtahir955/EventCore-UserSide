@@ -30,7 +30,7 @@ const menuItems = [
   {
     name: "Tenant Host",
     icon: "/icons/sidebar/4.png",
-    orangeicon: "/icons/sidebar-orange/2.png",
+    orangeicon: "/icons/sidebar-orange/8.png",
     whiteicon: "/icons/sidebar-white/3.png",
     href: "/host-management",
   },
@@ -66,7 +66,7 @@ const menuItems = [
   {
     name: "Push Notification Center",
     icon: "/icons/sidebar/6.png",
-    orangeicon: "/icons/sidebar-orange/4.png",
+    orangeicon: "/icons/sidebar-orange/9.png",
     whiteicon: "/icons/sidebar-white/6.png",
     href: "/push-notification",
   },

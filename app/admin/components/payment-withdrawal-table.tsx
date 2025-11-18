@@ -1,18 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { HostRequestModal } from "./host-request-modal";
 import { PaymentWithdrawalModal } from "./Payment-withdrawal-modal";
 
 interface Host {
   id: string;
   name: string;
   email: string;
-  category: string;
-  address: string;
+  date: string;
+  time: string;
+  eventName: string;
   amount: number;
   avatar: string;
 }
@@ -21,120 +19,53 @@ const hosts: Host[] = [
   {
     id: "1",
     name: "Daniel Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    email: "danielc@gmail.com",
+    date: "12 Nov 2025",
+    time: "07:00 PM",
+    eventName: "Starry Nights Music Fest",
     avatar: "/avatars/avatar-1.png",
     amount: 2500,
   },
   {
     id: "2",
     name: "Sarah Mitchell",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    email: "sarahm@gmail.com",
+    date: "18 Nov 2025",
+    time: "06:30 PM",
+    eventName: "Good Life Trainings Meetup",
     avatar: "/avatars/avatar-1.png",
     amount: 4200,
   },
   {
     id: "3",
     name: "Emily Carter",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    email: "emilyc@gmail.com",
+    date: "20 Nov 2025",
+    time: "05:00 PM",
+    eventName: "Tech Innovators Expo",
     avatar: "/avatars/avatar-1.png",
     amount: 3900,
   },
   {
     id: "4",
     name: "Nathan Blake",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    email: "nathanb@gmail.com",
+    date: "25 Nov 2025",
+    time: "08:00 PM",
+    eventName: "Cultural Food & Music Night",
     avatar: "/avatars/avatar-1.png",
     amount: 1800,
   },
   {
     id: "5",
     name: "Taylor Morgan",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
+    email: "taylorm@gmail.com",
+    date: "30 Nov 2025",
+    time: "04:00 PM",
+    eventName: "Business Leadership Summit",
     avatar: "/avatars/avatar-1.png",
     amount: 2100,
   },
-  // {
-  //   id: "6",
-  //   name: "Daniel Carter",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 4600,
-  // },
-  // {
-  //   id: "7",
-  //   name: "Sarah Mitchell",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 5200,
-  // },
-  // {
-  //   id: "8",
-  //   name: "Emily Carter",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 2700,
-  // },
-  // {
-  //   id: "9",
-  //   name: "Nathan Blake",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 3100,
-  // },
-  // {
-  //   id: "10",
-  //   name: "Taylor Morgan",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 4800,
-  // },
-  // {
-  //   id: "11",
-  //   name: "Daniel Carter",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 2000,
-  // },
-  // {
-  //   id: "12",
-  //   name: "Daniel Carter",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 5100,
-  // },
-  // {
-  //   id: "13",
-  //   name: "Sarah Mitchell",
-  //   email: "Info@gmail.com",
-  //   category: "Organizer/Host",
-  //   address: "Washington DC, USA",
-  //   avatar: "/avatars/avatar-1.png",
-  //   amount: 4400,
-  // },
 ];
 
 export function PaymentWithdrawalTable() {
@@ -158,10 +89,10 @@ export function PaymentWithdrawalTable() {
                   Email
                 </th>
                 <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                  Category
+                  Date & Time
                 </th>
                 <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                  Address
+                  Event Name
                 </th>
                 <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
                   Amount
@@ -179,6 +110,7 @@ export function PaymentWithdrawalTable() {
                   onClick={() => setIsmodalopen(true)}
                   className="border-b border-border last:border-b-0 hover:bg-secondary/50 cursor-pointer transition-colors"
                 >
+                  {/* USER NAME + AVATAR */}
                   <td className="pl-10 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full overflow-hidden">
@@ -196,19 +128,30 @@ export function PaymentWithdrawalTable() {
                     </div>
                   </td>
 
+                  {/* EMAIL */}
                   <td className="px-6 py-4 text-sm text-foreground">
                     {host.email}
                   </td>
+
+                  {/* DATE + TIME */}
                   <td className="px-6 py-4 text-sm text-foreground">
-                    {host.category}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-foreground">
-                    {host.address}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-foreground">
-                    {host.amount}
+                    {host.date} <br />
+                    <span className="text-xs text-muted-foreground">
+                      {host.time}
+                    </span>
                   </td>
 
+                  {/* EVENT NAME */}
+                  <td className="px-6 py-4 text-sm text-foreground">
+                    {host.eventName}
+                  </td>
+
+                  {/* AMOUNT */}
+                  <td className="px-6 py-4 text-sm text-foreground">
+                    ${host.amount}
+                  </td>
+
+                  {/* ACTION BUTTONS */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 justify-center">
                       <button

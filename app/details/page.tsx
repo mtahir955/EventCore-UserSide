@@ -65,16 +65,12 @@ export default function EventDetailPage({
                       <span className="text-sm sm:text-base">California</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="text-sm sm:text-base">150 Audience</span>
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-sm sm:text-base">13 June 2025</span>
                     </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="text-sm sm:text-base">13 June 2025</span>
-                    </div>
                     <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                       <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="text-sm sm:text-base">
@@ -129,29 +125,6 @@ export default function EventDetailPage({
                 </Button>
               </Link>
 
-              {/* Hosted By */}
-              <div className="mt-6 sm:mt-8">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-                  Hosted by
-                </h2>
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-                  <Image
-                    src="/images/host-profile.png"
-                    alt="City Youth Movement"
-                    width={90}
-                    height={90}
-                    className="rounded-full object-cover w-[70px] h-[70px] sm:w-[90px] sm:h-[90px]"
-                  />
-                  <div className="text-center sm:text-left">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
-                      City Youth Movement
-                    </h3>
-                    <Button className="bg-black dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 text-white px-6 sm:px-8 py-2 rounded-lg text-sm font-medium transition-colors">
-                      Contact
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Right Column */}
@@ -366,7 +339,9 @@ export default function EventDetailPage({
           </div>
         </section>
 
+        <Link href="/events">
         <ExploreEvents />
+        </Link>
       </main>
 
       <Footer />

@@ -7,12 +7,10 @@ type Props = {
   imageSrc: string;
   price: string;
   isEditEvent: boolean;
-  hostby: string;
   title: string;
   description: string;
   location: string;
   date: string;
-  audience: number;
   time: string;
 };
 
@@ -20,12 +18,10 @@ export function MyEventsCard({
   imageSrc,
   price,
   isEditEvent,
-  hostby,
   title,
   description,
   location,
   date,
-  audience,
   time,
 }: Props) {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -103,14 +99,8 @@ export function MyEventsCard({
         <div className="absolute left-4 right-4 bottom-4 text-white">
           <div className="flex justify-between">
             <div>
-              <div className="text-[11px] opacity-80">Host By : {hostby}</div>
               <div className="mt-1 text-[18px] font-semibold">{title}</div>
             </div>
-            <img
-              src="/images/icons/star-circle.png"
-              alt="interested"
-              className="h-7 w-7"
-            />{" "}
           </div>
           <div className="mt-1 text-[12px] opacity-90">{description}</div>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px]">
@@ -129,14 +119,6 @@ export function MyEventsCard({
                 alt=""
               />
               {date}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <img
-                src="/images/icons/people-icon-orange.png"
-                className="h-3 w-3"
-                alt=""
-              />
-              {audience} Audience
             </span>
             <span className="inline-flex items-center gap-1">
               <img

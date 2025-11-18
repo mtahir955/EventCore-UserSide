@@ -64,16 +64,6 @@ export default function EventCard({
         {/* Event Info */}
         <div className="pr-1 sm:pr-2 mt-3 sm:mt-0">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] sm:text-xs text-foreground/60">
-              Host By : Eric Gryzbowski
-            </p>
-            <button aria-label="favorite" onClick={(e) => e.stopPropagation()}>
-              <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Star%202-x7Lbp8OQCj3N5KoX4MIL7N7S5HVuEh.png"
-                alt="star"
-                className="h-4 w-4"
-              />
-            </button>
           </div>
 
           <h3 className="mt-1 text-base sm:text-xl font-semibold">
@@ -94,12 +84,7 @@ export default function EventCard({
               <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span className="text-[11px] sm:text-sm">{formattedDate}</span>
             </Pill>
-            <Pill>
-              <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span className="text-[11px] sm:text-sm">
-                {event.audience ? `${event.audience} Audience` : "Open Entry"}
-              </span>
-            </Pill>
+            
           </InfoRow>
 
           <InfoRow>

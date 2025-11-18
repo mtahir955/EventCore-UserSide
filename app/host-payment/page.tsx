@@ -299,100 +299,14 @@ export default function PaymentWithdrawalPage() {
 
         {/* ===== Page Content ===== */}
         <div className="p-4 sm:p-6 md:p-8">
-          {/* ===== Stats Cards ===== */}
-          <div
-            className="
-              grid 
-              grid-cols-1 
-              sm:grid-cols-2 
-              lg:grid-cols-4 
-              gap-4 
-              md:gap-6 
-              mb-8
-            "
-          >
-            {/* Total Events Card */}
-            <div className="flex items-center gap-4 rounded-lg bg-background p-4 sm:p-5 md:p-6 shadow-sm">
-              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-blue-50">
-                <Image
-                  alt="Total Events"
-                  src="/icons/calendar-active-icon.png"
-                  width={28}
-                  height={28}
-                  className="h-6 w-6 sm:h-7 sm:w-7"
-                />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
-                  720
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Total Events
-                </p>
-              </div>
-            </div>
+          {/* ===== Payment Withdrawal Table ===== */}
+          <div className="mt-2 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Payments History
+            </h3>
 
-            {/* Tickets Sold Card */}
-            <div className="flex items-center gap-4 rounded-lg bg-background p-4 sm:p-5 md:p-6 shadow-sm">
-              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-orange-50">
-                <Image
-                  src="/icons/ticket-icon.png"
-                  alt="Tickets Sold"
-                  width={28}
-                  height={28}
-                  className="h-6 w-6 sm:h-7 sm:w-7"
-                />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
-                  12,00
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Tickets Sold
-                </p>
-              </div>
-            </div>
-
-            {/* Revenue Card */}
-            <div className="flex items-center gap-4 rounded-lg bg-background p-4 sm:p-5 md:p-6 shadow-sm">
-              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-pink-50">
-                <Image
-                  src="/icons/revenue-icon.png"
-                  alt="Revenue"
-                  width={28}
-                  height={28}
-                  className="h-6 w-6 sm:h-7 sm:w-7"
-                />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
-                  $67,000
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Revenue
-                </p>
-              </div>
-            </div>
-
-            {/* Active Events Card */}
-            <div className="flex items-center gap-4 rounded-lg bg-background p-4 sm:p-5 md:p-6 shadow-sm">
-              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-blue-50">
-                <Image
-                  src="/icons/calendar-check-icon.png"
-                  alt="Active Events"
-                  width={28}
-                  height={28}
-                  className="h-6 w-6 sm:h-7 sm:w-7"
-                />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">
-                  150
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Active Events
-                </p>
-              </div>
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
+              <PaymentSuccessTable />
             </div>
           </div>
 
@@ -404,17 +318,6 @@ export default function PaymentWithdrawalPage() {
 
             <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
               <PaymentWithdrawalTable />
-            </div>
-          </div>
-
-          {/* ===== Payment Withdrawal Table ===== */}
-          <div className="mt-8 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Payments History
-            </h3>
-
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentSuccessTable />
             </div>
           </div>
         </div>

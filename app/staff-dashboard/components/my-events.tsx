@@ -171,12 +171,6 @@ export default function MyEvents() {
                   {/* Content Section */}
                   <div className="flex flex-col justify-between p-4 sm:p-5 sm:w-[300px]">
                     <div>
-                      <p className="text-[12px] text-gray-500 dark:text-gray-300 mb-1">
-                        Host By :{" "}
-                        <span className="text-gray-700 dark:text-white font-medium">
-                          {event.host}
-                        </span>
-                      </p>
                       <h3 className="text-[16px] font-semibold text-gray-900 dark:text-white leading-tight mb-2">
                         {event.title}
                       </h3>
@@ -203,15 +197,6 @@ export default function MyEvents() {
                             height={15}
                           />
                           <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Image
-                            src="/icons/audience-icon.png"
-                            alt="Audience"
-                            width={15}
-                            height={15}
-                          />
-                          <span>{event.audience}</span>
                         </div>
                       </div>
 
