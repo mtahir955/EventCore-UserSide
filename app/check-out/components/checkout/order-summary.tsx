@@ -206,17 +206,20 @@ export default function OrderSummary() {
           </div>
 
           {showCoupon && (
-            <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-3 transition-all">
+            <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-3 w-full transition-all">
+              {/* Coupon Input */}
               <input
                 type="text"
                 placeholder="Enter your coupon code"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
-                className="flex-1 h-11 px-4 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-[14px] outline-none"
+                className="w-full sm:flex-1 h-11 px-4 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-[14px] outline-none"
               />
+
+              {/* Apply Button */}
               <button
                 onClick={handleApplyCoupon}
-                className="h-11 px-6 rounded-lg bg-[#0077F7] text-white text-[14px] font-medium"
+                className="w-full sm:w-auto h-11 px-6 rounded-lg bg-[#0077F7] text-white text-[14px] font-medium text-center"
               >
                 Apply
               </button>
