@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { toast } from "react-hot-toast";
 
 export default function SystemSettingsPage() {
   const [require2FA, setRequire2FA] = useState(true);
@@ -61,6 +62,32 @@ export default function SystemSettingsPage() {
   }, []);
 
   const [adminName, setAdminName] = useState("Admin");
+
+  const [email, setEmail] = useState("admin@example.com");
+  const [password, setPassword] = useState("");
+  const [subdomain, setSubdomain] = useState("eventcore.yourdomain.com");
+  const handleSaveAdminInfo = () => {
+    console.log({
+      username: adminName,
+      email,
+      password,
+      subdomain,
+    });
+
+    toast.success("Admin details updated successfully 🎉", {
+      duration: 4000,
+      position: "bottom-right",
+      style: {
+        background: "#101010",
+        color: "#fff",
+        border: "1px solid #D19537",
+      },
+      iconTheme: {
+        primary: "#D19537",
+        secondary: "#fff",
+      },
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFB]">
@@ -178,84 +205,93 @@ export default function SystemSettingsPage() {
         <div className="p-4 sm:p-6 md:p-8 w-full">
           <div className="bg-white dark:bg-black/60 rounded-xl p-4 sm:p-6 md:p-8 shadow-sm mb-8">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-6 sm:mb-8">
-              General Settings
+              System Settings
             </h2>
 
             <div className="space-y-8">
-              {/* === 2FA Section === */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                  {/* 2FA */}
-                  <div className="flex flex-col gap-y-4">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-300">
-                      Two Factor Authentication (2FA)
-                    </h3>
-                    <div className="flex items-center justify-between border-b pb-3 md:border-0 md:pb-0">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        Require Two Factor Authentication
-                      </span>
-                      <button
-                        onClick={() => setRequire2FA(!require2FA)}
-                        className={`flex items-center h-6 w-11 rounded-full transition-colors duration-300 ${
-                          require2FA ? "bg-[#D19537]" : "bg-gray-300"
-                        }`}
-                      >
-                        <span
-                          className={`h-[23px] w-[23px] rounded-full bg-white transition-transform duration-300 ${
-                            require2FA ? "translate-x-[20px]" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
+              {/* NEW ADMIN PROFILE FIELDS  */}
+
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                  {/* Username */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Username <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="username"
+                      placeholder="Enter admin username"
+                      value={adminName}
+                      onChange={(e) => setAdminName(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#101010]
+      text-gray-900 dark:text-white border-gray-300 dark:border-gray-700
+      focus:ring-2 focus:ring-[#D19537] outline-none"
+                    />
                   </div>
 
-                  {/* Login Attempts */}
-                  <div className="flex flex-col gap-y-2">
+                  {/* Email */}
+                  <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Login Attempts before Account Lockout
+                      Admin Email <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <select
-                        value={loginAttempts}
-                        onChange={(e) => setLoginAttempts(e.target.value)}
-                        className="w-full appearance-none rounded-lg border border-gray-300 bg-gray-50 dark:bg-[#101010] dark:text-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:border-[#D19537] focus:ring-1 focus:ring-[#D19537] outline-none"
-                      >
-                        <option value="3">3</option>
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
-                    </div>
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="admin@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#101010]
+      text-gray-900 dark:text-white border-gray-300 dark:border-gray-700
+      focus:ring-2 focus:ring-[#D19537] outline-none"
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* === Password Policy === */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-300">
-                  Password Policy
-                </h3>
-
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-[#101010] px-4 py-3">
-                  <div className="flex flex-wrap gap-2">
-                    <button className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-600">
-                      Uppercase Letter
-                    </button>
-                    <button className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-600">
-                      Lowercase Letter
-                    </button>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setPasswordPolicyExpanded(!passwordPolicyExpanded)
-                    }
-                    className="p-1 hover:bg-gray-100 rounded-md self-end sm:self-auto"
-                  >
-                    <ChevronDown
-                      className={`h-4 w-4 text-gray-600 transition-transform ${
-                        passwordPolicyExpanded ? "rotate-180" : ""
-                      }`}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="Enter new password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#101010]
+      text-gray-900 dark:text-white border-gray-300 dark:border-gray-700
+      focus:ring-2 focus:ring-[#D19537] outline-none"
                     />
+                  </div>
+
+                  {/* Subdomain */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Admin Domain <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="subdomain"
+                      placeholder="example.yourdomain.com"
+                      value={subdomain}
+                      onChange={(e) => setSubdomain(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#101010]
+      text-gray-900 dark:text-white border-gray-300 dark:border-gray-700
+      focus:ring-2 focus:ring-[#D19537] outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="pt-4">
+                  <button
+                    onClick={handleSaveAdminInfo}
+                    className="w-full sm:w-auto px-4 py-2 text-[14px] bg-[#D19537] text-white rounded-lg 
+          hover:bg-[#c2872f] transition font-medium"
+                  >
+                    Save Changes
                   </button>
                 </div>
               </div>
@@ -361,71 +397,6 @@ export default function SystemSettingsPage() {
                       <option value="Dark Theme">Dark Theme</option>
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
-                  </div>
-                </div>
-
-                {/* User Signup */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-900 dark:text-gray-300">
-                    User Sign up
-                  </label>
-
-                  {/* Make whole div clickable */}
-                  <div
-                    onClick={() => setAllowSignup(!allowSignup)}
-                    className="flex items-center justify-between rounded-lg border border-gray-300 bg-white dark:bg-[#101010] px-4 py-2.5 cursor-pointer select-none transition-colors"
-                  >
-                    <span className="text-sm text-gray-700 dark:text-white">
-                      Allow new users to sign up
-                    </span>
-
-                    {/* Toggle switch */}
-                    <div
-                      className={`flex items-center h-6 w-11 rounded-full transition-colors duration-300 ${
-                        allowSignup ? "bg-[#D19537]" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`h-[23px] w-[23px] rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                          allowSignup ? "translate-x-[20px]" : "translate-x-0"
-                        }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* === Default Theme & Notifications === */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                {/* Notifications */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-900 dark:text-gray-300">
-                    Notifications
-                  </label>
-
-                  {/* Make entire box clickable */}
-                  <div
-                    onClick={() => setAllowNotifications(!allowNotifications)}
-                    className="flex items-center justify-between rounded-lg border border-gray-300 bg-white dark:bg-[#101010] px-4 py-2.5 cursor-pointer select-none transition-colors"
-                  >
-                    <span className="text-sm text-gray-700 dark:text-white">
-                      Allow system notifications
-                    </span>
-
-                    {/* Toggle Switch */}
-                    <div
-                      className={`flex items-center h-6 w-11 rounded-full transition-colors duration-300 ${
-                        allowNotifications ? "bg-[#D19537]" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`h-[23px] w-[23px] rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                          allowNotifications
-                            ? "translate-x-[20px]"
-                            : "translate-x-0"
-                        }`}
-                      />
-                    </div>
                   </div>
                 </div>
               </div>

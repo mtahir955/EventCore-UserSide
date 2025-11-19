@@ -168,7 +168,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
       {/* Logo Upload */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Logo <span className="text-red-500">*</span>
+          Logo (152 × 48px) <span className="text-red-500">*</span>
         </label>
 
         {formData.logo ? (
@@ -268,87 +268,6 @@ const BasicInformationSection = forwardRef((props, ref) => {
           </div>
         )}
       </div>
-
-      {/* About Title */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          About Title <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="aboutTitle"
-          placeholder="Enter main about title"
-          value={formData.aboutTitle}
-          onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
-      ${
-        errors.aboutTitle
-          ? "border-red-500"
-          : "border-gray-300 dark:border-gray-700"
-      } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
-        />
-      </div>
-
-      {/* About Subtitle */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          About Subtitle <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="aboutSubtitle"
-          placeholder="Enter a short subtitle"
-          value={formData.aboutSubtitle}
-          onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
-      ${
-        errors.aboutSubtitle
-          ? "border-red-500"
-          : "border-gray-300 dark:border-gray-700"
-      } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
-        />
-      </div>
-
-      {/* Main Headline */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Main Headline <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          name="mainHeadline"
-          placeholder="Write your about page headline"
-          value={formData.mainHeadline}
-          onChange={handleChange}
-          rows={2}
-          className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#D19537]
-      ${
-        errors.mainHeadline
-          ? "border-red-500"
-          : "border-gray-300 dark:border-gray-700"
-      } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
-        />
-      </div>
-
-      {/* Description */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          name="description"
-          placeholder="Write a short description about the tenant"
-          value={formData.description}
-          onChange={handleChange}
-          rows={3}
-          className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#D19537]
-            ${
-              errors.description
-                ? "border-red-500"
-                : "border-gray-300 dark:border-gray-700"
-            } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
-        />
-      </div>
-
       {/* Subdomain */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

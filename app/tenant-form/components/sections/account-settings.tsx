@@ -149,22 +149,6 @@ const AccountSettingsSection = forwardRef((props, ref) => {
           </label>
         </div>
       </div>
-
-      {/* Terms & Conditions (Optional) */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Terms & Conditions (optional)
-        </label>
-        <textarea
-          name="termsAndConditions"
-          placeholder="Enter or link terms & conditions"
-          value={formData.termsAndConditions}
-          onChange={handleChange}
-          rows={3}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537] resize-none"
-        />
-      </div>
-
       {/* Debug info */}
       <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-300">
         <p>
