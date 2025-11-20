@@ -104,6 +104,27 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
     console.log("✅ Saved Data:", { privacyPolicies, faqs });
   };
 
+  const [formData, setFormData] = useState({
+    tenantName: "",
+    email: "",
+    description: "",
+    subdomain: "",
+    logo: "",
+    banner: "",
+    aboutTitle: "",
+    aboutSubtitle: "",
+    mainHeadline: "",
+    termsAndConditions: "",
+  });
+  // 🧩 Handle text & textarea inputs
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: false }));
+  };
+
   return (
     <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 space-y-8 shadow-sm transition-all">
       {/* Header */}
@@ -112,6 +133,91 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
           Other Pages Data
         </h3>
+      </div>
+
+      <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+        About page
+      </h4>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {/* About Title */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            About Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="aboutTitle"
+            placeholder="Enter main about title"
+            value={formData.aboutTitle}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
+        ${
+          errors.aboutTitle
+            ? "border-red-500"
+            : "border-gray-300 dark:border-gray-700"
+        } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+          />
+        </div>
+
+        {/* About Subtitle */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            About Subtitle <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="aboutSubtitle"
+            placeholder="Enter a short subtitle"
+            value={formData.aboutSubtitle}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
+        ${
+          errors.aboutSubtitle
+            ? "border-red-500"
+            : "border-gray-300 dark:border-gray-700"
+        } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+          />
+        </div>
+      </div>
+
+      {/* Main Headline */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Main Headline <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          name="mainHeadline"
+          placeholder="Write your about page headline"
+          value={formData.mainHeadline}
+          onChange={handleChange}
+          rows={2}
+          className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#D19537]
+      ${
+        errors.mainHeadline
+          ? "border-red-500"
+          : "border-gray-300 dark:border-gray-700"
+      } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+        />
+      </div>
+
+      {/* Description */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Description <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          name="description"
+          placeholder="Write a short description about the tenant"
+          value={formData.description}
+          onChange={handleChange}
+          rows={3}
+          className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#D19537]
+            ${
+              errors.description
+                ? "border-red-500"
+                : "border-gray-300 dark:border-gray-700"
+            } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+        />
       </div>
 
       {/* 📜 Privacy Policy */}
@@ -291,6 +397,24 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Terms & Conditions (Optional) */}
+      <div className="space-y-2">
+        <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+          Terms & Conditions
+        </h4>
+        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+          Enter Terms & Conditions <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          name="termsAndConditions"
+          placeholder="Enter or link terms & conditions"
+          value={formData.termsAndConditions}
+          onChange={handleChange}
+          rows={3}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537] resize-none"
+        />
       </div>
 
       {/* 💾 Save Button */}

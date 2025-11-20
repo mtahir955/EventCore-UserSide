@@ -39,7 +39,11 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       icon: "/images/icons/11.png",
       href: "/payment-setup",
     },
-
+    {
+      label: "Customers",
+      icon: "/images/icons/17.png",
+      href: "/host-customers",
+    },
     {
       label: "Ticket Check",
       icon: "/images/icons/5.png",

@@ -456,11 +456,23 @@ export default function CreateEventPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Start Date */}
                     <div>
                       <label className="block text-[14px] font-medium mb-2">
-                        Enter Date <span className="text-[#D6111A]">*</span>
+                        Start Date <span className="text-[#D6111A]">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={eventDate}
+                        onChange={(e) => setEventDate(e.target.value)}
+                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
+                      />
+                    </div>
+                    {/* End Date */}
+                    <div>
+                      <label className="block text-[14px] font-medium mb-2">
+                        End Date <span className="text-[#D6111A]">*</span>
                       </label>
                       <input
                         type="date"
