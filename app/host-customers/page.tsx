@@ -89,6 +89,32 @@ const mockData: Customer[] = [
     phone: "+44 7412 558496",
     address: "Beverly Hills, CA 90210",
   },
+  {
+    id: "6",
+    name: "Taylor Morgan",
+    avatar: "/placeholder.svg",
+    email: "info@gmail.com",
+    event: "Summer Jam",
+    ticketId: "TCK-991234",
+    ticketQuantity: 1,
+    gender: "Non-binary",
+    category: "General",
+    phone: "+44 7412 558496",
+    address: "Beverly Hills, CA 90210",
+  },
+  {
+    id: "7",
+    name: "Taylor Morgan",
+    avatar: "/placeholder.svg",
+    email: "info@gmail.com",
+    event: "Summer Jam",
+    ticketId: "TCK-991234",
+    ticketQuantity: 1,
+    gender: "Non-binary",
+    category: "General",
+    phone: "+44 7412 558496",
+    address: "Beverly Hills, CA 90210",
+  },
 ];
 
 export default function CustomersPage() {
@@ -158,6 +184,19 @@ export default function CustomersPage() {
 
   const { theme, setTheme } = useTheme();
   const [hostName] = useState("Host");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 5;
+
+  // Pagination calculations
+  const indexOfLast = currentPage * entriesPerPage;
+  const indexOfFirst = indexOfLast - entriesPerPage;
+
+  // Slice the filtered results
+  const currentEntries = filteredData.slice(indexOfFirst, indexOfLast);
+
+  // Total pages
+  const totalPages = Math.ceil(filteredData.length / entriesPerPage);
 
   return (
     <div className="relative bg-[#FAFAFB] dark:bg-[#101010] w-full min-h-screen flex overflow-x-hidden">
@@ -396,7 +435,7 @@ export default function CustomersPage() {
               </div>
 
               {/* TABLE BODY */}
-              {filteredData.map((c) => (
+              {currentEntries.map((c) => (
                 <div
                   key={c.id}
                   onClick={() => handleRowClick(c)}
@@ -424,6 +463,44 @@ export default function CustomersPage() {
             </div>
           </div>
         </div>
+
+        {/* PAGINATION */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4 mb-6">
+            {/* Prev Button */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Prev
+            </button>
+
+            {/* Page Numbers */}
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-4 py-2 border rounded-md ${
+                  currentPage === i + 1
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "dark:border-gray-700 dark:bg-[#181818]"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            {/* Next Button */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Logout Modal */}

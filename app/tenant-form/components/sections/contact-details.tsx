@@ -42,22 +42,48 @@ const ContactDetailsSection = forwardRef((props, ref) => {
   };
 
   // 🔹 Expose validate() to parent
+  // useImperativeHandle(ref, () => ({
+  //   validate: () => {
+  //     const requiredFields = [
+  //       "phoneNumber",
+  //       "countryCode",
+  //       "city",
+  //       "pincode",
+  //       "address",
+  //     ];
+  //     const newErrors: Record<string, boolean> = {};
+  //     requiredFields.forEach((field) => {
+  //       if (!formData[field as keyof typeof formData]) newErrors[field] = true;
+  //     });
+  //     setErrors(newErrors);
+  //     return Object.keys(newErrors).length === 0;
+  //   },
+  //   getData: () => formData
+  // }));
+
   useImperativeHandle(ref, () => ({
     validate: () => {
-      const requiredFields = [
-        "phoneNumber",
-        "countryCode",
-        "city",
-        "pincode",
-        "address",
-      ];
       const newErrors: Record<string, boolean> = {};
-      requiredFields.forEach((field) => {
-        if (!formData[field as keyof typeof formData]) newErrors[field] = true;
-      });
+
+      if (!formData.phoneNumber.trim()) newErrors.phoneNumber = true;
+
+      // Country code is always set, but keep validation
+      if (!formData.countryCode) newErrors.countryCode = true;
+
+      // City MUST be selected
+      if (!formData.city || formData.city === "") newErrors.city = true;
+
+      // Pincode trimmed
+      if (!formData.pincode.trim()) newErrors.pincode = true;
+
+      if (!formData.address.trim()) newErrors.address = true;
+
       setErrors(newErrors);
+
       return Object.keys(newErrors).length === 0;
     },
+
+    getData: () => formData,
   }));
 
   // 🔍 Local Save
@@ -266,4 +292,3 @@ const ContactDetailsSection = forwardRef((props, ref) => {
 
 ContactDetailsSection.displayName = "ContactDetailsSection";
 export default ContactDetailsSection;
-

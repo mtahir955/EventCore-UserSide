@@ -3,8 +3,9 @@
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE_URL } from "../../../config/apiConfig";
 
-type AuthView = "signin"
+type AuthView = "signin";
 
 interface SigninPopupProps {
   onNavigate: (view: AuthView) => void;
@@ -22,11 +23,9 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
     password: false,
   });
 
-  // ⛔ UPDATED: async function for backend login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Frontend validation
     const newErrors = {
       email: formData.email.trim() === "",
       password: formData.password.trim() === "",
@@ -40,14 +39,14 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
     try {
       const response = await axios.post(
-        "http://192.168.18.185:8080/auth/login",
+        `${API_BASE_URL}/auth/auth/login`,
         {
           email: formData.email,
           password: formData.password,
         },
         {
           headers: {
-            "x-tenant-id": "883e6f70-8923-4c72-bf04-66905d24d736",
+            "x-tenant-id": "fc36df79-3157-44fb-9c5a-fbc938f2fda7",
             "Content-Type": "application/json",
           },
         }
@@ -57,12 +56,16 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
       console.log("Login Response:", response.data);
 
-      // Store token if backend returns one
-      if (response.data?.accessToken) {
-        localStorage.setItem("adminToken", response.data.accessToken);
+      // Save token
+      const token = response.data?.access_token;
+      if (!token) {
+        toast.error("No token received from server");
+        return;
       }
 
-      // Navigate to admin dashboard
+      localStorage.setItem("adminToken", token);
+
+      // Redirect
       window.location.href = "/admin";
     } catch (error: any) {
       console.error("Login Error:", error);

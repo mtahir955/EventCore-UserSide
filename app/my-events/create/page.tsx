@@ -26,7 +26,8 @@ export default function CreateEventPage() {
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [eventCategory, setEventCategory] = useState("");
-  const [eventDate, setEventDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");
   const [eventLocation, setEventLocation] = useState("");
@@ -113,7 +114,8 @@ export default function CreateEventPage() {
       !eventTitle ||
       !eventDescription ||
       !eventCategory || // ⬅ ADDED
-      !eventDate ||
+      !startDate ||
+      !endDate ||
       !startTime ||
       !endTime ||
       !eventLocation
@@ -464,11 +466,12 @@ export default function CreateEventPage() {
                       </label>
                       <input
                         type="date"
-                        value={eventDate}
-                        onChange={(e) => setEventDate(e.target.value)}
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
                         className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                       />
                     </div>
+
                     {/* End Date */}
                     <div>
                       <label className="block text-[14px] font-medium mb-2">
@@ -476,8 +479,9 @@ export default function CreateEventPage() {
                       </label>
                       <input
                         type="date"
-                        value={eventDate}
-                        onChange={(e) => setEventDate(e.target.value)}
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        min={startDate} // optional: prevent selecting date earlier than start
                         className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
                       />
                     </div>

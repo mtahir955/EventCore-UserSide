@@ -83,6 +83,30 @@ const mockData: TransferRequest[] = [
     gender: "Non-binary",
     address: "7890 Beverly Hills, CA 90210",
   },
+  {
+    id: "6",
+    name: "Taylor Morgan",
+    avatar: "/placeholder.svg?height=96&width=96",
+    email: "info@gmail.com",
+    event: "Starry Nights",
+    ticketId: "TCK-992134",
+    ticketTransfer: 1,
+    phone: "+44 7412 558496",
+    gender: "Non-binary",
+    address: "7890 Beverly Hills, CA 90210",
+  },
+  {
+    id: "7",
+    name: "Taylor Morgan",
+    avatar: "/placeholder.svg?height=96&width=96",
+    email: "info@gmail.com",
+    event: "Starry Nights",
+    ticketId: "TCK-992134",
+    ticketTransfer: 1,
+    phone: "+44 7412 558496",
+    gender: "Non-binary",
+    address: "7890 Beverly Hills, CA 90210",
+  },
 ];
 
 export default function TransferRequestsPage() {
@@ -156,6 +180,15 @@ export default function TransferRequestsPage() {
 
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [hostName, setHostName] = useState("Host");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 5;
+
+  const indexOfLast = currentPage * entriesPerPage;
+  const indexOfFirst = indexOfLast - entriesPerPage;
+
+  const currentData = filteredData.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredData.length / entriesPerPage);
 
   return (
     <div className="relative bg-[#FAFAFB] w-full min-h-screen flex flex-col lg:flex-row">
@@ -414,7 +447,7 @@ export default function TransferRequestsPage() {
 
               {/* Table Body */}
               <div className="min-w-[800px]">
-                {filteredData.map((request) => (
+                {currentData.map((request) => (
                   <div
                     key={request.id}
                     className="grid grid-cols-[160px_150px_150px_150px_150px_1fr] place-items-center gap-4 px-6 py-4 text-[13px] sm:text-[14px] text-foreground border-b border-gray-100 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors cursor-pointer"
@@ -432,24 +465,23 @@ export default function TransferRequestsPage() {
                         {request.name}
                       </span>
                     </div>
+
                     <div className="truncate">{request.email}</div>
                     <div className="truncate">{request.event}</div>
                     <div className="truncate">{request.ticketId}</div>
                     <div>{request.ticketTransfer}</div>
+
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={(e) => {
-                          handleAccept(request.id);
-                        }}
+                        onClick={(e) => handleAccept(request.id)}
                         className="px-5 sm:px-6 py-2 rounded-full text-white font-medium text-[12px] sm:text-[13px] transition-colors hover:opacity-90"
                         style={{ backgroundColor: "#D19537" }}
                       >
                         Accept
                       </button>
+
                       <button
-                        onClick={(e) => {
-                          handleReject(request.id);
-                        }}
+                        onClick={(e) => handleReject(request.id)}
                         className="px-5 sm:px-6 py-2 rounded-full font-medium text-[12px] sm:text-[13px] transition-colors hover:opacity-90"
                         style={{ backgroundColor: "#F5EDE5", color: "#D19537" }}
                       >
@@ -460,6 +492,44 @@ export default function TransferRequestsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-4 pb-6">
+                {/* Prev */}
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+                >
+                  Prev
+                </button>
+
+                {/* Page Numbers */}
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-4 py-2 border rounded-md ${
+                      currentPage === i + 1
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "dark:border-gray-700 dark:bg-[#181818]"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                {/* Next */}
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>

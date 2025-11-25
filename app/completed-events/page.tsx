@@ -91,6 +91,28 @@ const dummyEvents: Props[] = [
     audience: 7000,
     time: "9:00 AM - 8:00 PM",
   },
+  {
+    imageSrc: "/images/event-2.png",
+    price: "2000",
+    hostby: "Pakistan Sports Board",
+    title: "National Sports Gala",
+    description: "A nationwide competition featuring top athletes and teams.",
+    location: "Faisalabad Sports Complex",
+    date: "20/02/2026",
+    audience: 7000,
+    time: "9:00 AM - 8:00 PM",
+  },
+  {
+    imageSrc: "/images/event-2.png",
+    price: "2000",
+    hostby: "Pakistan Sports Board",
+    title: "National Sports Gala",
+    description: "A nationwide competition featuring top athletes and teams.",
+    location: "Faisalabad Sports Complex",
+    date: "20/02/2026",
+    audience: 7000,
+    time: "9:00 AM - 8:00 PM",
+  },
 ];
 
 export default function CompletedEventsPage() {
@@ -151,6 +173,15 @@ export default function CompletedEventsPage() {
 
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [hostName, setHostName] = useState("Host");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 6;
+
+  const indexOfLast = currentPage * eventsPerPage;
+  const indexOfFirst = indexOfLast - eventsPerPage;
+
+  const currentEvents = filteredEvents.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFB]">
@@ -366,8 +397,8 @@ export default function CompletedEventsPage() {
 
         {/* Events Grid */}
         <div className="px-4 sm:px-6 md:px-8 mt-6 pb-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map((event, index) => (
+          {currentEvents.length > 0 ? (
+            currentEvents.map((event, index) => (
               <MyEventsCard
                 key={index}
                 imageSrc={event.imageSrc}
@@ -388,6 +419,44 @@ export default function CompletedEventsPage() {
             </p>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4 mb-10">
+            {/* Prev */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Prev
+            </button>
+
+            {/* Page Numbers */}
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-4 py-2 border rounded-md ${
+                  currentPage === i + 1
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "dark:border-gray-700 dark:bg-[#181818]"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            {/* Next */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Logout Modal */}

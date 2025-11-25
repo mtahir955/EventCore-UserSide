@@ -17,22 +17,102 @@ export default function TicketManager() {
   const [ticketName, setTicketName] = useState("");
   const [editingTicket, setEditingTicket] = useState<string | null>(null);
 
+  // -----------------------------
+  // EDITABLE Ticket Fields
+  // -----------------------------
+
+  const [ticketEditName, setTicketEditName] = useState("");
+  const [ticketEditType, setTicketEditType] = useState("General");
+  const [ticketEditPrice, setTicketEditPrice] = useState(0);
+  const [ticketEditTransferable, setTicketEditTransferable] = useState(false);
+
+  // Ticket Price (number)
+  const [ticketPrice, setTicketPrice] = useState(0);
+
+  // Transferable (boolean)
+  const [transferable, setTransferable] = useState(false);
+
   const [tickets, setTickets] = useState([
     {
       id: "1",
-      name: "General Ticket",
+      name: "ABC Ticket",
+      type: "General", // NEW
       event: "Tech Conference 2025",
-      date: "2025-12-05",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
       price: 199.99,
-      status: "Sold",
+      transferable: true, // NEW
     },
     {
       id: "2",
-      name: "VIP Ticket",
+      name: "AAA Ticket",
+      type: "VIP", // NEW
       event: "Lahore Music Fest",
-      date: "2025-12-10",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
       price: 299.99,
-      status: "Unsold",
+      transferable: false, // NEW
+    },
+    {
+      id: "3",
+      name: "BBB Ticket",
+      type: "General", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
+    },
+    {
+      id: "4",
+      name: "CCC Ticket",
+      type: "General", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
+    },
+    {
+      id: "5",
+      name: "DDD Ticket",
+      type: "VIP", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
+    },
+    {
+      id: "6",
+      name: "EEE Ticket",
+      type: "VIP", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
+    },
+    {
+      id: "7",
+      name: "FFF Ticket",
+      type: "VIP", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
+    },
+    {
+      id: "8",
+      name: "GGG Ticket",
+      type: "VIP", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
+    },
+    {
+      id: "9",
+      name: "HHH Ticket",
+      type: "VIP", // NEW
+      event: "Lahore Music Fest",
+      date: "2025-12-05 18:00", // FULL DATE & TIME
+      price: 299.99,
+      transferable: true, // NEW
     },
   ]);
 
@@ -65,6 +145,16 @@ export default function TicketManager() {
 
   const handleEditTicket = (id: string) => {
     setEditingTicket(id);
+
+    const t = tickets.find((x) => x.id === id);
+    if (t) {
+      setTicketEditName(t.name);
+      setTicketEditType(t.type);
+      setTicketEditPrice(t.price);
+      setTicketEditTransferable(t.transferable);
+      setTicketPrice(t.price);
+      setTransferable(t.transferable);
+    }
   };
 
   const filteredTickets = tickets.filter(
@@ -112,10 +202,23 @@ export default function TicketManager() {
   const [showToast, setShowToast] = useState(false);
 
   const handleSaveChanges = () => {
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === editingTicket
+          ? {
+              ...t,
+              name: ticketEditName,
+              type: ticketEditType,
+              price: ticketEditPrice,
+              transferable: ticketEditTransferable,
+            }
+          : t
+      )
+    );
+
     setEditingTicket(null);
-    // Save logic here (API call or state update)
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000); // hide after 3s
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   const [earlyBirdQuantity, setEarlyBirdQuantity] = useState<number | null>(
@@ -123,6 +226,19 @@ export default function TicketManager() {
   );
 
   const [hostName, setHostName] = useState("Host");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsPerPage = 5;
+
+  // Calculate slice indices
+  const indexOfLast = currentPage * ticketsPerPage;
+  const indexOfFirst = indexOfLast - ticketsPerPage;
+
+  // Tickets for current page
+  const currentTickets = filteredTickets.slice(indexOfFirst, indexOfLast);
+
+  // Total number of pages
+  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans dark:bg-[#101010]">
@@ -330,36 +446,61 @@ export default function TicketManager() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300">
-                  <th className="pb-3">Name</th>
+                  <th className="pb-3">Ticket Name</th>
+                  <th className="pb-3">Type</th>
                   <th className="pb-3">Event</th>
-                  <th className="pb-3">Date</th>
+                  <th className="pb-3">Date & Time</th>
                   <th className="pb-3">Price</th>
-                  <th className="pb-3">Status</th>
+                  <th className="pb-3">Transfer Status</th>
+
                   <th className="pb-3 text-right">Action</th>
                 </tr>
               </thead>
+
               <tbody>
-                {filteredTickets.length > 0 ? (
-                  filteredTickets.map((ticket) => (
+                {currentTickets.length > 0 ? (
+                  currentTickets.map((ticket) => (
                     <tr
                       key={ticket.id}
                       className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
                     >
-                      <td className="py-3 text-sm">{ticket.name}</td>
+                      {/* Ticket Name */}
+                      <td className="py-3 text-sm font-semibold">
+                        {ticket.name}
+                      </td>
+
+                      {/* Ticket Type */}
+                      <td className="py-3 text-sm">
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#D19537]/15 text-[#D19537]">
+                          {ticket.type}
+                        </span>
+                      </td>
+
+                      {/* Event Name */}
                       <td className="py-3 text-sm">{ticket.event}</td>
+
+                      {/* Date & Time */}
                       <td className="py-3 text-sm">{ticket.date}</td>
+
+                      {/* Price */}
                       <td className="py-3 text-sm">${ticket.price}</td>
-                      <td className="py-3">
+
+                      {/* Transferable Status */}
+                      <td className="py-3 text-sm">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            ticket.status === "Sold"
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            ticket.transferable
                               ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
                               : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
                           }`}
                         >
-                          {ticket.status}
+                          {ticket.transferable
+                            ? "Transferable"
+                            : "Untransferable"}
                         </span>
                       </td>
+
+                      {/* Action */}
                       <td className="py-3 text-right">
                         <button
                           onClick={() => handleEditTicket(ticket.id)}
@@ -372,7 +513,7 @@ export default function TicketManager() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-6 text-gray-500">
+                    <td colSpan={7} className="text-center py-6 text-gray-500">
                       No tickets found.
                     </td>
                   </tr>
@@ -383,50 +524,52 @@ export default function TicketManager() {
 
           {/* 📱 Mobile Card View */}
           <div className="sm:hidden space-y-4">
-            {filteredTickets.length > 0 ? (
-              filteredTickets.map((ticket) => (
+            {currentTickets.length > 0 ? (
+              currentTickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-[#101010] shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-[15px] font-semibold">{ticket.name}</h3>
-                    <span
-                      className={`px-2 py-1 rounded-full text-[11px] font-medium ${
-                        ticket.status === "Sold"
-                          ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                          : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
-                      }`}
-                    >
-                      {ticket.status}
+
+                    <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-[#D19537]/15 text-[#D19537]">
+                      {ticket.type}
                     </span>
                   </div>
 
+                  {/* Details */}
                   <div className="space-y-1 text-[13px] text-gray-600 dark:text-gray-300">
                     <p>
-                      <span className="font-medium text-gray-800 dark:text-gray-100">
-                        Event:
-                      </span>{" "}
-                      {ticket.event}
+                      <span className="font-medium">Event:</span> {ticket.event}
                     </p>
                     <p>
-                      <span className="font-medium text-gray-800 dark:text-gray-100">
-                        Date:
-                      </span>{" "}
+                      <span className="font-medium">Date & Time:</span>{" "}
                       {ticket.date}
                     </p>
                     <p>
-                      <span className="font-medium text-gray-800 dark:text-gray-100">
-                        Price:
-                      </span>{" "}
-                      ${ticket.price}
+                      <span className="font-medium">Price:</span> $
+                      {ticket.price}
+                    </p>
+
+                    <p>
+                      <span className="font-medium">Status:</span>{" "}
+                      {ticket.transferable ? (
+                        <span className="text-green-600 font-semibold">
+                          Transferable
+                        </span>
+                      ) : (
+                        <span className="text-red-500 font-semibold">
+                          Untransferable
+                        </span>
+                      )}
                     </p>
                   </div>
 
                   <div className="mt-3 flex justify-end">
                     <button
                       onClick={() => handleEditTicket(ticket.id)}
-                      className="px-4 py-1.5 rounded-lg bg-[#D19537] text-white text-sm font-medium hover:bg-[#e4a645] transition"
+                      className="px-4 py-1.5 rounded-lg bg-[#D19537] text-white text-sm font-medium hover:bg-[#e4a645]"
                     >
                       Edit
                     </button>
@@ -441,6 +584,43 @@ export default function TicketManager() {
           </div>
         </div>
 
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-6">
+            {/* Prev */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Prev
+            </button>
+
+            {/* Page Numbers */}
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-4 py-2 border rounded-md ${
+                  currentPage === i + 1
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "dark:border-gray-700 dark:bg-[#181818]"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            {/* Next */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
         {/* ✏️ Edit Ticket Section */}
         {editingTicket && (
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mx-4 sm:mx-6 md:mx-8 mt-6 sm:mt-8 p-4 sm:p-6 border border-gray-200 dark:border-gray-700 transition-all">
@@ -453,6 +633,77 @@ export default function TicketManager() {
               >
                 <X className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
+            </div>
+
+            {/* ----------------------------- */}
+            {/* ROW 1: Ticket Name + Ticket Type */}
+            {/* ----------------------------- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Ticket Name */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Ticket Name
+                </label>
+                <input
+                  type="text"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={ticketName}
+                  onChange={(e) => setTicketName(e.target.value)}
+                />
+              </div>
+
+              {/* Ticket Type */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Ticket Type
+                </label>
+                <select
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={ticketType}
+                  onChange={(e) => setTicketType(e.target.value)}
+                >
+                  <option value="General">General</option>
+                  <option value="VIP">VIP</option>
+                </select>
+              </div>
+            </div>
+
+            {/* ----------------------------- */}
+            {/* ROW 2: Price + Transferable Toggle */}
+            {/* ----------------------------- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Ticket Price */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Ticket Price
+                </label>
+                <input
+                  type="number"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={ticketPrice}
+                  onChange={(e) => setTicketPrice(Number(e.target.value))}
+                />
+              </div>
+
+              {/* Transferable Toggle */}
+              <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-[#FAFAFB] dark:bg-[#101010]">
+                <span className="text-[14px] font-medium text-gray-800 dark:text-gray-200">
+                  Transferable Ticket
+                </span>
+
+                <button
+                  onClick={() => setTransferable(!transferable)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    transferable ? "bg-[#D19537]" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-[22px] w-[22px] transform rounded-full bg-white transition-transform ${
+                      transferable ? "translate-x-[20px]" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Edit Fields Grid */}

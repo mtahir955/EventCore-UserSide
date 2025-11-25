@@ -22,16 +22,38 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
   };
 
   // 🔹 Expose validate() to parent
+  // useImperativeHandle(ref, () => ({
+  //   validate: () => {
+  //     const requiredFields = ["dbName", "dbUsername"];
+  //     const newErrors: Record<string, boolean> = {};
+  //     requiredFields.forEach((field) => {
+  //       if (!formData[field as keyof typeof formData]) newErrors[field] = true;
+  //     });
+  //     setErrors(newErrors);
+  //     return Object.keys(newErrors).length === 0;
+  //   },
+  //   getData: () => formData
+  // }));
+
   useImperativeHandle(ref, () => ({
     validate: () => {
-      const requiredFields = ["dbName", "dbUsername"];
       const newErrors: Record<string, boolean> = {};
-      requiredFields.forEach((field) => {
-        if (!formData[field as keyof typeof formData]) newErrors[field] = true;
-      });
+
+      // Required fields trimmed
+      if (!formData.dbName.trim()) newErrors.dbName = true;
+      if (!formData.dbUsername.trim()) newErrors.dbUsername = true;
+
       setErrors(newErrors);
+
       return Object.keys(newErrors).length === 0;
     },
+
+    getData: () => ({
+      dbName: formData.dbName.trim(),
+      dbUsername: formData.dbUsername.trim(),
+      dbPassword: formData.dbPassword?.trim() || "",
+      dbSmtp: formData.dbSmtp?.trim() || "",
+    }),
   }));
 
   // 🧠 Local validation before saving
@@ -145,4 +167,3 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
 
 DatabaseConfigurationSection.displayName = "DatabaseConfigurationSection";
 export default DatabaseConfigurationSection;
-

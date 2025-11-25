@@ -103,17 +103,37 @@ export default function EditEventPage() {
       quantity: 1,
       avatar: "/images/avatars/taylor-morgan.png",
     },
+    {
+      name: "Taylor Morgan",
+      email: "Info@gmail.com",
+      ticketId: "TCK-992134",
+      quantity: 1,
+      avatar: "/images/avatars/taylor-morgan.png",
+    },
   ];
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [hostName, setHostName] = useState("Host");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const attendeesPerPage = 5;
+
+  // Calculate slice indexes
+  const indexOfLast = currentPage * attendeesPerPage;
+  const indexOfFirst = indexOfLast - attendeesPerPage;
+
+  // Current page attendees
+  const currentAttendees = attendees.slice(indexOfFirst, indexOfLast);
+
+  // Total pages
+  const totalPages = Math.ceil(attendees.length / attendeesPerPage);
+
   return (
     <div className="flex min-h-screen bg-[#FAFAFB] relative">
       {/* Sidebar */}
       <Sidebar
-        active="My Events"
+        active="Completed Events"
         isOpen={sidebarOpen}
         onToggle={setSidebarOpen}
       />
@@ -417,19 +437,20 @@ export default function EditEventPage() {
           {/* Attendees Table */}
           <div className="rounded-xl overflow-hidden border border-[#F5EDE5]">
             {/* Table Header */}
-            <div className="flex sm:grid sm:grid-cols-4 px-6 py-4 text-sm font-semibold bg-[#F5EDE5] text-black ">
+            <div className="flex sm:grid sm:grid-cols-4 px-6 py-4 text-sm font-semibold bg-[#F5EDE5] text-black">
               <div className="flex-1">Name</div>
               <div className="flex-1">Email</div>
               <div className="flex-1">Ticket ID</div>
               <div className="flex-1 text-right sm:text-left">Quantity</div>
             </div>
 
-            {/* Mobile Table Header */}
+            {/* Mobile Table Title */}
             <div className="hidden sm:hidden px-4 py-3 text-[15px] font-semibold bg-[#F5EDE5]">
               Attendees
             </div>
 
-            {attendees.map((attendee, idx) => (
+            {/* ⭐ PAGINATED DATA */}
+            {currentAttendees.map((attendee, idx) => (
               <div
                 key={idx}
                 className="grid grid-cols-4 gap-18 sm:grid-cols-4 px-4 sm:px-6 py-4 text-sm border-t border-[#F5EDE5] bg-white dark:bg-[#101010]"
@@ -442,18 +463,59 @@ export default function EditEventPage() {
                   />
                   <span className="font-medium">{attendee.name}</span>
                 </div>
+
                 <div className="text-gray-700 dark:text-white mr-6 sm:ml-[-36px] sm:flex sm:items-center">
                   {attendee.email}
                 </div>
+
                 <div className="text-gray-700 dark:text-white ml-6 sm:ml-[-36px] sm:flex sm:items-center">
                   {attendee.ticketId}
                 </div>
+
                 <div className="text-gray-700 dark:text-white sm:flex sm:items-center">
                   {attendee.quantity}
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4 mb-6">
+              {/* Prev Button */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+              >
+                Prev
+              </button>
+
+              {/* Page Numbers */}
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-4 py-2 border rounded-md ${
+                    currentPage === i + 1
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : "dark:border-gray-700 dark:bg-[#181818]"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
+              {/* Next Button */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </main>
 

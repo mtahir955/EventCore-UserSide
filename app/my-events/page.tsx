@@ -91,6 +91,28 @@ const dummyEvents: Props[] = [
     audience: 7000,
     time: "09:00",
   },
+  {
+    imageSrc: "/images/event-2.png",
+    price: "2000",
+    hostby: "Pakistan Sports Board",
+    title: "National Sports Gala",
+    description: "A nationwide competition featuring top athletes and teams.",
+    location: "Faisalabad Sports Complex",
+    date: "2026-02-20",
+    audience: 7000,
+    time: "09:00",
+  },
+  {
+    imageSrc: "/images/event-2.png",
+    price: "2000",
+    hostby: "Pakistan Sports Board",
+    title: "National Sports Gala",
+    description: "A nationwide competition featuring top athletes and teams.",
+    location: "Faisalabad Sports Complex",
+    date: "2026-02-20",
+    audience: 7000,
+    time: "09:00",
+  },
 ];
 
 export default function MyEventsPage() {
@@ -161,6 +183,7 @@ export default function MyEventsPage() {
     });
 
     setFilteredEvents(results);
+    setCurrentPage(1); // ⭐ Reset pagination
   };
 
   const resetFilters = () => {
@@ -170,10 +193,26 @@ export default function MyEventsPage() {
     setDate("");
     setTime("");
     setFilteredEvents(dummyEvents);
+    setCurrentPage(1); // ⭐ Reset pagination
   };
 
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [hostName, setHostName] = useState("Host");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 6;
+
+  const indexOfLast = currentPage * eventsPerPage;
+  const indexOfFirst = indexOfLast - eventsPerPage;
+
+  const currentEvents = filteredEvents.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [filteredEvents, totalPages]);
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFB] relative">
@@ -451,8 +490,8 @@ export default function MyEventsPage() {
 
         {/* Events List */}
         <div className="px-4 md:px-8 mt-6 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map((event, index) => (
+          {currentEvents.length > 0 ? (
+            currentEvents.map((event, index) => (
               <MyEventsCard
                 key={index}
                 imageSrc={event.imageSrc}
@@ -471,6 +510,43 @@ export default function MyEventsPage() {
             </p>
           )}
         </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4 mb-6">
+            {/* Prev */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Prev
+            </button>
+
+            {/* Page Numbers */}
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-4 py-2 border rounded-md ${
+                  currentPage === i + 1
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "dark:border-gray-700 dark:bg-[#181818]"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            {/* Next */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Logout Modal */}

@@ -161,6 +161,19 @@ export default function TicketCheck() {
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [hostName, setHostName] = useState("Host");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const attendeesPerPage = 5;
+
+  // Calculate indices
+  const indexOfLast = currentPage * attendeesPerPage;
+  const indexOfFirst = indexOfLast - attendeesPerPage;
+
+  // Slice for current page
+  const currentAttendees = attendees.slice(indexOfFirst, indexOfLast);
+
+  // Total pages
+  const totalPages = Math.ceil(attendees.length / attendeesPerPage);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans">
       {/* Sidebar */}
@@ -554,8 +567,9 @@ export default function TicketCheck() {
                       <th>Status</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {attendees.map((attendee) => (
+                    {currentAttendees.map((attendee) => (
                       <tr key={attendee.id}>
                         <td>
                           <div className="attendee-name-cell">
@@ -569,10 +583,12 @@ export default function TicketCheck() {
                             <span>{attendee.name}</span>
                           </div>
                         </td>
+
                         <td>{attendee.email}</td>
                         <td>{attendee.ticketId}</td>
                         <td>{attendee.address}</td>
                         <td>{attendee.quantity}</td>
+
                         <td>
                           <span
                             className={`status-badge ${
@@ -589,6 +605,42 @@ export default function TicketCheck() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination-wrapper">
+                  {/* Prev */}
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="pagination-btn"
+                  >
+                    Prev
+                  </button>
+
+                  {/* Page Numbers */}
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`pagination-btn ${
+                        currentPage === i + 1 ? "pagination-active" : ""
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  {/* Next */}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="pagination-btn"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {/* Logout Modal */}

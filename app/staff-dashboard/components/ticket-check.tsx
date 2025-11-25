@@ -118,6 +118,19 @@ export default function TicketCheck() {
     .reduce((sum, a) => sum + a.quantity, 0);
   const remaining = totalTickets - checkedIn;
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const attendeesPerPage = 5;
+
+  // Calculate indices
+  const indexOfLast = currentPage * attendeesPerPage;
+  const indexOfFirst = indexOfLast - attendeesPerPage;
+
+  // Slice for current page
+  const currentAttendees = attendees.slice(indexOfFirst, indexOfLast);
+
+  // Total pages
+  const totalPages = Math.ceil(attendees.length / attendeesPerPage);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full bg-white font-sans">
       {/* Sidebar */}
@@ -159,45 +172,6 @@ export default function TicketCheck() {
               {showChecklist ? "Back to Scanner" : "View Check List"}
             </button>
           </div>
-
-          {/* <div>
-            <h2 className="verification-title">Ticket Verification</h2>
-            <p className="verification-subtitle">
-              Scan QR codes or enter Tickets IDs to verify
-            </p> */}
-
-            {/* Event Selection and Manual Entry */}
-            {/* <div className="verification-controls">
-              <div className="event-dropdown">
-                <span className="event-dropdown-text">{selectedEvent}</span>
-                <Image
-                  src="/images/chevron-down.png"
-                  alt="Dropdown"
-                  width={16}
-                  height={16}
-                  className="chevron-icon"
-                />
-              </div>
-
-              <div className="manual-entry">
-                <input
-                  type="text"
-                  placeholder="Manual Enter Ticket ID"
-                  value={ticketId}
-                  onChange={(e) => setTicketId(e.target.value)}
-                  className="ticket-id-input"
-                />
-                <Image
-                  src="/images/search-icon.png"
-                  alt="Search"
-                  width={20}
-                  height={20}
-                  className="search-icon"
-                />
-              </div>
-            </div>
-          </div> */}
-
           {!showChecklist ? (
             <>
               {/* Ticket Verification Section */}
@@ -365,8 +339,9 @@ export default function TicketCheck() {
                       <th>Status</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {attendees.map((attendee) => (
+                    {currentAttendees.map((attendee) => (
                       <tr key={attendee.id}>
                         <td>
                           <div className="attendee-name-cell">
@@ -380,10 +355,12 @@ export default function TicketCheck() {
                             <span>{attendee.name}</span>
                           </div>
                         </td>
+
                         <td>{attendee.email}</td>
                         <td>{attendee.ticketId}</td>
                         <td>{attendee.address}</td>
                         <td>{attendee.quantity}</td>
+
                         <td>
                           <span
                             className={`status-badge ${
@@ -400,6 +377,42 @@ export default function TicketCheck() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination-wrapper">
+                  {/* Prev */}
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="pagination-btn"
+                  >
+                    Prev
+                  </button>
+
+                  {/* Page Numbers */}
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`pagination-btn ${
+                        currentPage === i + 1 ? "pagination-active" : ""
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  {/* Next */}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="pagination-btn"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

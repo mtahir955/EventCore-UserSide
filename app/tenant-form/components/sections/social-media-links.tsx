@@ -19,16 +19,45 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
     /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z]{2,63}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/;
 
   // 🧠 Expose methods to parent
+  // useImperativeHandle(ref, () => ({
+  //   validate: () => {
+  //     const newErrors: Record<string, boolean> = {};
+  //     Object.entries(links).forEach(([key, value]) => {
+  //       if (value && !urlPattern.test(value)) newErrors[key] = true;
+  //     });
+  //     setErrors(newErrors);
+  //     return Object.keys(newErrors).length === 0;
+  //   },
+  //   getData: () => links,
+  // }));
+
   useImperativeHandle(ref, () => ({
     validate: () => {
       const newErrors: Record<string, boolean> = {};
+
       Object.entries(links).forEach(([key, value]) => {
-        if (value && !urlPattern.test(value)) newErrors[key] = true;
+        const trimmed = value.trim();
+
+        // If field is NOT empty → validate URL
+        if (trimmed && !urlPattern.test(trimmed)) {
+          newErrors[key] = true;
+        }
       });
+
       setErrors(newErrors);
+
       return Object.keys(newErrors).length === 0;
     },
-    getData: () => links,
+
+    getData: () => {
+      // Send clean trimmed values
+      return {
+        facebook: links.facebook.trim(),
+        instagram: links.instagram.trim(),
+        twitter: links.twitter.trim(),
+        youtube: links.youtube.trim(),
+      };
+    },
   }));
 
   // Handle input change

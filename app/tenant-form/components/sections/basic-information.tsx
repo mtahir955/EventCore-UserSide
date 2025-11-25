@@ -16,36 +16,43 @@ const BasicInformationSection = forwardRef((props, ref) => {
     aboutTitle: "",
     aboutSubtitle: "",
     mainHeadline: "",
+    gender: "Male", // ⬅️ ADD THIS
   });
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
-  // 🔹 Expose validate() to parent via ref
   useImperativeHandle(ref, () => ({
     validate: () => {
+      // ❗ ONLY BASIC INFO REQUIRED HERE
       const requiredFields = [
         "tenantName",
         "email",
         "subdomain",
         "logo",
         "banner",
-        "aboutTitle",
-        "aboutSubtitle",
-        "mainHeadline",
       ];
 
       const newErrors: Record<string, boolean> = {};
+
       requiredFields.forEach((key) => {
-        if (!formData[key as keyof typeof formData]) newErrors[key] = true;
+        if (!formData[key as keyof typeof formData]) {
+          newErrors[key] = true;
+        }
       });
+
       setErrors(newErrors);
+
       return Object.keys(newErrors).length === 0;
     },
+
+    getData: () => formData,
   }));
 
   // 🧩 Handle text & textarea inputs
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -163,6 +170,26 @@ const BasicInformationSection = forwardRef((props, ref) => {
                 : "border-gray-300 dark:border-gray-700"
             } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
         />
+      </div>
+
+      {/* Gender Dropdown */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Gender
+        </label>
+
+        <select
+          name="gender"
+          value={formData.gender}
+          onChange={handleChange}
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
+      border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+        >
+          
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="">Rather not say</option>
+        </select>
       </div>
 
       {/* Logo Upload */}

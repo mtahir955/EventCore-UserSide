@@ -6,6 +6,8 @@ interface Ticket {
   id: string;
   name: string;
   price: string;
+  type: "general" | "vip"; // NEW
+  transferable: boolean; // NEW
   couponCode?: string;
   discount?: string;
 }
@@ -22,6 +24,8 @@ export default function TicketingDetailsPage({
   const [currentTicket, setCurrentTicket] = useState({
     name: "",
     price: "",
+    type: "", // NEW
+    transferable: false, // NEW
     couponCode: "",
     discount: "",
   });
@@ -40,23 +44,39 @@ export default function TicketingDetailsPage({
   };
 
   const handleAddTicket = () => {
-    if (currentTicket.name.trim() && currentTicket.price.trim()) {
-      setTickets([
-        ...tickets,
-        {
-          id: Date.now().toString(),
-          name: currentTicket.name,
-          price: currentTicket.price,
-          couponCode: enableCoupon ? currentTicket.couponCode : undefined,
-          discount: enableCoupon ? currentTicket.discount : "",
-        },
-      ]);
-      setCurrentTicket({ name: "", price: "", couponCode: "", discount: "" });
-      setEnableCoupon(false);
-      setError("");
-    } else {
-      setError("Please fill in both ticket name and price.");
+    if (
+      !currentTicket.name.trim() ||
+      !currentTicket.price.trim() ||
+      !currentTicket.type
+    ) {
+      setError("Please fill in ticket name, price, and type.");
+      return;
     }
+
+    setTickets([
+      ...tickets,
+      {
+        id: Date.now().toString(),
+        name: currentTicket.name,
+        price: currentTicket.price,
+        type: currentTicket.type as "general" | "vip",
+        transferable: currentTicket.transferable,
+        couponCode: enableCoupon ? currentTicket.couponCode : undefined,
+        discount: enableCoupon ? currentTicket.discount : "",
+      },
+    ]);
+
+    setCurrentTicket({
+      name: "",
+      price: "",
+      type: "",
+      transferable: false,
+      couponCode: "",
+      discount: "",
+    });
+
+    setEnableCoupon(false);
+    setError("");
   };
 
   return (
@@ -149,7 +169,9 @@ export default function TicketingDetailsPage({
               What tickets are you selling?
             </h4>
 
+            {/* Ticket Name & Price */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+              {/* Ticket Name */}
               <div>
                 <label className="block text-[14px] font-medium mb-2">
                   Ticket Name <span className="text-[#D6111A]">*</span>
@@ -160,11 +182,12 @@ export default function TicketingDetailsPage({
                   onChange={(e) =>
                     setCurrentTicket({ ...currentTicket, name: e.target.value })
                   }
-                  placeholder="Ticket Name e.g. General Ticket"
-                  className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+                  placeholder="e.g. General Ticket"
+                  className="w-full h-11 sm:h-12 px-4 rounded-lg border"
                 />
               </div>
 
+              {/* Ticket Price */}
               <div>
                 <label className="block text-[14px] font-medium mb-2">
                   Ticket Price <span className="text-[#D6111A]">*</span>
@@ -179,9 +202,55 @@ export default function TicketingDetailsPage({
                     })
                   }
                   placeholder="$00.00"
-                  className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+                  className="w-full h-11 sm:h-12 px-4 rounded-lg border"
                 />
               </div>
+            </div>
+
+            {/* Ticket Type Dropdown */}
+            <div className="mb-6">
+              <label className="block text-[14px] font-medium mb-2">
+                Ticket Type <span className="text-[#D6111A]">*</span>
+              </label>
+
+              <select
+                value={currentTicket.type}
+                onChange={(e) =>
+                  setCurrentTicket({ ...currentTicket, type: e.target.value })
+                }
+                className="w-full h-11 sm:h-12 px-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010]"
+              >
+                <option value="">Select Type</option>
+                <option value="general">General</option>
+                <option value="vip">VIP</option>
+              </select>
+            </div>
+
+            {/* Transferable Toggle */}
+            <div className="mb-6 flex items-center justify-between border px-4 py-3 rounded-lg bg-[#FAFAFB] dark:bg-[#101010]">
+              <span className="text-[14px] font-medium">
+                Transferable Ticket
+              </span>
+
+              <button
+                onClick={() =>
+                  setCurrentTicket({
+                    ...currentTicket,
+                    transferable: !currentTicket.transferable,
+                  })
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  currentTicket.transferable ? "bg-green-600" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-[22px] w-[22px] transform rounded-full bg-white transition-transform ${
+                    currentTicket.transferable
+                      ? "translate-x-[20px]"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Coupon Toggle */}
@@ -262,17 +331,39 @@ export default function TicketingDetailsPage({
                 {tickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
                   >
-                    <div className="mb-2 sm:mb-0">
-                      <div className="text-[14px] font-semibold">
-                        {ticket.name}
-                      </div>
-                      <div className="text-[13px] sm:text-[14px] text-[#666666]">
-                        {ticket.price}
+                    {/* LEFT SIDE */}
+                    <div className="space-y-1">
+                      {/* Ticket Name & Type */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold">
+                          {ticket.name}
+                        </span>
+
+                        <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase">
+                          {ticket.type}
+                        </span>
                       </div>
 
-                      {/* Show coupon + discount if present */}
+                      {/* Price */}
+                      <div className="text-[13px] text-[#666666]">
+                        Price: {ticket.price}
+                      </div>
+
+                      {/* Transferable */}
+                      <div className="text-[13px]">
+                        Transferable:{" "}
+                        {ticket.transferable ? (
+                          <span className="text-green-600 font-semibold">
+                            YES
+                          </span>
+                        ) : (
+                          <span className="text-red-500 font-semibold">NO</span>
+                        )}
+                      </div>
+
+                      {/* Coupon + Discount */}
                       {(ticket.couponCode || ticket.discount) && (
                         <div className="text-[13px] text-[#D19537]">
                           {ticket.couponCode && (
@@ -285,11 +376,12 @@ export default function TicketingDetailsPage({
                       )}
                     </div>
 
+                    {/* RIGHT SIDE */}
                     <button
                       onClick={() =>
                         setTickets(tickets.filter((t) => t.id !== ticket.id))
                       }
-                      className="text-[13px] sm:text-[14px] font-medium text-[#D6111A]"
+                      className="text-[13px] sm:text-[14px] font-medium text-[#D6111A] sm:ml-4 mt-3 sm:mt-0"
                     >
                       Remove
                     </button>

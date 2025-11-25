@@ -17,14 +17,46 @@ const AccountSettingsSection = forwardRef((props, ref) => {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   // 🔹 Expose validate() to parent
+  // useImperativeHandle(ref, () => ({
+  //   validate: () => {
+  //     const newErrors: Record<string, boolean> = {};
+  //     if (!formData.accountStatus) newErrors.accountStatus = true;
+  //     if (!formTheme.themeStatus) newErrors.themeStatus = true;
+  //     setErrors(newErrors);
+  //     return Object.keys(newErrors).length === 0;
+  //   },
+  //   getData: () => ({
+  //     accountStatus: formData.accountStatus,
+  //     themeStatus: formTheme.themeStatus,
+  //   }),
+  // }));
+
   useImperativeHandle(ref, () => ({
     validate: () => {
       const newErrors: Record<string, boolean> = {};
-      if (!formData.accountStatus) newErrors.accountStatus = true;
-      if (!formTheme.themeStatus) newErrors.themeStatus = true;
+
+      if (!formData.accountStatus) {
+        console.log("❌ Account Status missing");
+        newErrors.accountStatus = true;
+      }
+
+      if (!formTheme.themeStatus) {
+        console.log("❌ Theme Status missing");
+        newErrors.themeStatus = true;
+      }
+
       setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
+
+      const isValid = Object.keys(newErrors).length === 0;
+      console.log("Account Settings Valid?", isValid);
+
+      return isValid;
     },
+
+    getData: () => ({
+      accountStatus: formData.accountStatus,
+      themeStatus: formTheme.themeStatus,
+    }),
   }));
 
   // Handle text / textarea input for formData
@@ -174,4 +206,3 @@ const AccountSettingsSection = forwardRef((props, ref) => {
 
 AccountSettingsSection.displayName = "AccountSettingsSection";
 export default AccountSettingsSection;
-
