@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import LogoutModalHost from "@/components/modals/LogoutModalHost";
 
 export default function CreateEventPage() {
   const [eventType, setEventType] = useState<"in-person" | "virtual">(
@@ -564,56 +565,14 @@ export default function CreateEventPage() {
         )}
 
         {/* Logout Modal */}
-        {showLogoutModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm"
-              onClick={() => setShowLogoutModal(false)}
-            />
-            <div
-              className="relative flex w-[90%] flex-col items-center justify-center bg-white dark:bg-[#101010] p-8 shadow-xl sm:w-[500px]"
-              style={{ height: "auto", borderRadius: "16px" }}
-            >
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-black text-white transition-colors hover:bg-gray-800"
-              >
-                <X className="size-4" />
-              </button>
-              <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-gray-300">
-                <div className="flex size-12 items-center justify-center rounded-full bg-[#D19537]">
-                  <LogOut className="size-6 text-white" />
-                </div>
-              </div>
-              <h2 className="mb-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
-                Are you sure you want to log out?
-              </h2>
-              <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
-                {"You'll be signed out from your account."}
-              </p>
-              <div className="flex w-full flex-col gap-4 sm:flex-row">
-                <button
-                  onClick={() => setShowLogoutModal(false)}
-                  className="h-14 w-full bg-gray-100 font-medium text-[#D19537] transition-colors hover:bg-gray-200 sm:w-[212px]"
-                  style={{ borderRadius: "50px" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    console.log("Logging out...");
-                    setShowLogoutModal(false);
-                  }}
-                  className="h-14 w-full bg-[#D19537] font-medium text-white transition-colors hover:bg-[#e99714] sm:w-[212px]"
-                  style={{ borderRadius: "50px" }}
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+        <LogoutModalHost
+          isOpen={showLogoutModal}
+          onClose={() => setShowLogoutModal(false)}
+          onLogout={() => {
+            localStorage.clear();
+            window.location.href = "/sign-in-host";
+          }}
+        />
         {ActivePage === "set-ticketingdetailsT" && (
           <AddTrainersSection setActivePage={setActivePage} />
         )}

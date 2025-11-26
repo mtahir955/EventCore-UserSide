@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Menu, X, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import LogoutModalHost from "@/components/modals/LogoutModalHost";
 
 type Customer = {
   id: string;
@@ -504,51 +505,14 @@ export default function CustomersPage() {
       </main>
 
       {/* Logout Modal */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setShowLogoutModal(false)}
-          />
-
-          <div className="relative bg-white dark:bg-[#101010] p-8 rounded-2xl w-[90%] sm:w-[450px] shadow-xl">
-            <button
-              onClick={() => setShowLogoutModal(false)}
-              className="absolute right-4 top-4 bg-black text-white p-2 rounded-full"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex justify-center mb-6">
-              <div className="h-20 w-20 bg-gray-200 rounded-full flex items-center justify-center">
-                <div className="h-12 w-12 bg-[#D19537] rounded-full flex items-center justify-center">
-                  <LogOut className="text-white h-6 w-6" />
-                </div>
-              </div>
-            </div>
-
-            <h2 className="text-2xl font-bold text-center mb-2">Logout?</h2>
-            <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
-              You will be signed out from your account.
-            </p>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="w-1/2 h-12 bg-gray-100 text-[#D19537] rounded-full"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => console.log("Logging out...")}
-                className="w-1/2 h-12 bg-[#D19537] text-white rounded-full"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LogoutModalHost
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onLogout={() => {
+          localStorage.clear();
+          window.location.href = "/sign-in-host";
+        }}
+      />
     </div>
   );
 }
