@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { API_BASE_URL } from "../../../../../config/apiConfig"; // ADD THIS IMPORT
+import { toast } from "react-hot-toast";
+import axios from "axios";
+import ChangePasswordModal from "@/components/modals/ChangePasswordModal";
 
 export default function AccountSettingsSection() {
   // Separate state for account status and theme
@@ -30,6 +35,68 @@ export default function AccountSettingsSection() {
     // Optional: trigger your theme logic here (if using next-themes)
     // theme.setTheme(value === "light" ? "light" : "dark");
   };
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  const handlePasswordSubmit = async (data: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
+    try {
+      const token = localStorage.getItem("hostToken");
+
+      if (!token) {
+        toast.error("No admin token found. Please log in again.", {
+          style: {
+            background: "#101010",
+            color: "#fff",
+            border: "1px solid #D19537",
+          },
+        });
+        return;
+      }
+
+      await axios.put(
+        `${API_BASE_URL}/auth/change-password`,
+        {
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+          confirmPassword: data.confirmPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-tenant-id": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Password updated successfully!", {
+        style: {
+          background: "#101010",
+          color: "#fff",
+          border: "1px solid #D19537",
+        },
+      });
+
+      setShowChangePasswordModal(false);
+    } catch (error: any) {
+      console.error("Password update error:", error);
+
+      const message =
+        error?.response?.data?.message ||
+        "Failed to update password. Please try again.";
+
+      toast.error(message, {
+        style: {
+          background: "#101010",
+          color: "#fff",
+          border: "1px solid red",
+        },
+      });
+    }
+  };
 
   return (
     <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 space-y-6 shadow-sm">
@@ -40,41 +107,13 @@ export default function AccountSettingsSection() {
           Account Settings
         </h3>
       </div>
-      {/* Account Status */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Account Status
-        </label>
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="accountStatus"
-              value="active"
-              checked={formData.accountStatus === "active"}
-              onChange={handleChange}
-              className="w-4 h-4"
-            />
-            <span className="inline-block px-3 py-1 bg-amber-100 text-amber-700 rounded text-sm font-medium">
-              Active
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="accountStatus"
-              value="inactive"
-              checked={formData.accountStatus === "inactive"}
-              onChange={handleChange}
-              className="w-4 h-4"
-            />
-            <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm font-medium">
-              Inactive
-            </span>
-          </label>
-        </div>
-      </div>
+      {/* Change Password Button */}
+      <button
+        onClick={() => setShowChangePasswordModal(true)}
+        className="px-4 py-2 bg-[#D19537] text-white rounded-lg hover:bg-[#c2872f]"
+      >
+        Change Password
+      </button>
       {/* Choose Theme */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -110,21 +149,17 @@ export default function AccountSettingsSection() {
           </label>
         </div>
       </div>
-      {/* Optional Debug Display (for dev preview) */}
-      <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-300">
-        <p>
-          <strong>Status:</strong> {formData.accountStatus}
-        </p>
-        <p>
-          <strong>Theme:</strong> {formTheme.themeStatus}
-        </p>
-      </div>
       {/* Save Button */}
       <div className="flex justify-end">
         <Button className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-2 rounded-lg transition">
           Save
         </Button>
       </div>
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSubmit={handlePasswordSubmit}
+      />
     </div>
   );
 }

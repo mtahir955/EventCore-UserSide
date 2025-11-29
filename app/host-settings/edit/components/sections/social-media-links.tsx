@@ -20,15 +20,12 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
 
   // 🧠 Expose methods to parent
   useImperativeHandle(ref, () => ({
-    validate: () => {
-      const newErrors: Record<string, boolean> = {};
-      Object.entries(links).forEach(([key, value]) => {
-        if (value && !urlPattern.test(value)) newErrors[key] = true;
-      });
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-    },
-    getData: () => links,
+    getData: () => ({
+      socialFacebook: links.facebook,
+      socialInstagram: links.instagram,
+      socialTwitter: links.twitter,
+      socialYoutube: links.youtube,
+    }),
   }));
 
   // Handle input change

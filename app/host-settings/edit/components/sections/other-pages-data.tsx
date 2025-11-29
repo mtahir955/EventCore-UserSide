@@ -24,17 +24,16 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
 
   // 🧠 Expose validate + getData to parent
   useImperativeHandle(ref, () => ({
-    validate: () => {
-      const hasError =
-        (privacyPolicies.length === 0 && faqs.length === 0) ||
-        privacyPolicies.some((p) => !p.title || !p.description) ||
-        faqs.some((f) => !f.question || !f.answer);
-      if (hasError) console.log("⚠️ Please fill required fields");
-      return !hasError;
-    },
     getData: () => ({
+      aboutPage: {
+        title: formData.aboutTitle,
+        subtitle: formData.aboutSubtitle,
+        mainHeadline: formData.mainHeadline,
+        description: formData.description,
+      },
       privacyPolicies,
       faqs,
+      termsAndConditions: formData.termsAndConditions,
     }),
   }));
 

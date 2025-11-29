@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModal from "@/components/modals/LogoutModal";
+import useAuthInterceptor from "@/utils/useAuthInterceptor";
 
 export default function DashboardPage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -19,6 +20,8 @@ export default function DashboardPage() {
 
   const { setTheme } = useTheme();
   const [adminName, setAdminName] = useState("Admin");
+
+  useAuthInterceptor("admin"); // <— activates 401 redirect for this user role
 
   /* ================================
         💡 ENSURE THEME ON FIRST LOAD

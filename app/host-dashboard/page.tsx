@@ -13,6 +13,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { syncThemeWithBackend } from "@/utils/themeManager";
 
 export default function Page() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -84,6 +86,32 @@ export default function Page() {
   ];
 
   const [hostName, setHostName] = useState("Host");
+  const [hostSubdomain, setHostSubdomain] = useState("");
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("hostUser");
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+
+      // Host Name
+      setHostName(user.userName || user.fullName || "Host");
+
+      // Subdomain (optional)
+      setHostSubdomain(user.subDomain || "");
+
+      console.log("HOST DASHBOARD USER:", user);
+      console.log("HOST SUBDOMAIN:", user?.subDomain);
+
+      // Theme (optional)
+      if (user.theme) {
+        syncThemeWithBackend(user);
+      }
+    } else {
+      // Force redirect if no host session found
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   return (
     <main className="min-h-screen w-full bg-[var(--bg-base)] relative overflow-x-hidden">
@@ -98,8 +126,9 @@ export default function Page() {
             </h1>
             <div className="mt-2 flex items-center gap-2">
               <p className="text-[24px] font-black -tracking-[0.02em]">
-                Welcome Host_name
+                Welcome {hostName}
               </p>
+
               <img
                 src="/images/icons/wave.png"
                 alt="wave"
@@ -265,14 +294,6 @@ export default function Page() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 sm:mt-0 mt-20">
-          {/* Withdraw button */}
-          <button
-            className="h-10 sm:hidden rounded-2xl px-5 font-medium text-white"
-            style={{ background: "var(--brand, #D19537)" }}
-            onClick={() => setWithdrawOpen(true)}
-          >
-            Withdraw
-          </button>
           <StatCard
             icon="/images/icons/1.png"
             label="Total Events"
@@ -327,7 +348,10 @@ export default function Page() {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onLogout={() => {
-          localStorage.clear();
+          localStorage.removeItem("hostToken");
+          localStorage.removeItem("hostUser");
+          localStorage.removeItem("hostTheme");
+          localStorage.removeItem("hostTenantId");
           window.location.href = "/sign-in-host";
         }}
       />

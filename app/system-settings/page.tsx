@@ -12,6 +12,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../../config/apiConfig"; // ADD THIS IMPORT
 import { setThemeGlobal } from "@/utils/themeManager";
 import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import useAuthInterceptor from "@/utils/useAuthInterceptor";
 
 export default function SystemSettingsPage() {
   // STATES
@@ -19,6 +20,8 @@ export default function SystemSettingsPage() {
   const [adminName, setAdminName] = useState("");
   const [email, setEmail] = useState("");
   const [subdomain, setSubdomain] = useState("");
+
+  useAuthInterceptor("admin"); // <— activates 401 redirect for this user role
 
   // Fixed values (cannot be changed)
   const systemLanguage = "English";
