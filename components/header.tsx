@@ -7,6 +7,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Menu, X, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useTicketsStore } from "@/store/ticketsStore";
+import { useNotificationsStore } from "@/store/notificationsStore";
 
 export function Header() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -17,15 +19,16 @@ export function Header() {
   const pathname = usePathname();
   const { resolvedTheme, theme, setTheme } = useTheme();
 
+  const tickets = useTicketsStore((state) => state.tickets);
+  const ticketsCount = tickets.length;
+
   // ✅ counters for tickets and notifications
-  const [ticketsCount, setTicketsCount] = useState(2);
-  const [notificationsCount, setNotificationsCount] = useState(5);
+  const notifications = useNotificationsStore((state) => state.notifications);
+  const notificationsCount = notifications.length;
 
   // (Optional) simulate real-time updates every 10s (for demo)
   useEffect(() => {
     const interval = setInterval(() => {
-      setTicketsCount((prev) => prev + Math.floor(Math.random() * 2)); // +0 or +1
-      setNotificationsCount((prev) => prev + Math.floor(Math.random() * 3)); // +0 to +2
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -45,13 +48,8 @@ export function Header() {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Ticket-icon-UCFZYJF7qiaJCM33FtP2mbaaGBEXA9.png",
       label: "Tickets",
       href: "/tickets",
-      counter: ticketsCount, // ✅ live ticket counter
+      counter: ticketsCount,
     },
-    // {
-    //   icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Calendar-icon-ilbfRcUhzwNOhOz3QBIziWCZOK4uDV.png",
-    //   label: "Calendar",
-    //   href: "/upcoming-events",
-    // },
     {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Star%201-KuLCEwN2eSN8JadnILyztdDuDq6Imj.png",
       label: "My Favorites",
@@ -61,7 +59,7 @@ export function Header() {
       icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/notifications-icon-YNBdsbLEdRySLL7MtsqsOP5jYisuIh.png",
       label: "Notifications",
       href: "/notifications",
-      counter: notificationsCount, // ✅ live notifications counter
+      counter: notificationsCount,
     },
   ];
 

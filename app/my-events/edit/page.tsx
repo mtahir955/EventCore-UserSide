@@ -58,13 +58,13 @@ export default function EditEventPage() {
       fullName: "Daniel Carter",
       email: "info@gmail.com",
       phoneNumber: "+44 7412 558492",
-      role: "Both",
+      role: "Check Tickets",
     },
     {
       fullName: "Daniel Carter",
       email: "info@gmail.com",
       phoneNumber: "+44 7412 558492",
-      role: "Ticket Check",
+      role: "Check Tickets",
     },
   ];
 

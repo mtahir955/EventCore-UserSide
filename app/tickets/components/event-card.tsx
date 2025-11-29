@@ -47,7 +47,7 @@ export function EventCard({ image, title, subtitle, price }: EventCardProps) {
         </div>
 
         {/* favorite button (click disabled from triggering redirect) */}
-        <button
+        {/* <button
           aria-label="Favorite event"
           onClick={(e) => e.stopPropagation()}
           className="absolute right-3 sm:right-4 top-3 sm:top-4 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-white dark:bg-[#222222] flex items-center justify-center shadow hover:scale-105 transition-transform"
@@ -59,13 +59,10 @@ export function EventCard({ image, title, subtitle, price }: EventCardProps) {
             height={20}
             className="dark:invert"
           />
-        </button>
+        </button> */}
 
         {/* text content */}
         <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4 text-white">
-          <p className="text-[10px] sm:text-[12px] opacity-80 mb-1">
-            Host By : Eric Grzybowski
-          </p>
           <h4 className="text-[15px] sm:text-[18px] font-semibold leading-tight">
             {title}
           </h4>
@@ -82,10 +79,6 @@ export function EventCard({ image, title, subtitle, price }: EventCardProps) {
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-white" />
               <span>13 June 2025</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-white" />
-              <span>150 Audience</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-white" />

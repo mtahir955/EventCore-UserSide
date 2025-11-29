@@ -4,6 +4,8 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../../config/apiConfig";
+import { syncThemeWithBackend } from "@/utils/themeManager";
+import { SAAS_Tenant_ID } from "../../../config/sasTenantId";
 
 type AuthView = "signin";
 
@@ -39,14 +41,14 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/auth/auth/login`,
+        `${API_BASE_URL}/auth/login`,
         {
           email: formData.email,
           password: formData.password,
         },
         {
           headers: {
-            "x-tenant-id": "fc36df79-3157-44fb-9c5a-fbc938f2fda7",
+            "x-tenant-id": SAAS_Tenant_ID,
             "Content-Type": "application/json",
           },
         }
@@ -54,18 +56,32 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
       toast.success("Login Successful! 🎉");
 
-      console.log("Login Response:", response.data);
+      // Extract from nested response
+      const token = response.data?.data?.access_token;
+      const user = response.data?.data?.user;
 
-      // Save token
-      const token = response.data?.access_token;
-      if (!token) {
-        toast.error("No token received from server");
+      console.log("ACCESS TOKEN:", token);
+      console.log("USER OBJECT:", user);
+      console.log("SUBDOMAIN:", user?.subDomain);
+
+      if (!token || !user) {
+        toast.error("Invalid server response");
         return;
       }
 
+      // Save token
       localStorage.setItem("adminToken", token);
 
-      // Redirect
+      // Save user
+      localStorage.setItem("adminUser", JSON.stringify(user));
+
+      // Save theme
+      localStorage.setItem("adminTheme", user.theme);
+
+      // Sync theme instantly
+      syncThemeWithBackend(user);
+
+      // Redirect to dashboard
       window.location.href = "/admin";
     } catch (error: any) {
       console.error("Login Error:", error);

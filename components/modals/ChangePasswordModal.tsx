@@ -22,6 +22,13 @@ export default function ChangePasswordModal({
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const [errors, setErrors] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+    mismatch: false,
+  });
+
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -29,6 +36,39 @@ export default function ChangePasswordModal({
   });
 
   if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    let newErrors = {
+      currentPassword: form.currentPassword.trim() === "",
+      newPassword: form.newPassword.trim() === "",
+      confirmPassword: form.confirmPassword.trim() === "",
+      mismatch: false,
+    };
+
+    // Password mismatch check
+    if (
+      form.newPassword.trim() !== "" &&
+      form.confirmPassword.trim() !== "" &&
+      form.newPassword !== form.confirmPassword
+    ) {
+      newErrors.mismatch = true;
+    }
+
+    setErrors(newErrors);
+
+    // ❌ if any error exists → block submit
+    if (
+      newErrors.currentPassword ||
+      newErrors.newPassword ||
+      newErrors.confirmPassword ||
+      newErrors.mismatch
+    ) {
+      return;
+    }
+
+    // ✅ submit
+    onSubmit(form);
+  };
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center">
@@ -67,7 +107,13 @@ export default function ChangePasswordModal({
                 onChange={(e) =>
                   setForm({ ...form, currentPassword: e.target.value })
                 }
-                className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] px-4 pr-12 text-gray-900 dark:text-gray-100 outline-none"
+                className={`h-12 w-full rounded-lg px-4 pr-12 outline-none bg-white dark:bg-[#101010] 
+                text-gray-900 dark:text-gray-100
+                border ${
+                  errors.currentPassword
+                    ? "border-red-500"
+                    : "border-gray-300 dark:border-gray-700"
+                }`}
               />
               <button
                 type="button"
@@ -91,7 +137,13 @@ export default function ChangePasswordModal({
                 onChange={(e) =>
                   setForm({ ...form, newPassword: e.target.value })
                 }
-                className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] px-4 pr-12 text-gray-900 dark:text-gray-100 outline-none"
+                className={`h-12 w-full rounded-lg px-4 pr-12 outline-none bg-white dark:bg-[#101010] 
+                text-gray-900 dark:text-gray-100
+                border ${
+                  errors.newPassword
+                    ? "border-red-500"
+                    : "border-gray-300 dark:border-gray-700"
+                }`}
               />
               <button
                 type="button"
@@ -115,7 +167,13 @@ export default function ChangePasswordModal({
                 onChange={(e) =>
                   setForm({ ...form, confirmPassword: e.target.value })
                 }
-                className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] px-4 pr-12 text-gray-900 dark:text-gray-100 outline-none"
+                className={`h-12 w-full rounded-lg px-4 pr-12 outline-none bg-white dark:bg-[#101010] 
+                text-gray-900 dark:text-gray-100
+                border ${
+                  errors.confirmPassword || errors.mismatch
+                    ? "border-red-500"
+                    : "border-gray-300 dark:border-gray-700"
+                }`}
               />
               <button
                 type="button"
@@ -125,12 +183,19 @@ export default function ChangePasswordModal({
                 {showConfirm ? <EyeOff /> : <Eye />}
               </button>
             </div>
+
+            {/* Password mismatch error */}
+            {errors.mismatch && (
+              <p className="text-xs text-red-500 mt-1">
+                New password and Confirm password do not match.
+              </p>
+            )}
           </div>
         </div>
 
         {/* BUTTON */}
         <button
-          onClick={() => onSubmit(form)}
+          onClick={handleSubmit}
           className="mt-6 w-full h-12 rounded-full bg-[#0077F7] hover:bg-blue-600 text-white font-medium transition"
         >
           Change Password

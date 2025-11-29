@@ -10,25 +10,25 @@ import { CalendarModal } from "../../check-out/components/calendar-modal";
 type TicketProps = {
   date: { day: string; month: string; weekday: string; time: string };
   title: string;
-  host: string;
   location: string;
   type: string;
   price: string;
   cta?: string;
   ended?: boolean;
   highlight?: boolean;
+  transferred?: boolean;
 };
 
 export function TicketCard({
   date,
   title,
-  host,
   location,
   type,
   price,
   cta = "View Ticket",
   ended = false,
   highlight = false,
+  transferred = false,
 }: TicketProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -76,9 +76,6 @@ export function TicketCard({
               <h3 className="text-[16px] sm:text-[20px] font-semibold leading-tight">
                 {title}
               </h3>
-              <p className="text-[13px] sm:text-[14px] text-muted-foreground dark:text-gray-400">
-                {host}
-              </p>
 
               <div className="mt-2 space-y-1 sm:space-y-2 text-[13px] sm:text-[14px]">
                 {/* Location */}
@@ -120,18 +117,23 @@ export function TicketCard({
               <div className="text-[16px] sm:text-[22px] font-semibold">
                 {price}
               </div>
-              <button
-                onClick={() => setIsShareModalOpen(true)}
-                className={cn(
-                  "h-8 sm:h-9 rounded-full px-3 sm:px-4 text-[12px] sm:text-[14px] font-medium transition",
-                  ended
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-[#333] dark:text-gray-500"
-                    : "bg-[#0077F7] text-white hover:opacity-90"
-                )}
-                disabled={ended}
-              >
-                {ended ? "Event Ended" : cta}
-              </button>
+              {/* Ticket Status Button */}
+              {transferred ? (
+                <span className="h-8 sm:h-9 rounded-full px-4 text-[12px] sm:text-[14px] font-semibold bg-purple-600 text-white grid place-items-center">
+                  Transferred
+                </span>
+              ) : ended ? (
+                <span className="h-8 sm:h-9 rounded-full px-4 text-[12px] sm:text-[14px] font-semibold bg-gray-300 dark:bg-[#333] text-gray-700 dark:text-gray-400 grid place-items-center">
+                  Event Ended
+                </span>
+              ) : (
+                <button
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="h-8 sm:h-9 rounded-full px-4 text-[12px] sm:text-[14px] font-medium bg-[#0077F7] text-white hover:opacity-90 transition"
+                >
+                  {cta}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -141,7 +143,7 @@ export function TicketCard({
       <TransferTicketModal
         open={transferModalOpen}
         onOpenChange={setTransferModalOpen}
-        ticket={{ date, title, host, location, type, price }}
+        ticket={{ date, title, location, type, price }}
       />
 
       {/* Calendar Modal */}

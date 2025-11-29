@@ -158,21 +158,21 @@ export default function PushNotificationPage() {
                 {/* Dropdown — Positioned relative to icon */}
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
+                    <Link href="/tenant-form">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Create Tenant
+                      </button>
+                    </Link>
+
                     <Link href="/host-management">
                       <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                        Host Management
+                        Tenant Host
                       </button>
                     </Link>
 
-                    <Link href="/host-request">
+                    <Link href="/tenant-management">
                       <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                        Host Request
-                      </button>
-                    </Link>
-
-                    <Link href="/payment-withdrawal">
-                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                        Payment Withdrawal
+                        Tenant Management
                       </button>
                     </Link>
 

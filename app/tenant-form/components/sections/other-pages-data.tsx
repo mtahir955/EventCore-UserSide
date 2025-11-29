@@ -175,7 +175,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
         {/* About Title */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            About Title *
+            About Title <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -190,7 +190,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
         {/* About Subtitle */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            About Subtitle *
+            About Subtitle <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -206,7 +206,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {/* Main Headline */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Main Headline *
+          Main Headline <span className="text-red-500">*</span>
         </label>
         <textarea
           name="mainHeadline"
@@ -221,7 +221,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {/* Description */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description *
+          Description <span className="text-red-500">*</span>
         </label>
         <textarea
           name="description"
@@ -242,7 +242,9 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
         {/* Inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm mb-1">Title *</label>
+            <label className="block text-sm mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               value={privacyForm.title}
@@ -254,7 +256,9 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Description *</label>
+            <label className="block text-sm mb-1">
+              Description <span className="text-red-500">*</span>
+            </label>
             <textarea
               value={privacyForm.description}
               onChange={(e) =>
@@ -271,7 +275,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
 
         <Button
           onClick={handleAddPrivacy}
-          className="bg-[#D19537] text-white flex gap-2 items-center"
+          className="bg-[#D19537] hover:bg-[#e59618] text-white flex gap-2 items-center"
         >
           <PlusCircle size={16} />
           {editingPrivacyIndex !== null ? "Update Policy" : "Add Policy"}
@@ -317,7 +321,9 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
         {/* Inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm mb-1">Question *</label>
+            <label className="block text-sm mb-1">
+              Question <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               value={faqForm.question}
@@ -329,7 +335,9 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Answer *</label>
+            <label className="block text-sm mb-1">
+              Answer <span className="text-red-500">*</span>
+            </label>
             <textarea
               value={faqForm.answer}
               onChange={(e) =>
@@ -343,7 +351,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
 
         <Button
           onClick={handleAddFaq}
-          className="bg-[#D19537] text-white flex gap-2 items-center"
+          className="bg-[#D19537] hover:bg-[#e59618] text-white flex gap-2 items-center"
         >
           <PlusCircle size={16} />
           {editingFaqIndex !== null ? "Update FAQ" : "Add FAQ"}
@@ -385,6 +393,9 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {/* Terms & Conditions */}
       <div className="space-y-2">
         <h4 className="text-lg font-semibold">Terms & Conditions</h4>
+        <label className="block text-sm mb-1">
+          Terms & Conditions <span className="text-red-500">*</span>
+        </label>
 
         <textarea
           name="termsAndConditions"
@@ -400,7 +411,7 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       <div className="flex justify-end pt-4 border-t">
         <Button
           onClick={handleSaveAll}
-          className="bg-[#D19537] text-white px-6 py-2 rounded-lg"
+          className="bg-[#D19537] hover:bg-[#e59618] text-white px-6 py-2 rounded-lg"
         >
           Save
         </Button>

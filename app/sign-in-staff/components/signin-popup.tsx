@@ -40,7 +40,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/auth/auth/login`,
+        `${API_BASE_URL}/auth/login`,
         {
           email: formData.email,
           password: formData.password,

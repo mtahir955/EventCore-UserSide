@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { HostRequestModal } from "./host-request-modal";
 import { API_BASE_URL } from "../../../config/apiConfig";
+import { SAAS_Tenant_ID } from "../../../config/sasTenantId";
 
 export interface Host {
   id: string;
@@ -93,7 +94,7 @@ export function HostRequestTable({
       const res = await fetch(url.toString(), {
         headers: {
           Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": "61b33c05-455f-43e6-89e4-e00a0f2a6c74",
+          "x-tenant-id": SAAS_Tenant_ID,
           "Content-Type": "application/json",
         },
       });
@@ -150,7 +151,7 @@ export function HostRequestTable({
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": "61b33c05-455f-43e6-89e4-e00a0f2a6c74",
+          "x-tenant-id": SAAS_Tenant_ID,
           "Content-Type": "application/json",
         },
       });
@@ -176,7 +177,7 @@ export function HostRequestTable({
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": "61b33c05-455f-43e6-89e4-e00a0f2a6c74",
+          "x-tenant-id": SAAS_Tenant_ID,
           "Content-Type": "application/json",
         },
       });
@@ -230,11 +231,21 @@ export function HostRequestTable({
               className="border-b border-border"
               style={{ background: "rgba(245, 237, 229, 1)" }}
             >
-              <th className="px-6 py-4 text-sm font-semibold">Tenant Name</th>
-              <th className="px-6 py-4 text-sm font-semibold">Email</th>
-              <th className="px-6 py-4 text-sm font-semibold">Category</th>
-              <th className="px-6 py-4 text-sm font-semibold">Sub-domain</th>
-              <th className="px-6 py-4 text-sm font-semibold">Action</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Tenant Name
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Email
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Category
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Sub-domain
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Action
+              </th>
             </tr>
           </thead>
 

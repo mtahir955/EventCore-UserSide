@@ -10,6 +10,7 @@ import { Bell, X, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { API_BASE_URL } from "../../../config/apiConfig";
 import LogoutModal from "@/components/modals/LogoutModal";
+import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 
 // -----------------------------------------
 // Skeleton Component
@@ -51,7 +52,7 @@ export default function HostDetailsPage() {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": "61b33c05-455f-43e6-89e4-e00a0f2a6c74",
+            "x-tenant-id": SAAS_Tenant_ID,
           },
         });
 
@@ -196,33 +197,33 @@ export default function HostDetailsPage() {
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
+                    <Link href="/tenant-form">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Create Tenant
+                      </button>
+                    </Link>
+
                     <Link href="/host-management">
-                      <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                        Host Management
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Host
                       </button>
                     </Link>
 
-                    <Link href="/host-request">
-                      <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                        Host Request
-                      </button>
-                    </Link>
-
-                    <Link href="/payment-withdrawal">
-                      <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                        Payment Withdrawal
+                    <Link href="/tenant-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Management
                       </button>
                     </Link>
 
                     <Link href="/system-settings">
-                      <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
                         System Settings
                       </button>
                     </Link>
 
                     <button
                       onClick={() => setShowLogoutModal(true)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
                     >
                       Logout
                     </button>

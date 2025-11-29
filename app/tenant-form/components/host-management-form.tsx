@@ -10,6 +10,7 @@ import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../../config/apiConfig";
+import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 
 // ==============================
 // TYPES
@@ -145,7 +146,7 @@ export default function HostManagementForm() {
       const res = await fetch(`${API_BASE_URL}/admin/tenants`, {
         method: "POST",
         headers: {
-          "x-tenant-id": "fc36df79-3157-44fb-9c5a-fbc938f2fda7",
+          "x-tenant-id": SAAS_Tenant_ID,
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },

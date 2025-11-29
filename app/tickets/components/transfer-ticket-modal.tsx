@@ -12,7 +12,6 @@ type TransferTicketModalProps = {
   ticket: {
     date: { day: string; month: string; weekday: string; time: string };
     title: string;
-    host: string;
     location: string;
     type: string;
     price: string;
@@ -139,9 +138,6 @@ export function TransferTicketModal({
                   <h3 className="text-[15px] md:text-[16px] font-semibold text-black dark:text-white">
                     {ticket.title}
                   </h3>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {ticket.host}
-                  </p>
 
                   <div className="mt-2 space-y-1 text-[12px] text-black dark:text-gray-200">
                     <div className="flex items-center gap-1.5">

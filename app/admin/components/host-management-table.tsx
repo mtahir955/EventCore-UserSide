@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../../config/apiConfig";
+import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 
 interface Host {
   id: string;
@@ -79,7 +80,7 @@ export function HostManagementTable({
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "X-Tenant-ID": TENANT_ID,
+            "x-tenant-id": SAAS_Tenant_ID,
             Authorization: `Bearer ${token}`,
           },
         });

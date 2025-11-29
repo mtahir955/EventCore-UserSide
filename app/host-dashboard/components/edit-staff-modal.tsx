@@ -21,7 +21,7 @@ export function EditStaffModal({
   onSave,
 }: EditStaffModalProps) {
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([
-    { fullName: "", email: "", phoneNumber: "", role: "Both" },
+    { fullName: "", email: "", phoneNumber: "", role: "Check Tickets" },
   ]);
 
   if (!isOpen) return null;
@@ -29,7 +29,7 @@ export function EditStaffModal({
   const handleAddMore = () => {
     setStaffMembers([
       ...staffMembers,
-      { fullName: "", email: "", phoneNumber: "", role: "Both" },
+      { fullName: "", email: "", phoneNumber: "", role: "Check Tickets" },
     ]);
   };
 
@@ -128,7 +128,7 @@ export function EditStaffModal({
                 </label>
 
                 <div className="flex flex-wrap items-center gap-8">
-                  {["Check Tickets", "Sold Tickets", "Both"].map((role) => (
+                  {["Check Tickets"].map((role) => (
                     <label
                       key={role}
                       className="flex items-center gap-2 cursor-pointer select-none"

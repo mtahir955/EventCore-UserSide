@@ -41,7 +41,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
 
       // Required fields trimmed
       if (!formData.dbName.trim()) newErrors.dbName = true;
-      if (!formData.dbUsername.trim()) newErrors.dbUsername = true;
+      // if (!formData.dbUsername.trim()) newErrors.dbUsername = true;
 
       setErrors(newErrors);
 
@@ -103,7 +103,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
       </div>
 
       {/* Database Username */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
           Database Username <span className="text-red-500">*</span>
         </label>
@@ -120,10 +120,10 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
                 : "border-gray-300 dark:border-gray-700"
             } bg-background dark:bg-[#101010] text-foreground dark:text-white`}
         />
-      </div>
+      </div> */}
 
       {/* Database Password (Optional) */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
           Database Password (optional)
         </label>
@@ -135,10 +135,10 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-background dark:bg-[#101010] text-foreground dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]"
         />
-      </div>
+      </div> */}
 
       {/* Database SMTP (Optional) */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground dark:text-gray-300">
           Database SMTP (optional)
         </label>
@@ -150,7 +150,7 @@ const DatabaseConfigurationSection = forwardRef((props, ref) => {
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-background dark:bg-[#101010] text-foreground dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]"
         />
-      </div>
+      </div> */}
 
       {/* Save Button */}
       <div className="flex justify-end">

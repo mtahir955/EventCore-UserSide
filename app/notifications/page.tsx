@@ -3,8 +3,12 @@
 import { Header } from "../../components/header";
 import { NotificationItem } from "../notifications/components/notification-item";
 import { Footer } from "../../components/footer";
+import { useNotificationsStore } from "@/store/notificationsStore";
+import { useEffect } from "react";
 
 export default function Page() {
+  const { setNotifications } = useNotificationsStore();
+
   const items = [
     {
       title: "Event Added Successfully",
@@ -91,6 +95,9 @@ export default function Page() {
         "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Frame%20%285%29-A3mi2ahLSWY4LcbD3HISNSdxWRTMIL.png",
     },
   ];
+  useEffect(() => {
+    setNotifications(items);
+  }, []);
 
   return (
     <div className="notification-page flex flex-col min-h-screen bg-white dark:bg-[#101010] transition-colors duration-300">
