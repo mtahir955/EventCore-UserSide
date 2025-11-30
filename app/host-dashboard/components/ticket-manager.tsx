@@ -6,6 +6,10 @@ import { X, LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 export default function TicketManager() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -33,89 +37,7 @@ export default function TicketManager() {
   // Transferable (boolean)
   const [transferable, setTransferable] = useState(false);
 
-  const [tickets, setTickets] = useState([
-    {
-      id: "1",
-      name: "ABC Ticket",
-      type: "General", // NEW
-      event: "Tech Conference 2025",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 199.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "2",
-      name: "AAA Ticket",
-      type: "VIP", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: false, // NEW
-    },
-    {
-      id: "3",
-      name: "BBB Ticket",
-      type: "General", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "4",
-      name: "CCC Ticket",
-      type: "General", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "5",
-      name: "DDD Ticket",
-      type: "VIP", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "6",
-      name: "EEE Ticket",
-      type: "VIP", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "7",
-      name: "FFF Ticket",
-      type: "VIP", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "8",
-      name: "GGG Ticket",
-      type: "VIP", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-    {
-      id: "9",
-      name: "HHH Ticket",
-      type: "VIP", // NEW
-      event: "Lahore Music Fest",
-      date: "2025-12-05 18:00", // FULL DATE & TIME
-      price: 299.99,
-      transferable: true, // NEW
-    },
-  ]);
+  const [tickets, setTickets] = useState<any[]>([]);
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -148,24 +70,43 @@ export default function TicketManager() {
     setEditingTicket(id);
 
     const t = tickets.find((x) => x.id === id);
+
     if (t) {
-      setTicketEditName(t.name);
-      setTicketEditType(t.type);
-      setTicketEditPrice(t.price);
-      setTicketEditTransferable(t.transferable);
-      setTicketPrice(t.price);
-      setTransferable(t.transferable);
+      setTicketName(t.name);
+      setTicketType(t.type);
+      setTicketPrice(Number(t.price));
+      setTransferable(t.isTransferable);
+      setIsRefundable(t.isRefundable);
+      setIsEarlyBird(t.earlyBirdOption);
+      setEarlyBirdQuantity(t.earlyBirdQuantity ?? null);
+
+      setEnableDiscount(!!t.discount);
+      setDiscountPercent(t.discount?.toString() || "");
+      setCouponCode(t.couponCode || "");
     }
   };
 
-  const filteredTickets = tickets.filter(
-    (t) =>
-      t.event.toLowerCase().includes(searchEvent.toLowerCase()) &&
-      (ticketType === "All" || t.name.includes(ticketType)) &&
-      (ticketName === "" ||
-        t.name.toLowerCase().includes(ticketName.toLowerCase())) &&
-      (searchDate === "" || t.date === searchDate)
-  );
+  const filteredTickets = Array.isArray(tickets)
+    ? tickets.filter((t) => {
+        const matchesEvent =
+          searchEvent.trim() === "" ||
+          t.event?.id?.toLowerCase().includes(searchEvent.toLowerCase());
+
+        const matchesType =
+          ticketType === "All" ||
+          t.type?.toLowerCase() === ticketType.toLowerCase();
+
+        const matchesName =
+          ticketName.trim() === "" ||
+          t.name?.toLowerCase().includes(ticketName.toLowerCase());
+
+        const matchesDate =
+          searchDate.trim() === "" ||
+          (t.dateTime && t.dateTime.startsWith(searchDate));
+
+        return matchesEvent && matchesType && matchesName && matchesDate;
+      })
+    : [];
 
   // Dummy notifications
   const notifications = [
@@ -202,24 +143,62 @@ export default function TicketManager() {
 
   const [showToast, setShowToast] = useState(false);
 
-  const handleSaveChanges = () => {
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === editingTicket
-          ? {
-              ...t,
-              name: ticketEditName,
-              type: ticketEditType,
-              price: ticketEditPrice,
-              transferable: ticketEditTransferable,
-            }
-          : t
-      )
-    );
+  const handleSaveChanges = async () => {
+    if (!editingTicket) {
+      toast.error("No ticket selected!");
+      return;
+    }
 
-    setEditingTicket(null);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    const token = localStorage.getItem("hostToken");
+    if (!token) {
+      toast.error("You are not logged in!");
+      return;
+    }
+
+    const payload = {
+      name: ticketName,
+      type: ticketType.toLowerCase(), // "general" | "vip"
+      price: ticketPrice.toString(), // backend needs string
+      isTransferable: transferable,
+      isRefundable: isRefundable,
+      earlyBirdOption: isEarlyBird,
+      earlyBirdQuantity: isEarlyBird ? earlyBirdQuantity : null,
+      couponCode: enableDiscount ? couponCode : null,
+      discount: enableDiscount ? discountPercent : null,
+      minOrder,
+      maxOrder,
+    };
+
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/tickets/${editingTicket}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("UPDATE SUCCESS", response.data);
+
+      toast.success("Ticket updated successfully!", {
+        position: "bottom-right",
+      });
+
+      // Refresh updated tickets
+      await fetchTickets();
+
+      // Close modal
+      setEditingTicket(null);
+    } catch (error: any) {
+      console.error("Ticket update error:", error);
+      toast.error(error?.response?.data?.message || "Failed to update ticket", {
+        position: "bottom-right",
+      });
+    }
   };
 
   const [earlyBirdQuantity, setEarlyBirdQuantity] = useState<number | null>(
@@ -229,29 +208,29 @@ export default function TicketManager() {
   const [hostName, setHostName] = useState("Host");
 
   useEffect(() => {
-      const savedUser = localStorage.getItem("hostUser");
-  
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-  
-        // Host Name
-        setHostName(user.userName || user.fullName || "Host");
-  
-        // Subdomain (optional)
-        // setHostSubdomain(user.subDomain || "");
-  
-        console.log("HOST DASHBOARD USER:", user);
-        console.log("HOST SUBDOMAIN:", user?.subDomain);
-  
-        // Theme (optional)
-        if (user.theme) {
-          // syncThemeWithBackend(user);
-        }
-      } else {
-        // Force redirect if no host session found
-        window.location.href = "/sign-in-host";
+    const savedUser = localStorage.getItem("hostUser");
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+
+      // Host Name
+      setHostName(user.userName || user.fullName || "Host");
+
+      // Subdomain (optional)
+      // setHostSubdomain(user.subDomain || "");
+
+      console.log("HOST DASHBOARD USER:", user);
+      console.log("HOST SUBDOMAIN:", user?.subDomain);
+
+      // Theme (optional)
+      if (user.theme) {
+        // syncThemeWithBackend(user);
       }
-    }, []);
+    } else {
+      // Force redirect if no host session found
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 5;
@@ -265,6 +244,41 @@ export default function TicketManager() {
 
   // Total number of pages
   const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
+
+  // 🔥 Fetch Tickets From API
+  const fetchTickets = async () => {
+    try {
+      const token = localStorage.getItem("hostToken");
+
+      if (!token) {
+        toast.error("You are not logged in!");
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/tickets`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Tenant-ID": HOST_Tenant_ID,
+        },
+      });
+
+      console.log("API Tickets:", response.data);
+
+      // 🟢 Correct extraction of tickets array
+      const apiTickets = Array.isArray(response.data?.data?.tickets)
+        ? response.data.data.tickets
+        : [];
+
+      setTickets(apiTickets);
+    } catch (error) {
+      console.error("Ticket Fetch Error:", error);
+      toast.error("Failed to load tickets!");
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans dark:bg-[#101010]">
@@ -503,10 +517,12 @@ export default function TicketManager() {
                       </td>
 
                       {/* Event Name */}
-                      <td className="py-3 text-sm">{ticket.event}</td>
+                      <td className="py-3 text-sm">{ticket.eventName}</td>
 
                       {/* Date & Time */}
-                      <td className="py-3 text-sm">{ticket.date}</td>
+                      <td className="py-3 text-sm">
+                        {ticket.dateTime || "N/A"}
+                      </td>
 
                       {/* Price */}
                       <td className="py-3 text-sm">${ticket.price}</td>
@@ -515,12 +531,12 @@ export default function TicketManager() {
                       <td className="py-3 text-sm">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            ticket.transferable
+                            ticket.isTransferable
                               ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
                               : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
                           }`}
                         >
-                          {ticket.transferable
+                          {ticket.isTransferable
                             ? "Transferable"
                             : "Untransferable"}
                         </span>
@@ -567,12 +583,15 @@ export default function TicketManager() {
                   {/* Details */}
                   <div className="space-y-1 text-[13px] text-gray-600 dark:text-gray-300">
                     <p>
-                      <span className="font-medium">Event:</span> {ticket.event}
+                      <span className="font-medium">Event:</span>{" "}
+                      {ticket.event?.id}
                     </p>
+
                     <p>
                       <span className="font-medium">Date & Time:</span>{" "}
-                      {ticket.date}
+                      {ticket.dateTime || "N/A"}
                     </p>
+
                     <p>
                       <span className="font-medium">Price:</span> $
                       {ticket.price}
@@ -580,7 +599,7 @@ export default function TicketManager() {
 
                     <p>
                       <span className="font-medium">Status:</span>{" "}
-                      {ticket.transferable ? (
+                      {ticket.isTransferable ? (
                         <span className="text-green-600 font-semibold">
                           Transferable
                         </span>
@@ -769,30 +788,6 @@ export default function TicketManager() {
                 </div>
               )}
 
-              {/* Max Orders */}
-              <div className="col-span-1 sm:col-span-2">
-                <label className="text-sm font-medium mb-2 block">
-                  Max Orders Range
-                </label>
-                <div className="flex flex-col xs:flex-row sm:flex-row sm:items-center gap-3">
-                  <input
-                    type="number"
-                    value={minOrder}
-                    onChange={(e) => setMinOrder(Number(e.target.value))}
-                    className="w-full sm:w-28 h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
-                  />
-                  <span className="text-gray-500 dark:text-gray-400 text-center sm:text-left">
-                    to
-                  </span>
-                  <input
-                    type="number"
-                    value={maxOrder}
-                    onChange={(e) => setMaxOrder(Number(e.target.value))}
-                    className="w-full sm:w-28 h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
-                  />
-                </div>
-              </div>
-
               {/* Enable Discount */}
               <div className="col-span-1 sm:col-span-2">
                 <ToggleRow
@@ -889,7 +884,7 @@ export default function TicketManager() {
         />
 
         {/* ✅ Toast Notification */}
-        {showToast && (
+        {/* {showToast && (
           <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
             <div className="flex items-center gap-3 bg-[#D19537] text-white px-5 py-3 rounded-lg shadow-lg text-sm font-medium dark:bg-[#e4a645] transition-all">
               <svg
@@ -909,7 +904,7 @@ export default function TicketManager() {
               <span>Ticket changes saved successfully!</span>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

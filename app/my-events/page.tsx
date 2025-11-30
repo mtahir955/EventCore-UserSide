@@ -8,6 +8,10 @@ import { Menu, X, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import axios from "axios";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import toast from "react-hot-toast";
 
 type Props = {
   imageSrc: string;
@@ -21,100 +25,100 @@ type Props = {
   time: string;
 };
 
-const dummyEvents: Props[] = [
-  {
-    imageSrc: "/images/event-1.png",
-    price: "1500",
-    hostby: "Ali Khan",
-    title: "Lahore Music Fest 2025",
-    description:
-      "Join us for an unforgettable night of music, food, and lights in Lahore.",
-    location: "Lahore Expo Center",
-    date: "2025-11-12",
-    audience: 5000,
-    time: "19:00",
-  },
-  {
-    imageSrc: "/images/event-2.png",
-    price: "0",
-    hostby: "ITU CS Department",
-    title: "Tech Conference Pakistan",
-    description:
-      "A gathering of tech enthusiasts discussing AI, Blockchain, and Web3.",
-    location: "Islamabad Convention Hall",
-    date: "2025-11-25",
-    audience: 1200,
-    time: "10:00",
-  },
-  {
-    imageSrc: "/images/event-1.png",
-    price: "1000",
-    hostby: "Startup Lahore",
-    title: "Startup Meetup 2025",
-    description:
-      "Connect with founders, investors, and innovators across Pakistan.",
-    location: "Lahore Innovation Hub",
-    date: "2025-12-18",
-    audience: 800,
-    time: "15:00",
-  },
-  {
-    imageSrc: "/images/event-2.png",
-    price: "500",
-    hostby: "Foodies United",
-    title: "Karachi Food Festival",
-    description:
-      "Experience cuisines from across Pakistan with live cooking stations.",
-    location: "Karachi Beach Arena",
-    date: "2025-12-05",
-    audience: 3000,
-    time: "12:00",
-  },
-  {
-    imageSrc: "/images/event-1.png",
-    price: "0",
-    hostby: "Art Council",
-    title: "Art Exhibition 2025",
-    description: "Showcasing creative art pieces from young Pakistani artists.",
-    location: "Multan Art Gallery",
-    date: "2026-01-10",
-    audience: 600,
-    time: "11:00",
-  },
-  {
-    imageSrc: "/images/event-2.png",
-    price: "2000",
-    hostby: "Pakistan Sports Board",
-    title: "National Sports Gala",
-    description: "A nationwide competition featuring top athletes and teams.",
-    location: "Faisalabad Sports Complex",
-    date: "2026-02-20",
-    audience: 7000,
-    time: "09:00",
-  },
-  {
-    imageSrc: "/images/event-2.png",
-    price: "2000",
-    hostby: "Pakistan Sports Board",
-    title: "National Sports Gala",
-    description: "A nationwide competition featuring top athletes and teams.",
-    location: "Faisalabad Sports Complex",
-    date: "2026-02-20",
-    audience: 7000,
-    time: "09:00",
-  },
-  {
-    imageSrc: "/images/event-2.png",
-    price: "2000",
-    hostby: "Pakistan Sports Board",
-    title: "National Sports Gala",
-    description: "A nationwide competition featuring top athletes and teams.",
-    location: "Faisalabad Sports Complex",
-    date: "2026-02-20",
-    audience: 7000,
-    time: "09:00",
-  },
-];
+// const dummyEvents: Props[] = [
+//   {
+//     imageSrc: "/images/event-1.png",
+//     price: "1500",
+//     hostby: "Ali Khan",
+//     title: "Lahore Music Fest 2025",
+//     description:
+//       "Join us for an unforgettable night of music, food, and lights in Lahore.",
+//     location: "Lahore Expo Center",
+//     date: "2025-11-12",
+//     audience: 5000,
+//     time: "19:00",
+//   },
+//   {
+//     imageSrc: "/images/event-2.png",
+//     price: "0",
+//     hostby: "ITU CS Department",
+//     title: "Tech Conference Pakistan",
+//     description:
+//       "A gathering of tech enthusiasts discussing AI, Blockchain, and Web3.",
+//     location: "Islamabad Convention Hall",
+//     date: "2025-11-25",
+//     audience: 1200,
+//     time: "10:00",
+//   },
+//   {
+//     imageSrc: "/images/event-1.png",
+//     price: "1000",
+//     hostby: "Startup Lahore",
+//     title: "Startup Meetup 2025",
+//     description:
+//       "Connect with founders, investors, and innovators across Pakistan.",
+//     location: "Lahore Innovation Hub",
+//     date: "2025-12-18",
+//     audience: 800,
+//     time: "15:00",
+//   },
+//   {
+//     imageSrc: "/images/event-2.png",
+//     price: "500",
+//     hostby: "Foodies United",
+//     title: "Karachi Food Festival",
+//     description:
+//       "Experience cuisines from across Pakistan with live cooking stations.",
+//     location: "Karachi Beach Arena",
+//     date: "2025-12-05",
+//     audience: 3000,
+//     time: "12:00",
+//   },
+//   {
+//     imageSrc: "/images/event-1.png",
+//     price: "0",
+//     hostby: "Art Council",
+//     title: "Art Exhibition 2025",
+//     description: "Showcasing creative art pieces from young Pakistani artists.",
+//     location: "Multan Art Gallery",
+//     date: "2026-01-10",
+//     audience: 600,
+//     time: "11:00",
+//   },
+//   {
+//     imageSrc: "/images/event-2.png",
+//     price: "2000",
+//     hostby: "Pakistan Sports Board",
+//     title: "National Sports Gala",
+//     description: "A nationwide competition featuring top athletes and teams.",
+//     location: "Faisalabad Sports Complex",
+//     date: "2026-02-20",
+//     audience: 7000,
+//     time: "09:00",
+//   },
+//   {
+//     imageSrc: "/images/event-2.png",
+//     price: "2000",
+//     hostby: "Pakistan Sports Board",
+//     title: "National Sports Gala",
+//     description: "A nationwide competition featuring top athletes and teams.",
+//     location: "Faisalabad Sports Complex",
+//     date: "2026-02-20",
+//     audience: 7000,
+//     time: "09:00",
+//   },
+//   {
+//     imageSrc: "/images/event-2.png",
+//     price: "2000",
+//     hostby: "Pakistan Sports Board",
+//     title: "National Sports Gala",
+//     description: "A nationwide competition featuring top athletes and teams.",
+//     location: "Faisalabad Sports Complex",
+//     date: "2026-02-20",
+//     audience: 7000,
+//     time: "09:00",
+//   },
+// ];
 
 export default function MyEventsPage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -124,7 +128,7 @@ export default function MyEventsPage() {
   const [minTicket, setMinTicket] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [filteredEvents, setFilteredEvents] = useState(dummyEvents);
+  const [filteredEvents, setFilteredEvents] = useState<Props[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Dropdowns
@@ -162,7 +166,7 @@ export default function MyEventsPage() {
   }, []);
 
   const handleFilter = () => {
-    let results = dummyEvents.filter((event) => {
+    let results = events.filter((event) => {
       const matchesSearch = event.title
         .toLowerCase()
         .includes(search.toLowerCase());
@@ -193,7 +197,7 @@ export default function MyEventsPage() {
     setMinTicket("");
     setDate("");
     setTime("");
-    setFilteredEvents(dummyEvents);
+    setFilteredEvents(events);
     setCurrentPage(1); // ⭐ Reset pagination
   };
 
@@ -201,29 +205,29 @@ export default function MyEventsPage() {
   const [hostName, setHostName] = useState("Host");
 
   useEffect(() => {
-      const savedUser = localStorage.getItem("hostUser");
-  
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-  
-        // Host Name
-        setHostName(user.userName || user.fullName || "Host");
-  
-        // Subdomain (optional)
-        // setHostSubdomain(user.subDomain || "");
-  
-        console.log("HOST DASHBOARD USER:", user);
-        console.log("HOST SUBDOMAIN:", user?.subDomain);
-  
-        // Theme (optional)
-        if (user.theme) {
-          // syncThemeWithBackend(user);
-        }
-      } else {
-        // Force redirect if no host session found
-        window.location.href = "/sign-in-host";
+    const savedUser = localStorage.getItem("hostUser");
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+
+      // Host Name
+      setHostName(user.userName || user.fullName || "Host");
+
+      // Subdomain (optional)
+      // setHostSubdomain(user.subDomain || "");
+
+      console.log("HOST DASHBOARD USER:", user);
+      console.log("HOST SUBDOMAIN:", user?.subDomain);
+
+      // Theme (optional)
+      if (user.theme) {
+        // syncThemeWithBackend(user);
       }
-    }, []);
+    } else {
+      // Force redirect if no host session found
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const eventsPerPage = 6;
@@ -239,6 +243,65 @@ export default function MyEventsPage() {
       setCurrentPage(1);
     }
   }, [filteredEvents, totalPages]);
+
+  const [events, setEvents] = useState<Props[]>([]);
+
+  const fetchEvents = async () => {
+    try {
+      let rawToken =
+        localStorage.getItem("hostToken") ||
+        localStorage.getItem("hostUser") ||
+        localStorage.getItem("token");
+
+      let token = null;
+
+      // Universal token cleaner
+      try {
+        const parsed = JSON.parse(rawToken || "{}");
+        token = parsed?.token || parsed;
+      } catch {
+        token = rawToken;
+      }
+
+      if (!token) {
+        toast.error("Missing authentication token");
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/events`, {
+        headers: {
+          "X-Tenant-ID": HOST_Tenant_ID,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("EVENTS FROM BACKEND:", response.data);
+
+      // REPLACE your mapped events array with this:
+      const mapped = response.data?.data?.map((ev: any) => ({
+        id: ev.id, // ⭐ IMPORTANT
+        imageSrc: ev.bannerImage || "/images/event-1.png",
+        price: ev.tickets?.[0]?.price || "0",
+        hostby: ev.hostName || "Unknown",
+        title: ev.eventTitle,
+        description: ev.eventDescription,
+        location: ev.eventLocation,
+        date: ev.startDate,
+        time: ev.startTime,
+        audience: ev.audienceCount || 0,
+      }));
+
+      setEvents(mapped || []);
+      setFilteredEvents(mapped || []);
+    } catch (err) {
+      console.log("Failed to fetch events:", err);
+      toast.error("Failed to load events");
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFB] relative">
@@ -520,6 +583,7 @@ export default function MyEventsPage() {
             currentEvents.map((event, index) => (
               <MyEventsCard
                 key={index}
+                id={event.id} // ⭐ ADDED ID
                 imageSrc={event.imageSrc}
                 price={event.price}
                 isEditEvent={true}

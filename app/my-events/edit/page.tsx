@@ -10,6 +10,11 @@ import { X, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import axios from "axios";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function EditEventPage() {
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
@@ -118,29 +123,29 @@ export default function EditEventPage() {
   const [hostName, setHostName] = useState("Host");
 
   useEffect(() => {
-      const savedUser = localStorage.getItem("hostUser");
-  
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-  
-        // Host Name
-        setHostName(user.userName || user.fullName || "Host");
-  
-        // Subdomain (optional)
-        // setHostSubdomain(user.subDomain || "");
-  
-        console.log("HOST DASHBOARD USER:", user);
-        console.log("HOST SUBDOMAIN:", user?.subDomain);
-  
-        // Theme (optional)
-        if (user.theme) {
-          // syncThemeWithBackend(user);
-        }
-      } else {
-        // Force redirect if no host session found
-        window.location.href = "/sign-in-host";
+    const savedUser = localStorage.getItem("hostUser");
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+
+      // Host Name
+      setHostName(user.userName || user.fullName || "Host");
+
+      // Subdomain (optional)
+      // setHostSubdomain(user.subDomain || "");
+
+      console.log("HOST DASHBOARD USER:", user);
+      console.log("HOST SUBDOMAIN:", user?.subDomain);
+
+      // Theme (optional)
+      if (user.theme) {
+        // syncThemeWithBackend(user);
       }
-    }, []);
+    } else {
+      // Force redirect if no host session found
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const attendeesPerPage = 5;
@@ -154,6 +159,122 @@ export default function EditEventPage() {
 
   // Total pages
   const totalPages = Math.ceil(attendees.length / attendeesPerPage);
+
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("id");
+
+  const [eventData, setEventData] = useState<any>(null);
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const getToken = () => {
+    let rawToken =
+      localStorage.getItem("hostToken") ||
+      localStorage.getItem("hostUser") ||
+      localStorage.getItem("token");
+
+    try {
+      const parsed = JSON.parse(rawToken || "{}");
+      return parsed?.token || parsed;
+    } catch {
+      return rawToken;
+    }
+  };
+
+  const fetchEventDetails = async () => {
+    if (!eventId) {
+      console.log("❌ No Event ID provided");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const token = getToken();
+
+      const response = await axios.get(`${API_BASE_URL}/events/${eventId}`, {
+        headers: {
+          "X-Tenant-ID": HOST_Tenant_ID,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = response.data?.data || response.data;
+
+      console.log("EVENT DETAILS:", data);
+
+      setEventData(data);
+
+      // SET FORM FIELDS
+      setEventTitle(data.eventTitle || "");
+      setEventLocation(data.eventLocation || "");
+
+      // Format date → input accepts YYYY-MM-DD
+      setEventDate(data.startDate || "");
+
+      // Format time → "04:00:00" → "04:00"
+      setStartTime(data.startTime?.slice(0, 5) || "");
+      setEndTime(data.endTime?.slice(0, 5) || "");
+
+      if (data?.bannerImage) {
+        setPreviewImage(data.bannerImage);
+      }
+    } catch (err) {
+      console.error("Failed to load event", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEventDetails();
+  }, [eventId]);
+
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(
+    null
+  );
+
+  const handleUpdateEvent = async () => {
+    if (!eventId) return toast.error("Missing Event ID");
+
+    try {
+      const token = getToken();
+
+      const formData = new FormData();
+      formData.append("eventTitle", eventTitle);
+      formData.append("eventLocation", eventLocation);
+      formData.append("startDate", eventDate);
+      formData.append("endDate", eventDate);
+      formData.append("startTime", startTime);
+      formData.append("endTime", endTime);
+
+      if (selectedBannerFile) {
+        formData.append("bannerImage", selectedBannerFile);
+      }
+
+      const response = await axios.put(
+        `${API_BASE_URL}/events/${eventId}`,
+        formData,
+        {
+          headers: {
+            "X-Tenant-ID": HOST_Tenant_ID,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("UPDATED SUCCESS:", response.data);
+      toast.success("Event updated successfully!");
+    } catch (err) {
+      console.error("Update failed:", err);
+      toast.error("Failed to update event. Try again.");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFB] relative">
@@ -366,7 +487,10 @@ export default function EditEventPage() {
               >
                 Staff Management
               </button>
-              <button className="flex-shrink-0 px-4 sm:px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-[#D19537] whitespace-nowrap">
+              <button
+                onClick={handleUpdateEvent}
+                className="flex-shrink-0 px-4 sm:px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-[#D19537] whitespace-nowrap"
+              >
                 Mark as Complete
               </button>
             </div>
@@ -403,6 +527,8 @@ export default function EditEventPage() {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
+                  setSelectedBannerFile(file);
+
                   const reader = new FileReader();
                   reader.onload = (event) => {
                     setPreviewImage(event.target?.result as string);
@@ -421,7 +547,8 @@ export default function EditEventPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Starry Nights Music Fest"
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
               />
             </div>
@@ -433,17 +560,22 @@ export default function EditEventPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="California"
+                  value={eventLocation}
+                  onChange={(e) => setEventLocation(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Date</label>
-                <input
-                  type="text"
-                  defaultValue="13/06/2025"
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] 
+                 bg-white dark:bg-[#101010] text-sm pr-10"
+                  />
+                </div>
               </div>
             </div>
 
@@ -452,48 +584,45 @@ export default function EditEventPage() {
                 <label className="block text-sm font-medium mb-2">
                   Start Time
                 </label>
-                <input
-                  type="text"
-                  defaultValue="08:00 PM"
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
-                />
+                <div className="relative">
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] 
+                 bg-white dark:bg-[#101010] text-sm pr-10"
+                  />
+                </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2">
                   End Time
                 </label>
-                <input
-                  type="text"
-                  defaultValue="08:00 PM"
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
-                />
+                <div className="relative">
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] 
+                 bg-white dark:bg-[#101010] text-sm pr-10"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Ticket Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 mb-6">
             {/* Total Tickets */}
             <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
               <div className="text-sm font-medium mb-4">Total Tickets</div>
               <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress value={120} max={120} color="#D19537" />
-              </div>
-            </div>
-
-            {/* Booked Tickets */}
-            <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
-              <div className="text-sm font-medium mb-4">Booked Tickets</div>
-              <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress value={91} max={120} color="#D19537" />
-              </div>
-            </div>
-
-            {/* Remaining Tickets */}
-            <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
-              <div className="text-sm font-medium mb-4">Remaining Tickets</div>
-              <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress value={29} max={120} color="#D19537" />
+                <CircularProgress
+                  value={eventData?.tickets?.length || 0}
+                  max={eventData?.tickets?.length || 1}
+                  color="#D19537"
+                />
               </div>
             </div>
           </div>
