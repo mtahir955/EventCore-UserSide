@@ -36,6 +36,11 @@ export default function Page() {
     { id: 3, message: "New user message received." },
   ];
 
+  useEffect(() => {
+    const saved = localStorage.getItem("hostTheme");
+    if (saved) setTheme(saved);
+  }, []);
+
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

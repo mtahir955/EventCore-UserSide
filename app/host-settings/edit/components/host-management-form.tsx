@@ -1,55 +1,77 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import BasicInformationSection from "./sections/basic-information";
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
 import OtherPagesDataSection from "./sections/other-pages-data";
 import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import toast from "react-hot-toast";
-import axios from "axios";
-import { useRef } from "react";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 export default function HostManagementForm() {
   const router = useRouter();
 
-  // 🔗 Collect Data from Child Sections
-  const basicRef: any = useRef();
-  const contactRef: any = useRef();
-  const aboutRef: any = useRef();
-  const socialRef: any = useRef();
+  const [hostData, setHostData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 🔙 Back
-  const handleBack = () => {
-    router.push("/host-settings");
-  };
+  const accountRef = useRef();
+  const contactRef = useRef();
+  const otherRef = useRef();
+  const socialRef = useRef();
 
-  // 💾 Final Update API
-  const handleUpdateHost = async () => {
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        let token = localStorage.getItem("hostToken");
+
+        try {
+          const parsed = JSON.parse(token!);
+          if (parsed?.token) token = parsed.token;
+        } catch {}
+
+        const res = await axios.get(`${API_BASE_URL}/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-tenant-id": HOST_Tenant_ID,
+          },
+        });
+
+        setHostData(res.data.data);
+      } catch (err) {
+        console.log("❌ Fetch failed", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!hostData) return;
+
+    const finalPayload = {
+      ...accountRef.current?.getData?.(),
+      ...contactRef.current?.getData?.(),
+      ...socialRef.current?.getData?.(),
+      ...otherRef.current?.getData?.(),
+    };
+
+    console.log("🔥 FINAL PAYLOAD SENT TO /users/me", finalPayload);
+
+    let token = localStorage.getItem("hostToken");
     try {
-      const token = localStorage.getItem("hostToken");
-      if (!token) return toast.error("No host token found");
+      const parsed = JSON.parse(token!);
+      if (parsed?.token) token = parsed.token;
+    } catch {}
 
-      // 💡 Collect data from sections
-      const basicInfo = basicRef.current?.getData() || {};
-      const contactInfo = contactRef.current?.getData() || {};
-      const aboutInfo = aboutRef.current?.getData() || {};
-      const socialLinks = socialRef.current?.getData() || {};
-
-      const payload = {
-        ...basicInfo,
-        ...contactInfo,
-        ...aboutInfo,
-        ...socialLinks,
-      };
-
-      console.log("📤 Updating Host With Payload:", payload);
-
-      const response = await axios.put(`${API_BASE_URL}/users/me`, payload, {
+    try {
+      const res = await axios.put(`${API_BASE_URL}/users/me`, finalPayload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "x-tenant-id": HOST_Tenant_ID,
@@ -57,65 +79,50 @@ export default function HostManagementForm() {
         },
       });
 
-      console.log("✅ Update Response:", response.data);
-
-      toast.success("Changes saved successfully 🎉", {
-        duration: 4000,
-        position: "bottom-right",
-        style: {
-          background: "#101010",
-          color: "#fff",
-          border: "1px solid #D19537",
-        },
-        iconTheme: {
-          primary: "#D19537",
-          secondary: "#fff",
-        },
-      });
-
-      router.push("/host-settings");
-    } catch (error: any) {
-      console.error("❌ Update Error:", error);
-      toast.error(error?.response?.data?.message || "Failed to update");
+      toast.success("Updated successfully!");
+      setHostData(res.data.data);
+    } catch (err) {
+      console.log(err);
+      toast.error("Update failed");
     }
   };
+
+  if (loading || !hostData || !hostData.tenant) {
+    return <p className="text-center mt-10 text-gray-500">Loading...</p>;
+  }
 
   return (
     <div
       className="
-      w-[329px]
-      px-4 sm:px-6 lg:px-8 
-      py-6 sm:py-8 
-      mx-auto 
-      space-y-6 
-      sm:w-[95%] lg:w-[1170px] 
-      sm:ml-0 lg:ml-[250px]
-    "
+        w-[329px]
+        px-4 sm:px-6 lg:px-8 
+        py-6 sm:py-8 
+        mx-auto 
+        space-y-6 
+        sm:w-[95%] lg:w-[1170px] 
+        sm:ml-0 lg:ml-[250px]
+      "
     >
-      {/* 🔙 Back Button */}
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          onClick={handleBack}
-          variant="outline"
-          className="flex items-center gap-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-white hover:bg-[#D19537]/10"
-        >
-          <ArrowLeft size={18} />
-          Back
-        </Button>
-      </div>
+      {/* 🔙 BACK BUTTON */}
+      <button
+        onClick={() => router.push("/host-settings")}
+        className="flex items-center gap-2 text-gray-700 dark:text-gray-200 mb-6 hover:text-[#D19537] transition font-medium"
+      >
+        <ArrowLeft size={20} />
+        Back
+      </button>
 
-      {/* 🧩 Sections */}
-      {/* <BasicInformationSection ref={basicRef} /> */}
-      <AccountSettingsSection />
-      <ContactDetailsSection ref={contactRef} />
-      <OtherPagesDataSection ref={aboutRef} />
-      <SocialMediaLinksSection ref={socialRef} />
+      {/* ⭐ Editable Sections */}
+      <AccountSettingsSection ref={accountRef} host={hostData} />
+      <ContactDetailsSection ref={contactRef} host={hostData} />
+      <OtherPagesDataSection ref={otherRef} tenant={hostData.tenant} />
+      <SocialMediaLinksSection ref={socialRef} tenant={hostData.tenant} />
 
-      {/* 💾 Save Button */}
-      <div className="flex justify-end">
+      {/* ⭐ Save Button */}
+      <div className="flex justify-end mt-4">
         <Button
-          onClick={handleUpdateHost}
-          className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-6 rounded-lg transition"
+          onClick={handleSave}
+          className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-4"
         >
           Save Changes
         </Button>
@@ -126,38 +133,103 @@ export default function HostManagementForm() {
 
 // "use client";
 
-// import { useRouter } from "next/navigation";
-// import BasicInformationSection from "./sections/basic-information";
+// import { useEffect, useRef, useState } from "react";
+// import axios from "axios";
 // import AccountSettingsSection from "./sections/account-settings";
 // import ContactDetailsSection from "./sections/contact-details";
 // import OtherPagesDataSection from "./sections/other-pages-data";
 // import SocialMediaLinksSection from "./sections/social-media-links";
 // import { Button } from "@/components/ui/button";
-// import { ArrowLeft } from "lucide-react";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 // import toast from "react-hot-toast";
 
 // export default function HostManagementForm() {
-//   const router = useRouter();
+//   const [hostData, setHostData] = useState<any>(null);
+//   const [loading, setLoading] = useState(true);
 
-//   const handleCreateTenant = () => {
-//     toast.success("Save changes successfully 🎉", {
-//       duration: 4000,
-//       position: "bottom-right",
-//       style: {
-//         background: "#101010",
-//         color: "#fff",
-//         border: "1px solid #D19537",
-//       },
-//       iconTheme: {
-//         primary: "#D19537",
-//         secondary: "#fff",
-//       },
-//     });
+//   // ⭐ REFS TO COLLECT DATA FROM ALL SECTIONS
+//   const accountRef = useRef();
+//   const contactRef = useRef();
+//   const otherRef = useRef();
+//   const socialRef = useRef();
+
+//   // ⭐ FETCH HOST DETAILS
+//   useEffect(() => {
+//     const loadProfile = async () => {
+//       try {
+//         let token = localStorage.getItem("hostToken");
+
+//         try {
+//           const parsed = JSON.parse(token!);
+//           if (parsed?.token) token = parsed.token;
+//         } catch {}
+
+//         const res = await axios.get(`${API_BASE_URL}/users/me`, {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "x-tenant-id": HOST_Tenant_ID,
+//           },
+//         });
+
+//         setHostData(res.data.data);
+//       } catch (err) {
+//         console.log("❌ Fetch failed", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     loadProfile();
+//   }, []);
+
+//   // ⭐ SAVE: USER + TENANT BOTH
+//   const handleSave = async () => {
+//     if (!hostData) return;
+
+//     // 🟦 1) COLLECT FIELDS FROM ALL SECTIONS
+//     const finalPayload = {
+//       // USER FIELDS
+//       ...accountRef.current?.getData?.(), // theme
+//       ...contactRef.current?.getData?.(), // mobileNumber, city, address, pincode, nationalId
+
+//       // TENANT FIELDS
+//       ...socialRef.current?.getData?.(), // socials
+//       ...otherRef.current?.getData?.(), // aboutPage, privacyPolicies, faqs, terms
+//     };
+
+//     console.log("🔥 FINAL PAYLOAD SENT TO /users/me", finalPayload);
+
+//     // 🟨 2) SEND TO ONLY ONE API
+//     let token = localStorage.getItem("hostToken");
+//     try {
+//       const parsed = JSON.parse(token!);
+//       if (parsed?.token) token = parsed.token;
+//     } catch {}
+
+//     try {
+//       const res = await axios.put(`${API_BASE_URL}/users/me`, finalPayload, {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "x-tenant-id": HOST_Tenant_ID,
+//           "Content-Type": "application/json",
+//         },
+//       });
+
+//       toast.success("Updated successfully!");
+
+//       setHostData(res.data.data);
+//     } catch (err) {
+//       console.log(err);
+//       toast.error("Update failed");
+//     }
 //   };
 
-//   const handleBack = () => {
-//     router.push("/host-settings");
-//   };
+//   // if (loading) return <p className="text-center mt-10">Loading...</p>;
+
+//   if (loading || !hostData || !hostData.tenant) {
+//     return <p className="text-center mt-10 text-gray-500">Loading...</p>;
+//   }
 
 //   return (
 //     <div
@@ -171,38 +243,17 @@ export default function HostManagementForm() {
 //         sm:ml-0 lg:ml-[250px]
 //       "
 //     >
-//       {/* 🔙 Back Button */}
-//       <div className="flex items-center justify-between mb-6">
-//         <Button
-//           onClick={handleBack}
-//           variant="outline"
-//           className="flex items-center gap-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-white hover:bg-[#D19537]/10"
-//         >
-//           <ArrowLeft size={18} />
-//           Back
-//         </Button>
-//       </div>
+//       {/* ⭐ Editable Sections with REFs */}
+//       <AccountSettingsSection ref={accountRef} host={hostData} />
+//       <ContactDetailsSection ref={contactRef} host={hostData} />
+//       <OtherPagesDataSection ref={otherRef} tenant={hostData.tenant} />
+//       <SocialMediaLinksSection ref={socialRef} tenant={hostData.tenant} />
 
-//       {/* 🧩 Basic Information */}
-//       <BasicInformationSection />
-
-//       {/* ⚙️ Account Settings */}
-//       <AccountSettingsSection />
-
-//       {/* ☎️ Contact Details */}
-//       <ContactDetailsSection />
-
-//       {/* 📄 Other Pages Data */}
-//       <OtherPagesDataSection />
-
-//       {/* 🌐 Social Links */}
-//       <SocialMediaLinksSection />
-
-//       {/* 💾 Save Button */}
+//       {/* ⭐ Save Button */}
 //       <div className="flex justify-end">
 //         <Button
-//           onClick={handleCreateTenant}
-//           className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-6 rounded-lg transition"
+//           onClick={handleSave}
+//           className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-4"
 //         >
 //           Save Changes
 //         </Button>

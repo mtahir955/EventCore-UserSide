@@ -87,12 +87,12 @@ export function PaymentSuccessTable() {
               className="border-b border-border"
               style={{ background: "rgba(245, 237, 229, 1)" }}
             >
-              <th className="px-6 py-4 text-sm font-semibold">Name</th>
-              <th className="px-6 py-4 text-sm font-semibold">Email</th>
-              <th className="px-6 py-4 text-sm font-semibold">Date & Time</th>
-              <th className="px-6 py-4 text-sm font-semibold">Event Name</th>
-              <th className="px-6 py-4 text-sm font-semibold">Amount</th>
-              <th className="px-6 py-4 text-sm font-semibold">Status</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">Name</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">Email</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">Date & Time</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">Event Name</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">Amount</th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">Status</th>
             </tr>
           </thead>
 

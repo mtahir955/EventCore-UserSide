@@ -4,430 +4,516 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 import { FileText, PlusCircle, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const OtherPagesDataSection = forwardRef((props, ref) => {
-  const [privacyPolicies, setPrivacyPolicies] = useState<
-    { id: number; title: string; description: string }[]
-  >([]);
-  const [faqs, setFaqs] = useState<
-    { id: number; question: string; answer: string }[]
-  >([]);
+const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
+  // ⭐ About
+  const [about, setAbout] = useState({
+    title: tenant.aboutPage?.title || "",
+    subtitle: tenant.aboutPage?.subtitle || "",
+    mainHeadline: tenant.aboutPage?.mainHeadline || "",
+    description: tenant.aboutPage?.description || "",
+  });
+
+  // ⭐ Privacy Policies
+  const [privacyPolicies, setPrivacyPolicies] = useState(
+    tenant.privacyPolicies || []
+  );
 
   const [privacyForm, setPrivacyForm] = useState({
     title: "",
     description: "",
   });
-  const [faqForm, setFaqForm] = useState({ question: "", answer: "" });
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [editingPrivacyIndex, setEditingPrivacyIndex] = useState<number | null>(
+    null
+  );
 
-  const [editingPrivacyId, setEditingPrivacyId] = useState<number | null>(null);
-  const [editingFaqId, setEditingFaqId] = useState<number | null>(null);
+  // ⭐ FAQs
+  const [faqs, setFaqs] = useState(tenant.faqs || []);
 
-  // 🧠 Expose validate + getData to parent
+  const [faqForm, setFaqForm] = useState({
+    question: "",
+    answer: "",
+  });
+  const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
+
+  // ⭐ Terms
+  const [terms, setTerms] = useState(tenant.termsAndConditions || "");
+
+  // ⭐ Tell parent the output
   useImperativeHandle(ref, () => ({
     getData: () => ({
       aboutPage: {
-        title: formData.aboutTitle,
-        subtitle: formData.aboutSubtitle,
-        mainHeadline: formData.mainHeadline,
-        description: formData.description,
+        title: about.title.trim(),
+        subtitle: about.subtitle.trim(),
+        mainHeadline: about.mainHeadline.trim(),
+        description: about.description.trim(),
       },
-      privacyPolicies,
-      faqs,
-      termsAndConditions: formData.termsAndConditions,
+
+      privacyPolicies: privacyPolicies.map((p) => ({
+        title: p.title.trim(),
+        description: p.description.trim(),
+      })),
+
+      faqs: faqs.map((f) => ({
+        question: f.question.trim(),
+        answer: f.answer.trim(),
+      })),
+
+      termsAndConditions: terms.trim(),
     }),
   }));
 
-  // ➕ Add / Update Privacy
+  // -----------------------
+  // 🚀 PRIVACY POLICY HANDLERS
+  // -----------------------
   const handleAddPrivacy = () => {
-    const newErrors: Record<string, boolean> = {};
-    if (!privacyForm.title) newErrors.title = true;
-    if (!privacyForm.description) newErrors.description = true;
-    setErrors(newErrors);
+    if (!privacyForm.title.trim() || !privacyForm.description.trim()) return;
 
-    if (Object.keys(newErrors).length === 0) {
-      if (editingPrivacyId) {
-        setPrivacyPolicies((prev) =>
-          prev.map((p) =>
-            p.id === editingPrivacyId ? { ...p, ...privacyForm } : p
-          )
-        );
-        setEditingPrivacyId(null);
-      } else {
-        setPrivacyPolicies((prev) => [
-          ...prev,
-          { id: Date.now(), ...privacyForm },
-        ]);
-      }
-      setPrivacyForm({ title: "", description: "" });
+    if (editingPrivacyIndex !== null) {
+      const updated = [...privacyPolicies];
+      updated[editingPrivacyIndex] = { ...privacyForm };
+      setPrivacyPolicies(updated);
+      setEditingPrivacyIndex(null);
+    } else {
+      setPrivacyPolicies([...privacyPolicies, { ...privacyForm }]);
     }
+
+    setPrivacyForm({ title: "", description: "" });
   };
 
-  // ➕ Add / Update FAQ
+  const handleEditPrivacy = (index: number) => {
+    setEditingPrivacyIndex(index);
+    setPrivacyForm(privacyPolicies[index]);
+  };
+
+  const handleRemovePrivacy = (index: number) => {
+    setPrivacyPolicies((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // -----------------------
+  // 🚀 FAQ HANDLERS
+  // -----------------------
   const handleAddFaq = () => {
-    const newErrors: Record<string, boolean> = {};
-    if (!faqForm.question) newErrors.question = true;
-    if (!faqForm.answer) newErrors.answer = true;
-    setErrors(newErrors);
+    if (!faqForm.question.trim() || !faqForm.answer.trim()) return;
 
-    if (Object.keys(newErrors).length === 0) {
-      if (editingFaqId) {
-        setFaqs((prev) =>
-          prev.map((f) => (f.id === editingFaqId ? { ...f, ...faqForm } : f))
-        );
-        setEditingFaqId(null);
-      } else {
-        setFaqs((prev) => [...prev, { id: Date.now(), ...faqForm }]);
-      }
-      setFaqForm({ question: "", answer: "" });
+    if (editingFaqIndex !== null) {
+      const updated = [...faqs];
+      updated[editingFaqIndex] = { ...faqForm };
+      setFaqs(updated);
+      setEditingFaqIndex(null);
+    } else {
+      setFaqs([...faqs, { ...faqForm }]);
     }
+
+    setFaqForm({ question: "", answer: "" });
   };
 
-  // ✏️ Edit
-  const handleEditPrivacy = (p) => {
-    setPrivacyForm({ title: p.title, description: p.description });
-    setEditingPrivacyId(p.id);
-  };
-  const handleEditFaq = (f) => {
-    setFaqForm({ question: f.question, answer: f.answer });
-    setEditingFaqId(f.id);
+  const handleEditFaq = (index: number) => {
+    setEditingFaqIndex(index);
+    setFaqForm(faqs[index]);
   };
 
-  // ❌ Remove
-  const handleRemovePrivacy = (id: number) =>
-    setPrivacyPolicies((prev) => prev.filter((p) => p.id !== id));
-  const handleRemoveFaq = (id: number) =>
-    setFaqs((prev) => prev.filter((f) => f.id !== id));
-
-  // 💾 Save all
-  const handleSaveAll = () => {
-    console.log("✅ Saved Data:", { privacyPolicies, faqs });
+  const handleRemoveFaq = (index: number) => {
+    setFaqs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const [formData, setFormData] = useState({
-    tenantName: "",
-    email: "",
-    description: "",
-    subdomain: "",
-    logo: "",
-    banner: "",
-    aboutTitle: "",
-    aboutSubtitle: "",
-    mainHeadline: "",
-    termsAndConditions: "",
-  });
-  // 🧩 Handle text & textarea inputs
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: false }));
-  };
-
+  // -----------------------
+  // 🚀 UI START
+  // -----------------------
   return (
-    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 space-y-8 shadow-sm transition-all">
+    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border border-gray-300 dark:border-gray-700 p-6 sm:p-8 space-y-8 shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-3">
         <FileText size={24} className="text-gray-700 dark:text-white" />
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-          Other Pages Data
+          Edit Other Pages Data
         </h3>
       </div>
 
+      {/* ================================
+         ⭐ ABOUT PAGE
+      ================================== */}
       <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-        About page
+        About Page
       </h4>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* About Title */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            About Title <span className="text-red-500">*</span>
-          </label>
+          <label>About Title</label>
           <input
-            type="text"
-            name="aboutTitle"
-            placeholder="Enter main about title"
-            value={formData.aboutTitle}
-            onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
-        ${
-          errors.aboutTitle
-            ? "border-red-500"
-            : "border-gray-300 dark:border-gray-700"
-        } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+            value={about.title}
+            onChange={(e) => setAbout({ ...about, title: e.target.value })}
+            className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
           />
         </div>
 
-        {/* About Subtitle */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            About Subtitle <span className="text-red-500">*</span>
-          </label>
+          <label>About Subtitle</label>
           <input
-            type="text"
-            name="aboutSubtitle"
-            placeholder="Enter a short subtitle"
-            value={formData.aboutSubtitle}
-            onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
-        ${
-          errors.aboutSubtitle
-            ? "border-red-500"
-            : "border-gray-300 dark:border-gray-700"
-        } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+            value={about.subtitle}
+            onChange={(e) => setAbout({ ...about, subtitle: e.target.value })}
+            className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
           />
         </div>
       </div>
 
-      {/* Main Headline */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Main Headline <span className="text-red-500">*</span>
-        </label>
+        <label>Main Headline</label>
         <textarea
-          name="mainHeadline"
-          placeholder="Write your about page headline"
-          value={formData.mainHeadline}
-          onChange={handleChange}
+          value={about.mainHeadline}
+          onChange={(e) => setAbout({ ...about, mainHeadline: e.target.value })}
           rows={2}
-          className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#D19537]
-      ${
-        errors.mainHeadline
-          ? "border-red-500"
-          : "border-gray-300 dark:border-gray-700"
-      } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+          className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
         />
       </div>
 
-      {/* Description */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description <span className="text-red-500">*</span>
-        </label>
+        <label>Description</label>
         <textarea
-          name="description"
-          placeholder="Write a short description about the tenant"
-          value={formData.description}
-          onChange={handleChange}
+          value={about.description}
+          onChange={(e) => setAbout({ ...about, description: e.target.value })}
           rows={3}
-          className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#D19537]
-            ${
-              errors.description
-                ? "border-red-500"
-                : "border-gray-300 dark:border-gray-700"
-            } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+          className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
         />
       </div>
 
-      {/* 📜 Privacy Policy */}
+      {/* ================================
+         ⭐ PRIVACY POLICY
+      ================================== */}
       <div className="space-y-4">
         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-          Privacy Policy
+          Privacy Policies
         </h4>
 
+        {/* Form */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter policy title"
-              value={privacyForm.title}
-              onChange={(e) =>
-                setPrivacyForm({ ...privacyForm, title: e.target.value })
-              }
-              className={`w-full rounded-lg px-4 py-2 border ${
-                errors.title
-                  ? "border-red-500"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#D19537] outline-none`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              placeholder="Enter policy description"
-              value={privacyForm.description}
-              onChange={(e) =>
-                setPrivacyForm({ ...privacyForm, description: e.target.value })
-              }
-              rows={3}
-              className={`w-full rounded-lg px-4 py-2 border ${
-                errors.description
-                  ? "border-red-500"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#D19537] resize-none`}
-            />
-          </div>
+          <input
+            placeholder="Policy Title"
+            value={privacyForm.title}
+            onChange={(e) =>
+              setPrivacyForm({ ...privacyForm, title: e.target.value })
+            }
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+          />
+
+          <textarea
+            placeholder="Policy Description"
+            value={privacyForm.description}
+            onChange={(e) =>
+              setPrivacyForm({ ...privacyForm, description: e.target.value })
+            }
+            rows={3}
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+          />
         </div>
 
         <Button
           onClick={handleAddPrivacy}
-          className="flex items-center gap-2 bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-4 py-2 rounded-lg transition"
+          className="bg-[#D19537] hover:bg-[#e59618] text-white flex gap-2"
         >
-          <PlusCircle size={16} />{" "}
-          {editingPrivacyId ? "Update Policy" : "Add Policy"}
+          <PlusCircle size={18} />
+          {editingPrivacyIndex !== null ? "Update Policy" : "Add Policy"}
         </Button>
 
-        {privacyPolicies.length > 0 && (
-          <div className="mt-4 space-y-3">
-            {privacyPolicies.map((p) => (
-              <div
-                key={p.id}
-                className="p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1a1a] flex justify-between items-start"
-              >
-                <div>
-                  <h5 className="font-semibold text-gray-800 dark:text-white">
-                    {p.title}
-                  </h5>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    {p.description}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleEditPrivacy(p)}
-                    className="text-blue-500 hover:text-blue-600"
-                    title="Edit"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleRemovePrivacy(p.id)}
-                    className="text-red-500 hover:text-red-700"
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+        {/* LIST */}
+        <div className="space-y-3">
+          {privacyPolicies.map((p: any, index: number) => (
+            <div
+              key={index}
+              className="flex justify-between items-start bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-lg border"
+            >
+              <div>
+                <h5 className="font-semibold">{p.title}</h5>
+                <p className="text-sm mt-1">{p.description}</p>
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleEditPrivacy(index)}
+                  className="text-blue-500"
+                >
+                  <Pencil size={18} />
+                </button>
+
+                <button
+                  onClick={() => handleRemovePrivacy(index)}
+                  className="text-red-500"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* ❓ FAQ Section */}
+      {/* ================================
+         ⭐ FAQ SECTION
+      ================================== */}
       <div className="space-y-4">
         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
           FAQs
         </h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Question <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter question"
-              value={faqForm.question}
-              onChange={(e) =>
-                setFaqForm({ ...faqForm, question: e.target.value })
-              }
-              className={`w-full rounded-lg px-4 py-2 border ${
-                errors.question
-                  ? "border-red-500"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#D19537] outline-none`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Answer <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              placeholder="Enter answer"
-              value={faqForm.answer}
-              onChange={(e) =>
-                setFaqForm({ ...faqForm, answer: e.target.value })
-              }
-              rows={3}
-              className={`w-full rounded-lg px-4 py-2 border ${
-                errors.answer
-                  ? "border-red-500"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#D19537] resize-none`}
-            />
-          </div>
+          <input
+            placeholder="FAQ Question"
+            value={faqForm.question}
+            onChange={(e) =>
+              setFaqForm({ ...faqForm, question: e.target.value })
+            }
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+          />
+
+          <textarea
+            placeholder="FAQ Answer"
+            value={faqForm.answer}
+            onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+            rows={3}
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+          />
         </div>
 
         <Button
           onClick={handleAddFaq}
-          className="flex items-center gap-2 bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-4 py-2 rounded-lg transition"
+          className="bg-[#D19537] hover:bg-[#e59618] text-white flex gap-2"
         >
-          <PlusCircle size={16} /> {editingFaqId ? "Update FAQ" : "Add FAQ"}
+          <PlusCircle size={18} />
+          {editingFaqIndex !== null ? "Update FAQ" : "Add FAQ"}
         </Button>
 
-        {faqs.length > 0 && (
-          <div className="mt-4 space-y-3">
-            {faqs.map((f) => (
-              <div
-                key={f.id}
-                className="p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1a1a] flex justify-between items-start"
-              >
-                <div>
-                  <h5 className="font-semibold text-gray-800 dark:text-white">
-                    Q: {f.question}
-                  </h5>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    A: {f.answer}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleEditFaq(f)}
-                    className="text-blue-500 hover:text-blue-600"
-                    title="Edit"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleRemoveFaq(f.id)}
-                    className="text-red-500 hover:text-red-700"
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+        <div className="space-y-3">
+          {faqs.map((f: any, index: number) => (
+            <div
+              key={index}
+              className="flex justify-between items-start bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-lg border"
+            >
+              <div>
+                <h5 className="font-semibold">Q: {f.question}</h5>
+                <p className="text-sm mt-1">A: {f.answer}</p>
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleEditFaq(index)}
+                  className="text-blue-500"
+                >
+                  <Pencil size={18} />
+                </button>
+
+                <button
+                  onClick={() => handleRemoveFaq(index)}
+                  className="text-red-500"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Terms & Conditions (Optional) */}
+      {/* ================================
+         ⭐ TERMS & CONDITIONS
+      ================================== */}
       <div className="space-y-2">
         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
           Terms & Conditions
         </h4>
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-          Enter Terms & Conditions <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          name="termsAndConditions"
-          placeholder="Enter or link terms & conditions"
-          value={formData.termsAndConditions}
-          onChange={handleChange}
-          rows={3}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537] resize-none"
-        />
-      </div>
 
-      {/* 💾 Save Button */}
-      <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
-        <Button
-          onClick={handleSaveAll}
-          className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-2 rounded-lg transition"
-        >
-          Save
-        </Button>
+        <textarea
+          value={terms}
+          onChange={(e) => setTerms(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+        />
       </div>
     </div>
   );
 });
 
 OtherPagesDataSection.displayName = "OtherPagesDataSection";
+
 export default OtherPagesDataSection;
+
+// "use client";
+
+// import { forwardRef, useImperativeHandle, useState } from "react";
+// import { FileText } from "lucide-react";
+
+// const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
+//   const [about, setAbout] = useState({
+//     title: tenant.aboutPage?.title || "",
+//     subtitle: tenant.aboutPage?.subtitle || "",
+//     mainHeadline: tenant.aboutPage?.mainHeadline || "",
+//     description: tenant.aboutPage?.description || "",
+//   });
+
+//   const [privacyPolicies, setPrivacyPolicies] = useState(
+//     tenant.privacyPolicies || []
+//   );
+
+//   const [faqs, setFaqs] = useState(tenant.faqs || []);
+
+//   const [terms, setTerms] = useState(tenant.termsAndConditions || "");
+
+//   useImperativeHandle(ref, () => ({
+//     getData: () => ({
+//       aboutPage: {
+//         title: about.title.trim(),
+//         subtitle: about.subtitle.trim(),
+//         mainHeadline: about.mainHeadline.trim(),
+//         description: about.description.trim(),
+//       },
+//       privacyPolicies: privacyPolicies.map((p: any) => ({
+//         title: p.title.trim(),
+//         description: p.description.trim(),
+//       })),
+//       faqs: faqs.map((f: any) => ({
+//         question: f.question.trim(),
+//         answer: f.answer.trim(),
+//       })),
+//       termsAndConditions: terms.trim(),
+//     }),
+//   }));
+
+//   // Add Privacy Policy
+//   const addPrivacy = () =>
+//     setPrivacyPolicies([...privacyPolicies, { title: "", description: "" }]);
+
+//   // Add FAQ
+//   const addFAQ = () => setFaqs([...faqs, { question: "", answer: "" }]);
+
+//   return (
+//     <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border p-6 space-y-6">
+//       <div className="flex items-center gap-3">
+//         <FileText size={24} className="text-gray-700 dark:text-white" />
+//         <h3 className="text-xl font-bold">Other Pages Data</h3>
+//       </div>
+
+//       {/* ABOUT PAGE */}
+//       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//         <input
+//           className="px-4 py-2 border rounded-lg"
+//           placeholder="About Title"
+//           value={about.title}
+//           onChange={(e) => setAbout({ ...about, title: e.target.value })}
+//         />
+//         <input
+//           className="px-4 py-2 border rounded-lg"
+//           placeholder="Subtitle"
+//           value={about.subtitle}
+//           onChange={(e) => setAbout({ ...about, subtitle: e.target.value })}
+//         />
+//       </div>
+
+//       <input
+//         className="px-4 py-2 border rounded-lg w-full"
+//         placeholder="Main Headline"
+//         value={about.mainHeadline}
+//         onChange={(e) => setAbout({ ...about, mainHeadline: e.target.value })}
+//       />
+
+//       <textarea
+//         className="px-4 py-2 border rounded-lg w-full"
+//         placeholder="Description"
+//         rows={4}
+//         value={about.description}
+//         onChange={(e) => setAbout({ ...about, description: e.target.value })}
+//       />
+
+//       {/* PRIVACY POLICIES */}
+//       <div>
+//         <div className="flex justify-between mb-2">
+//           <label>Privacy Policies</label>
+//           <button
+//             onClick={addPrivacy}
+//             className="px-3 py-1 bg-blue-600 text-white rounded"
+//           >
+//             + Add
+//           </button>
+//         </div>
+
+//         {privacyPolicies.map((p: any, index: number) => (
+//           <div
+//             key={index}
+//             className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2"
+//           >
+//             <input
+//               className="px-3 py-2 border rounded"
+//               placeholder="Title"
+//               value={p.title}
+//               onChange={(e) => {
+//                 const updated = [...privacyPolicies];
+//                 updated[index].title = e.target.value;
+//                 setPrivacyPolicies(updated);
+//               }}
+//             />
+//             <input
+//               className="px-3 py-2 border rounded"
+//               placeholder="Description"
+//               value={p.description}
+//               onChange={(e) => {
+//                 const updated = [...privacyPolicies];
+//                 updated[index].description = e.target.value;
+//                 setPrivacyPolicies(updated);
+//               }}
+//             />
+//           </div>
+//         ))}
+//       </div>
+
+//       {/* FAQ */}
+//       <div>
+//         <div className="flex justify-between mb-2">
+//           <label>FAQs</label>
+//           <button
+//             onClick={addFAQ}
+//             className="px-3 py-1 bg-blue-600 text-white rounded"
+//           >
+//             + Add
+//           </button>
+//         </div>
+
+//         {faqs.map((f: any, index: number) => (
+//           <div
+//             key={index}
+//             className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2"
+//           >
+//             <input
+//               className="px-3 py-2 border rounded"
+//               placeholder="Question"
+//               value={f.question}
+//               onChange={(e) => {
+//                 const updated = [...faqs];
+//                 updated[index].question = e.target.value;
+//                 setFaqs(updated);
+//               }}
+//             />
+
+//             <input
+//               className="px-3 py-2 border rounded"
+//               placeholder="Answer"
+//               value={f.answer}
+//               onChange={(e) => {
+//                 const updated = [...faqs];
+//                 updated[index].answer = e.target.value;
+//                 setFaqs(updated);
+//               }}
+//             />
+//           </div>
+//         ))}
+//       </div>
+
+//       {/* TERMS */}
+//       <textarea
+//         className="px-4 py-2 border rounded-lg w-full"
+//         placeholder="Terms & Conditions"
+//         rows={4}
+//         value={terms}
+//         onChange={(e) => setTerms(e.target.value)}
+//       />
+//     </div>
+//   );
+// });
+
+// export default OtherPagesDataSection;

@@ -184,7 +184,32 @@ export default function CustomersPage() {
   }, []);
 
   const { theme, setTheme } = useTheme();
-  const [hostName] = useState("Host");
+  const [hostName, setHostName] = useState("Host");
+
+  useEffect(() => {
+      const savedUser = localStorage.getItem("hostUser");
+  
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+  
+        // Host Name
+        setHostName(user.userName || user.fullName || "Host");
+  
+        // Subdomain (optional)
+        // setHostSubdomain(user.subDomain || "");
+  
+        console.log("HOST DASHBOARD USER:", user);
+        console.log("HOST SUBDOMAIN:", user?.subDomain);
+  
+        // Theme (optional)
+        if (user.theme) {
+          // syncThemeWithBackend(user);
+        }
+      } else {
+        // Force redirect if no host session found
+        window.location.href = "/sign-in-host";
+      }
+    }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
@@ -426,13 +451,13 @@ export default function CustomersPage() {
                 className="min-w-[1050px] grid grid-cols-[160px_200px_150px_150px_120px_120px_120px] px-6 py-4 font-semibold text-[14px] text-center"
                 style={{ backgroundColor: "#F5EDE5" }}
               >
-                <div>Customer Name</div>
-                <div>Email</div>
-                <div>Event</div>
-                <div>Ticket ID</div>
-                <div>Gender</div>
-                <div>Category</div>
-                <div>Tickets Qty</div>
+                <div className="dark:text-black">Customer Name</div>
+                <div className="dark:text-black">Email</div>
+                <div className="dark:text-black">Event</div>
+                <div className="dark:text-black">Ticket ID</div>
+                <div className="dark:text-black">Gender</div>
+                <div className="dark:text-black">Category</div>
+                <div className="dark:text-black">Tickets Qty</div>
               </div>
 
               {/* TABLE BODY */}

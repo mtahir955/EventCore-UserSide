@@ -162,6 +162,31 @@ export default function TicketCheck() {
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [hostName, setHostName] = useState("Host");
 
+  useEffect(() => {
+      const savedUser = localStorage.getItem("hostUser");
+  
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+  
+        // Host Name
+        setHostName(user.userName || user.fullName || "Host");
+  
+        // Subdomain (optional)
+        // setHostSubdomain(user.subDomain || "");
+  
+        console.log("HOST DASHBOARD USER:", user);
+        console.log("HOST SUBDOMAIN:", user?.subDomain);
+  
+        // Theme (optional)
+        if (user.theme) {
+          // syncThemeWithBackend(user);
+        }
+      } else {
+        // Force redirect if no host session found
+        window.location.href = "/sign-in-host";
+      }
+    }, []);
+
   const [currentPage, setCurrentPage] = useState(1);
   const attendeesPerPage = 5;
 

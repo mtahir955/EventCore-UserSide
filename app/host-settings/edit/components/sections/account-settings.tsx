@@ -1,40 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
-import { API_BASE_URL } from "../../../../../config/apiConfig"; // ADD THIS IMPORT
-import { toast } from "react-hot-toast";
-import axios from "axios";
+import { useTheme } from "next-themes";
+import { setThemeGlobal } from "@/utils/themeManager";
 import ChangePasswordModal from "@/components/modals/ChangePasswordModal";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { API_BASE_URL } from "../../../../../config/apiConfig"; // ADD THIS IMPORT
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
-export default function AccountSettingsSection() {
-  // Separate state for account status and theme
-  const [formData, setFormData] = useState({
-    accountStatus: "active", // Active / Inactive
-    termsAndConditions: "",
-  });
+const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
+  const { setTheme } = useTheme();
 
-  const [formTheme, setFormTheme] = useState({
-    themeStatus: "light", // Light / Dark
-  });
+  const [theme, setThemeLocal] = useState(host.theme || "light");
 
-  // Handle text/textarea input for formData
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  // ⭐ APPLY THEME INSTANTLY WHEN DROPDOWN CHANGES
+  useEffect(() => {
+    setTheme(theme); // next-themes
+    setThemeGlobal(theme); // your global theme manager
+    localStorage.setItem("hostTheme", theme);
+  }, [theme]);
 
-  // Handle theme change
-  const handleThemeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setFormTheme({ themeStatus: value });
-    // Optional: trigger your theme logic here (if using next-themes)
-    // theme.setTheme(value === "light" ? "light" : "dark");
-  };
+  // ⭐ SEND BACK CORRECT DATA
+  useImperativeHandle(ref, () => ({
+    getData: () => ({
+      theme: theme,
+    }),
+  }));
+
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const handlePasswordSubmit = async (data: {
@@ -46,7 +40,7 @@ export default function AccountSettingsSection() {
       const token = localStorage.getItem("hostToken");
 
       if (!token) {
-        toast.error("No admin token found. Please log in again.", {
+        toast.error("No host token found. Please log in again.", {
           style: {
             background: "#101010",
             color: "#fff",
@@ -99,14 +93,12 @@ export default function AccountSettingsSection() {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 space-y-6 shadow-sm">
-      {/* Header */}
+    <div className="bg-white dark:bg-[#101010] rounded-2xl border p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <Settings2 size={24} className="text-gray-700 dark:text-white" />
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-          Account Settings
-        </h3>
+        <Settings2 size={24} />
+        <h3 className="text-xl font-bold">Account Settings</h3>
       </div>
+
       {/* Change Password Button */}
       <button
         onClick={() => setShowChangePasswordModal(true)}
@@ -114,47 +106,21 @@ export default function AccountSettingsSection() {
       >
         Change Password
       </button>
-      {/* Choose Theme */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Choose Theme
-        </label>
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="themeStatus"
-              value="light"
-              checked={formTheme.themeStatus === "light"}
-              onChange={handleThemeChange}
-              className="w-4 h-4"
-            />
-            <span className="inline-block px-3 py-1 bg-amber-100 text-amber-700 rounded text-sm font-medium">
-              Light
-            </span>
-          </label>
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="themeStatus"
-              value="dark"
-              checked={formTheme.themeStatus === "dark"}
-              onChange={handleThemeChange}
-              className="w-4 h-4"
-            />
-            <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm font-medium">
-              Dark
-            </span>
-          </label>
-        </div>
+      {/* THEME SELECTOR */}
+      <div className="space-y-2">
+        <label>Theme</label>
+
+        <select
+          value={theme}
+          onChange={(e) => setThemeLocal(e.target.value)}
+          className="w-full px-4 py-2 border rounded bg-gray-100 dark:bg-[#181818]"
+        >
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
       </div>
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-2 rounded-lg transition">
-          Save
-        </Button>
-      </div>
+
       <ChangePasswordModal
         isOpen={showChangePasswordModal}
         onClose={() => setShowChangePasswordModal(false)}
@@ -162,4 +128,44 @@ export default function AccountSettingsSection() {
       />
     </div>
   );
-}
+});
+
+export default AccountSettingsSection;
+
+// "use client";
+
+// import { forwardRef, useImperativeHandle, useState } from "react";
+// import { Settings2 } from "lucide-react";
+
+// const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
+//   const [theme, setTheme] = useState(host.theme || "light");
+
+//   useImperativeHandle(ref, () => ({
+//     getData: () => ({
+//       theme: theme,
+//     }),
+//   }));
+
+//   return (
+//     <div className="bg-white dark:bg-[#101010] rounded-2xl border p-6 space-y-6">
+//       <div className="flex items-center gap-3">
+//         <Settings2 size={24} />
+//         <h3 className="text-xl font-bold">Account Settings</h3>
+//       </div>
+
+//       <div className="space-y-2">
+//         <label>Theme</label>
+//         <select
+//           value={theme}
+//           onChange={(e) => setTheme(e.target.value)}
+//           className="w-full px-4 py-2 border rounded bg-gray-100 dark:bg-[#181818]"
+//         >
+//           <option value="light">Light</option>
+//           <option value="dark">Dark</option>
+//         </select>
+//       </div>
+//     </div>
+//   );
+// });
+
+// export default AccountSettingsSection;
