@@ -70,11 +70,11 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       icon: "/images/icons/16.png",
       href: "/host-settings",
     },
-    {
-      label: "Help Line",
-      icon: "/images/icons/13.png",
-      onClick: () => setShowHelpModal(true),
-    },
+    // {
+    //   label: "Help Line",
+    //   icon: "/images/icons/13.png",
+    //   onClick: () => setShowHelpModal(true),
+    // },
   ];
 
   // Dropdowns

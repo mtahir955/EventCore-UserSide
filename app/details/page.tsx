@@ -129,7 +129,7 @@ export default function EventDetailPage({
 
             {/* Right Column */}
             <div className="space-y-6">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
+              {/* <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 Event location
               </h3>
               <div className="relative h-[180px] sm:h-[200px] rounded-xl overflow-hidden mb-3 sm:mb-4">
@@ -146,7 +146,7 @@ export default function EventDetailPage({
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Dummy location generation model by RSU ... Our approach
                 generates more realistic dummy locations
-              </p>
+              </p> */}
 
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">

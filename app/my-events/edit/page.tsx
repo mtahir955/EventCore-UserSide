@@ -208,16 +208,15 @@ export default function EditEventPage() {
 
       console.log("EVENT DETAILS:", data);
 
+      // ⭐ SAVE EVENT ID LOCALLY FOR STAFF MODULE
+      localStorage.setItem("editEventId", eventId);
+
       setEventData(data);
 
-      // SET FORM FIELDS
       setEventTitle(data.eventTitle || "");
       setEventLocation(data.eventLocation || "");
-
-      // Format date → input accepts YYYY-MM-DD
       setEventDate(data.startDate || "");
 
-      // Format time → "04:00:00" → "04:00"
       setStartTime(data.startTime?.slice(0, 5) || "");
       setEndTime(data.endTime?.slice(0, 5) || "");
 
@@ -721,11 +720,18 @@ export default function EditEventPage() {
           window.location.href = "/sign-in-host";
         }}
       />
-      {/* StaffInfo Modal */}
-      <StaffInfoModal
+      {/* StaffInfo Modal before integration */}
+      {/* <StaffInfoModal
         isOpen={isStaffModalOpen}
         onClose={() => setIsStaffModalOpen(false)}
         staff={staffMembers}
+      /> */}
+
+      {/* StaffInfo Modal after integration */}
+      <StaffInfoModal
+        isOpen={isStaffModalOpen}
+        onClose={() => setIsStaffModalOpen(false)}
+        eventId={eventId ?? undefined} // ⭐ converts null → undefined
       />
     </div>
   );

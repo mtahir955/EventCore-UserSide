@@ -168,16 +168,28 @@ export default function PreviewEventPage({
       // -----------------------------
       // 7) POST multipart/form-data
       // -----------------------------
-      await axios.post(`${API_BASE_URL}/events`, formData, {
+      // 7) POST multipart/form-data
+      const res = await axios.post(`${API_BASE_URL}/events`, formData, {
         headers: {
           "X-Tenant-ID": HOST_Tenant_ID,
           Authorization: `Bearer ${token}`,
-          // ⛔ don't set Content-Type; axios sets multipart boundary
         },
       });
 
+      // EXTRACT EVENT ID
+      const createdEvent = res?.data?.data;
+
+      if (createdEvent?.id || createdEvent?.eventId) {
+        const eventId = createdEvent.id || createdEvent.eventId;
+
+        // ⭐ Save eventId for staff creation
+        localStorage.setItem("lastPublishedEventId", eventId);
+      }
+
       // SUCCESS UI
       toast.success("Event Published Successfully!");
+      localStorage.removeItem("eventDraft");
+      setShowSuccessModal(true);
 
       // Clear draft data
       localStorage.removeItem("eventDraft");
@@ -311,51 +323,10 @@ export default function PreviewEventPage({
                   )}
                 </div>
               </div>
-
-              {/* Hosted By */}
-              {/* <div className="mb-2">
-                <h3 className="text-[18px] sm:text-[20px] font-semibold mb-4">
-                  Hosted by
-                </h3>
-                <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
-                  <img
-                    src="/images/host-profile.png"
-                    alt="Host"
-                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full"
-                  />
-                  <div className="flex flex-col justify-start gap-3 w-full sm:w-auto">
-                    <p className="text-[16px] sm:text-[18px] font-semibold">
-                      City Youth Movement
-                    </p>
-                    <button className="px-6 py-2 rounded-lg bg-black text-white font-medium text-[15px] sm:text-[16px]">
-                      Contact
-                    </button>
-                  </div>
-                </div>
-              </div> */}
             </div>
 
             {/* Right Column - Sidebar */}
             <div className="lg:w-1/2 w-full lg:pl-8 mt-8 lg:mt-0">
-              {/* Event Location */}
-              <div className="mb-6">
-                {/* <h3 className="text-[17px] sm:text-[18px] font-semibold mb-3">
-                  Event Location
-                </h3>
-                <img
-                  src="/images/event-map.png"
-                  alt="Event location map"
-                  className="w-full h-[180px] sm:h-[200px] md:h-[250px] rounded-lg mb-3 object-cover"
-                /> */}
-                {/* <p className="text-[15px] sm:text-[16px] font-semibold mb-1">
-                  Dream world wide in jakatra
-                </p>
-                <p className="text-[13px] sm:text-[14px] text-gray-600">
-                  Dummy location generation model by RSU ... Our approach
-                  generates more realistic dummy locations
-                </p> */}
-              </div>
-
               {/* Trainers */}
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -560,7 +531,6 @@ export default function PreviewEventPage({
                           <span className="text-[15px] sm:text-[16px] font-semibold">
                             ${ticket.price}
                           </span>
-                          {/* We skip original price calculation for now to avoid changing structure too much */}
                         </div>
                       </div>
                     ))
@@ -595,12 +565,6 @@ export default function PreviewEventPage({
                     </>
                   )}
                 </div>
-                {/* <button
-                  className="w-full mt-4 px-6 py-3 rounded-lg text-white font-medium text-[15px] sm:text-[16px]"
-                  style={{ backgroundColor: "#D19537" }}
-                >
-                  Save my Spot
-                </button> */}
               </div>
             </div>
           </div>

@@ -293,7 +293,7 @@ export default function Sidebar() {
             })}
 
             {/* Help & Support button */}
-            <button
+            {/* <button
               onClick={() => setShowHelpModal(true)}
               className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-[#1a1a1a]"
             >
@@ -309,7 +309,7 @@ export default function Sidebar() {
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 Help & Support
               </span>
-            </button>
+            </button> */}
           </nav>
         </div>
 
