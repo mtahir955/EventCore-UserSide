@@ -6,7 +6,7 @@ export default function OtherPagesDataSection({ tenant }: any) {
   const about = tenant.aboutPage || {};
   const faqs = tenant.faqs || [];
   const privacy = tenant.privacyPolicies || [];
-  const terms = tenant.termsAndConditions || "";
+  const terms = tenant.termsAndConditions || [];
 
   return (
     <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border p-6 sm:p-8 space-y-6">
@@ -17,7 +17,6 @@ export default function OtherPagesDataSection({ tenant }: any) {
 
       {/* ABOUT PAGE */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* About Title */}
         <div className="space-y-2">
           <label>About Title</label>
           <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg">
@@ -25,7 +24,6 @@ export default function OtherPagesDataSection({ tenant }: any) {
           </div>
         </div>
 
-        {/* Subtitle */}
         <div className="space-y-2">
           <label>Subtitle</label>
           <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg">
@@ -95,9 +93,24 @@ export default function OtherPagesDataSection({ tenant }: any) {
       {/* TERMS & CONDITIONS */}
       <div className="space-y-2">
         <label>Terms & Conditions</label>
-        <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg whitespace-pre-line">
-          {terms || "N/A"}
-        </div>
+
+        {terms.length > 0 ? (
+          <div className="space-y-3">
+            {terms.map((t: any, i: number) => (
+              <div
+                key={i}
+                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg"
+              >
+                <strong>{t.title}</strong>
+                <p className="text-sm mt-1">{t.description}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg">
+            N/A
+          </div>
+        )}
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export default function CalendarView({
   const [hoveredEvent, setHoveredEvent] = useState<{
     id: number;
     title: string;
-    type: "in-person" | "virtual";
+    type: "in-person" | "virtual" | "you" | "purchased";
     date: number;
     location: string;
   } | null>(null);
@@ -35,7 +35,7 @@ export default function CalendarView({
       {
         id: number;
         title: string;
-        type: "in-person" | "virtual";
+        type: "in-person" | "virtual" | "you";
         date: number;
         location: string;
       }[]
@@ -82,6 +82,20 @@ export default function CalendarView({
           type: "virtual",
           date: 6,
           location: "Miami",
+        },
+        {
+          id: 20,
+          title: "Your Hosted Event",
+          type: "you",
+          date: 9,
+          location: "Los Angeles",
+        },
+        {
+          id: 21,
+          title: "Purchased Event",
+          type: "purchased",
+          date: 14,
+          location: "Chicago",
         },
         {
           id: 6,
@@ -251,8 +265,17 @@ export default function CalendarView({
           <span className="inline-flex items-center gap-1">
             <span className="h-3 w-3 rounded-full bg-[#6D10F5]" /> In Person
           </span>
+
           <span className="inline-flex items-center gap-1">
             <span className="h-3 w-3 rounded-full bg-[#89FC00]" /> Virtual
+          </span>
+
+          <span className="inline-flex items-center gap-1">
+            <span className="h-3 w-3 rounded-full bg-[#FC1100]" /> You
+          </span>
+
+          <span className="inline-flex items-center gap-1">
+            <span className="h-3 w-3 rounded-full bg-[#0077F7]" /> Purchased
           </span>
         </div>
 
@@ -307,11 +330,19 @@ export default function CalendarView({
                           });
                         }}
                         onMouseLeave={() => setHoveredEvent(null)}
-                        className={`px-1 py-[2px] rounded-md text-[9px] sm:text-xs truncate font-medium ${
-                          event.type === "in-person"
-                            ? "bg-[#6D10F5] text-white"
-                            : "bg-[#89FC00] text-black"
-                        }`}
+                        className={`px-1 py-[2px] rounded-md text-[9px] sm:text-xs truncate font-medium 
+  ${
+    event.type === "in-person"
+      ? "bg-[#6D10F5] text-white"
+      : event.type === "virtual"
+      ? "bg-[#89FC00] text-black"
+      : event.type === "you"
+      ? "bg-[#FC1100] text-white"
+      : event.type === "purchased"
+      ? "bg-[#0077F7] text-white"
+      : ""
+  }
+`}
                       >
                         {event.title}
                       </div>

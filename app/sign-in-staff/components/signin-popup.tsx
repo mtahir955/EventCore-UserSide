@@ -4,6 +4,7 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../../config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 type AuthView = "signin" | "signup" | "forgot-password" | "reset-password";
 
@@ -47,7 +48,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
         },
         {
           headers: {
-            "x-tenant-id": "fc36df79-3157-44fb-9c5a-fbc938f2fda7", // ⭐ SAME TENANT ID AS ADMIN + HOST
+            "x-tenant-id": HOST_Tenant_ID,
             "Content-Type": "application/json",
           },
         }
@@ -58,17 +59,23 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       console.log("Staff Login Response:", response.data);
 
       // ⭐ FIX TOKEN KEY (backend returns access_token)
-      const token = response.data?.access_token;
+      // ⭐ FIX TOKEN KEY (backend returns access_token)
+      const token = response?.data?.data?.access_token;
 
       if (!token) {
+        console.error("Token Debug:", response.data);
         toast.error("No token received from server");
         return;
       }
 
-      // store token
+      // ⭐ Save token everywhere your app expects it
       localStorage.setItem("staffToken", token);
+      localStorage.setItem("token", token);
+      localStorage.setItem("hostToken", JSON.stringify({ token }));
+      localStorage.setItem("hostUser", JSON.stringify({ token }));
+      localStorage.setItem("staffUser", JSON.stringify(response.data.user));
 
-      // redirect
+      // ⭐ redirect
       window.location.href = "/staff-dashboard";
     } catch (error: any) {
       console.error("Staff Login Error:", error);

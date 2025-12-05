@@ -123,7 +123,7 @@ export default function HostManagementForm() {
 
       privacyPolicies: other.privacyPolicies,
       faqs: other.faqs,
-      termsAndConditions: other.formData?.termsAndConditions || "",
+      termsAndConditions: other.termsAndConditions,
 
       // Social Links
       socialFacebook: social.facebook,

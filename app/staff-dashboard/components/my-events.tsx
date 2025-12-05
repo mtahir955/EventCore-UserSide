@@ -33,20 +33,27 @@ export default function MyEvents() {
     }
   };
 
-  // 🔥 FETCH STAFF EVENTS
+  // =====================================================
+  // 🔥 UPDATED API: GET /users/me/events/cards
+  // =====================================================
   const fetchStaffEvents = async () => {
     try {
       setLoading(true);
       const token = getToken();
 
-      const response = await axios.get(`${API_BASE_URL}/staffEvents`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      });
+      const response = await axios.get(
+        `${API_BASE_URL}/users/me/events/cards`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
 
-      const events = response.data?.events || response.data?.data || [];
+      // ✅ Correct path (matches your backend response)
+      const events =
+        response?.data?.data?.events || response?.data?.events || [];
 
       setAllEvents(events);
     } catch (err: any) {

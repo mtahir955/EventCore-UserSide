@@ -28,8 +28,7 @@ export function Header() {
 
   // (Optional) simulate real-time updates every 10s (for demo)
   useEffect(() => {
-    const interval = setInterval(() => {
-    }, 10000);
+    const interval = setInterval(() => {}, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -189,7 +188,7 @@ export function Header() {
               className="flex items-center gap-1 sm:gap-2 hover:bg-gray-100 dark:hover:bg-[#2E2E2E] rounded-full px-2 sm:px-3 py-1 transition-colors flex-shrink-0"
             >
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/profile-img-IlvMGJzzN77BPcgfbFQVybIIXKKBsA.jpg"
+                src="/images/profile.jpeg"
                 alt="Profile"
                 width={28}
                 height={28}
@@ -238,7 +237,7 @@ export function Header() {
                 <div className="p-4 border-b border-gray-100 dark:border-[#3A3A3A]">
                   <div className="flex items-center gap-3">
                     <Image
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/profile-img-IlvMGJzzN77BPcgfbFQVybIIXKKBsA.jpg"
+                      src="/images/profile.jpeg"
                       alt="User profile"
                       width={44}
                       height={44}
@@ -361,7 +360,16 @@ export function Header() {
                 <button
                   onClick={() => {
                     console.log("Logging out...");
+
+                    // CLEAR ALL LOCAL STORAGE
+                    localStorage.clear();
+
+                    // CLOSE MODAL
                     setShowLogoutModal(false);
+
+                    // REDIRECT TO SIGNUP/LOGIN PAGE
+                    window.location.href = "/sign-up";
+                    // ❗ If this logout is for the buyer, change to: window.location.href = "/sign-up-buyer";
                   }}
                   className="h-14 w-full bg-[#0077F7] font-medium text-white transition-colors hover:bg-blue-600 sm:w-[212px]"
                   style={{ borderRadius: "50px" }}

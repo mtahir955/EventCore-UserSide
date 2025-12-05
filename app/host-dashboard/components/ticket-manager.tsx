@@ -135,11 +135,7 @@ export default function TicketManager() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [existingCoupons] = useState([
-    { code: "SAVE10", discount: 10 },
-    { code: "WELCOME15", discount: 15 },
-    { code: "VIP20", discount: 20 },
-  ]);
+  const [existingCoupons, setExistingCoupons] = useState<any[]>([]);
 
   const [showToast, setShowToast] = useState(false);
 
@@ -270,6 +266,21 @@ export default function TicketManager() {
         : [];
 
       setTickets(apiTickets);
+
+      // ⭐ NEW: extract all coupons from tickets
+      const couponSet = new Map();
+
+      apiTickets.forEach((t) => {
+        if (t.couponCode && t.discount) {
+          couponSet.set(t.couponCode, {
+            code: t.couponCode,
+            discount: t.discount,
+          });
+        }
+      });
+
+      // convert map -> array
+      setExistingCoupons(Array.from(couponSet.values()));
     } catch (error) {
       console.error("Ticket Fetch Error:", error);
       toast.error("Failed to load tickets!");
@@ -817,7 +828,7 @@ export default function TicketManager() {
                           }
                         }}
                         value={couponCode || ""}
-                        className="w-full h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
+                        className="w-full h-10 px-3 rounded-lg border"
                       >
                         <option value="">-- Select Coupon --</option>
                         {existingCoupons.map((coupon) => (

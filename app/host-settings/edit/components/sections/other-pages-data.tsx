@@ -35,8 +35,44 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
   });
   const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
 
-  // ⭐ Terms
-  const [terms, setTerms] = useState(tenant.termsAndConditions || "");
+  // ⭐ Terms (Array of objects)
+  const [terms, setTerms] = useState(tenant.termsAndConditions || []);
+
+  const [termsForm, setTermsForm] = useState({
+    title: "",
+    description: "",
+  });
+
+  const [editingTermsIndex, setEditingTermsIndex] = useState<number | null>(
+    null
+  );
+
+  // Add or Update
+  const handleAddTerms = () => {
+    if (!termsForm.title.trim() || !termsForm.description.trim()) return;
+
+    if (editingTermsIndex !== null) {
+      const updated = [...terms];
+      updated[editingTermsIndex] = { ...termsForm };
+      setTerms(updated);
+      setEditingTermsIndex(null);
+    } else {
+      setTerms([...terms, { ...termsForm }]);
+    }
+
+    setTermsForm({ title: "", description: "" });
+  };
+
+  // Edit
+  const handleEditTerms = (i: number) => {
+    setEditingTermsIndex(i);
+    setTermsForm(terms[i]);
+  };
+
+  // Remove
+  const handleRemoveTerms = (i: number) => {
+    setTerms((prev) => prev.filter((_, index) => index !== i));
+  };
 
   // ⭐ Tell parent the output
   useImperativeHandle(ref, () => ({
@@ -58,7 +94,10 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
         answer: f.answer.trim(),
       })),
 
-      termsAndConditions: terms.trim(),
+      termsAndConditions: terms.map((t) => ({
+        title: t.title.trim(),
+        description: t.description.trim(),
+      })),
     }),
   }));
 
@@ -313,19 +352,73 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
       </div>
 
       {/* ================================
-         ⭐ TERMS & CONDITIONS
-      ================================== */}
-      <div className="space-y-2">
+   ⭐ TERMS & CONDITIONS
+================================== */}
+      <div className="space-y-4">
         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
           Terms & Conditions
         </h4>
 
-        <textarea
-          value={terms}
-          onChange={(e) => setTerms(e.target.value)}
-          rows={3}
-          className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
-        />
+        {/* Input Form */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <input
+            placeholder="Term Title"
+            value={termsForm.title}
+            onChange={(e) =>
+              setTermsForm({ ...termsForm, title: e.target.value })
+            }
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+          />
+
+          <textarea
+            placeholder="Term Description"
+            value={termsForm.description}
+            onChange={(e) =>
+              setTermsForm({ ...termsForm, description: e.target.value })
+            }
+            rows={3}
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-[#181818]"
+          />
+        </div>
+
+        <Button
+          onClick={handleAddTerms}
+          className="bg-[#D19537] hover:bg-[#e59618] text-white flex gap-2"
+        >
+          <PlusCircle size={18} />
+          {editingTermsIndex !== null ? "Update Term" : "Add Term"}
+        </Button>
+
+        {/* TERMS LIST */}
+        <div className="space-y-3">
+          {terms.map((t: any, index: number) => (
+            <div
+              key={index}
+              className="flex justify-between items-start bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-lg border"
+            >
+              <div>
+                <h5 className="font-semibold">{t.title}</h5>
+                <p className="text-sm mt-1">{t.description}</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleEditTerms(index)}
+                  className="text-blue-500"
+                >
+                  <Pencil size={18} />
+                </button>
+
+                <button
+                  onClick={() => handleRemoveTerms(index)}
+                  className="text-red-500"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

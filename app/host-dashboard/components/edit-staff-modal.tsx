@@ -34,10 +34,17 @@ export function EditStaffModal({
     { fullName: "", email: "", phoneNumber: "", permission: "Check Tickets" },
   ]);
 
+  // ⭐ STATE FOR PREVIOUS STAFF MINI MODAL
+  const [showPreviousStaffModal, setShowPreviousStaffModal] = useState(false);
+
+  // ⭐ API staff list state
+  const [previousStaffList, setPreviousStaffList] = useState<StaffMember[]>([]);
+  const [loadingPreviousStaff, setLoadingPreviousStaff] = useState(false);
+
   // ⭐ LOAD EXISTING STAFF WHEN EDITING
   useEffect(() => {
     if (isOpen && mode === "edit" && existingStaff.length > 0) {
-      const formatted = existingStaff.map((s) => ({
+      const formatted = existingStaff.map((s: any) => ({
         fullName: s.fullName,
         email: s.email,
         phoneNumber: s.phoneNumber,
@@ -86,6 +93,22 @@ export function EditStaffModal({
     setStaffMembers(updated);
   };
 
+  // ⭐ ADD EXISTING PREVIOUS STAFF INTO FORM
+  const handleAddPreviousStaff = (staff: StaffMember) => {
+    setStaffMembers([
+      ...staffMembers,
+      {
+        fullName: staff.fullName,
+        email: staff.email,
+        phoneNumber: staff.phoneNumber,
+        permission: staff.permission,
+      },
+    ]);
+
+    setShowPreviousStaffModal(false);
+    toast.success("Staff added from previous list");
+  };
+
   const getToken = () => {
     let rawToken =
       localStorage.getItem("hostToken") ||
@@ -100,7 +123,51 @@ export function EditStaffModal({
     }
   };
 
-  // ⭐ SUBMIT HANDLER
+  // ⭐ FETCH PREVIOUS STAFF LIST FROM API
+  const fetchPreviousStaff = async () => {
+    try {
+      setLoadingPreviousStaff(true);
+
+      const token = getToken();
+      if (!token) {
+        toast.error("Missing authentication token");
+        return;
+      }
+
+      const res = await axios.get(`${API_BASE_URL}/users/staff/list`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Tenant-ID": HOST_Tenant_ID,
+        },
+      });
+
+      const apiData = res.data?.data?.staff || [];
+
+      const formatted: StaffMember[] = apiData
+        .filter((s: any) => s.isActive === true) // Only active staff
+        .map((s: any) => ({
+          fullName: s.fullName,
+          email: s.email,
+          phoneNumber: s.phoneNumber,
+          permission: s.permission || "Check Tickets",
+        }));
+
+      setPreviousStaffList(formatted);
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Failed to load previous staff");
+    } finally {
+      setLoadingPreviousStaff(false);
+    }
+  };
+
+  // ⭐ OPEN MINI MODAL + TRIGGER API
+  const openPreviousStaffModal = () => {
+    setShowPreviousStaffModal(true);
+    fetchPreviousStaff();
+  };
+
+  // ⭐ SUBMIT HANDLER (UNCHANGED)
   const handleSubmit = async () => {
     try {
       for (const staff of staffMembers) {
@@ -116,7 +183,6 @@ export function EditStaffModal({
         return;
       }
 
-      // EVENT ID HANDLING
       const finalEventId =
         mode === "edit"
           ? eventId
@@ -137,7 +203,6 @@ export function EditStaffModal({
 
       const payload = { staff: finalStaff };
 
-      // ⭐ API MODE LOGIC
       if (mode === "create") {
         await axios.post(`${API_BASE_URL}/users/staff/bulk`, payload, {
           headers: {
@@ -163,7 +228,7 @@ export function EditStaffModal({
 
         toast.success("Staff updated successfully!");
 
-        if (onUpdated) onUpdated(); // refresh parent list
+        if (onUpdated) onUpdated();
       }
 
       onClose();
@@ -188,6 +253,14 @@ export function EditStaffModal({
           >
             <img src="/images/icons/plus-icon.png" className="h-4 w-4" />
             Add More
+          </button>
+
+          <button
+            onClick={openPreviousStaffModal}
+            className="flex items-center gap-3 sm:px-4 px-2 sm:py-2.5 py-3 rounded-lg bg-black text-white text-[12px] sm:text-[14px] font-semibold"
+          >
+            <img src="/images/icons/plus-icon.png" className="h-4 w-4" />
+            Add previous staff
           </button>
         </div>
 
@@ -300,9 +373,371 @@ export function EditStaffModal({
           </button>
         </div>
       </div>
+
+      {/* ⭐ NEW — PREVIOUS STAFF MINI MODAL */}
+      {showPreviousStaffModal && (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50">
+          <div className="bg-white dark:bg-[#101010] rounded-xl p-6 w-[300px] sm:w-[400px]">
+            <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">
+              Previous Staff List
+            </h3>
+
+            <div className="max-h-[300px] overflow-y-auto space-y-4">
+              {loadingPreviousStaff ? (
+                <p className="text-center text-sm opacity-70">Loading...</p>
+              ) : previousStaffList.length === 0 ? (
+                <p className="text-center text-sm opacity-70">
+                  No staff found.
+                </p>
+              ) : (
+                previousStaffList.map((staff, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-gray-300 dark:border-gray-700 p-4 rounded-lg flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-semibold">{staff.fullName}</p>
+                      <p className="text-sm opacity-80">{staff.email}</p>
+                    </div>
+
+                    <button
+                      onClick={() => handleAddPreviousStaff(staff)}
+                      className="px-3 py-1 rounded-lg bg-black text-white text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowPreviousStaffModal(false)}
+              className="mt-4 w-full py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// code before adding add previous staff functionality
+
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import axios from "axios";
+// import toast from "react-hot-toast";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+
+// interface EditStaffModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   mode?: "create" | "edit";
+//   eventId?: string;
+//   existingStaff?: StaffMember[];
+//   onUpdated?: () => void;
+// }
+
+// interface StaffMember {
+//   fullName: string;
+//   email: string;
+//   phoneNumber: string;
+//   permission: string;
+// }
+
+// export function EditStaffModal({
+//   isOpen,
+//   onClose,
+//   mode = "create",
+//   eventId,
+//   existingStaff = [],
+//   onUpdated,
+// }: EditStaffModalProps) {
+//   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([
+//     { fullName: "", email: "", phoneNumber: "", permission: "Check Tickets" },
+//   ]);
+
+//   // ⭐ LOAD EXISTING STAFF WHEN EDITING
+//   useEffect(() => {
+//     if (isOpen && mode === "edit" && existingStaff.length > 0) {
+//       const formatted = existingStaff.map((s) => ({
+//         fullName: s.fullName,
+//         email: s.email,
+//         phoneNumber: s.phoneNumber,
+//         permission: s.permissionName || s.permission || "Check Tickets",
+//       }));
+
+//       setStaffMembers(formatted);
+//     }
+
+//     if (isOpen && mode === "create") {
+//       setStaffMembers([
+//         {
+//           fullName: "",
+//           email: "",
+//           phoneNumber: "",
+//           permission: "Check Tickets",
+//         },
+//       ]);
+//     }
+//   }, [isOpen]);
+
+//   if (!isOpen) return null;
+
+//   const handleAddMore = () => {
+//     setStaffMembers([
+//       ...staffMembers,
+//       { fullName: "", email: "", phoneNumber: "", permission: "Check Tickets" },
+//     ]);
+//   };
+
+//   const handleDelete = (index: number) => {
+//     if (staffMembers.length === 1) {
+//       toast.error("At least 1 staff member is required.");
+//       return;
+//     }
+//     setStaffMembers(staffMembers.filter((_, i) => i !== index));
+//   };
+
+//   const handleChange = (
+//     index: number,
+//     field: keyof StaffMember,
+//     value: string
+//   ) => {
+//     const updated = [...staffMembers];
+//     updated[index][field] = value;
+//     setStaffMembers(updated);
+//   };
+
+//   const getToken = () => {
+//     let rawToken =
+//       localStorage.getItem("hostToken") ||
+//       localStorage.getItem("hostUser") ||
+//       localStorage.getItem("token");
+
+//     try {
+//       const parsed = JSON.parse(rawToken || "{}");
+//       return parsed?.token || rawToken;
+//     } catch {
+//       return rawToken;
+//     }
+//   };
+
+//   // ⭐ SUBMIT HANDLER
+//   const handleSubmit = async () => {
+//     try {
+//       for (const staff of staffMembers) {
+//         if (!staff.fullName || !staff.email || !staff.phoneNumber) {
+//           toast.error("Please fill all required fields.");
+//           return;
+//         }
+//       }
+
+//       const token = getToken();
+//       if (!token) {
+//         toast.error("Missing authentication token");
+//         return;
+//       }
+
+//       // EVENT ID HANDLING
+//       const finalEventId =
+//         mode === "edit"
+//           ? eventId
+//           : localStorage.getItem("lastPublishedEventId");
+
+//       if (!finalEventId) {
+//         toast.error("Event ID not found");
+//         return;
+//       }
+
+//       const finalStaff = staffMembers.map((s) => ({
+//         eventId: finalEventId,
+//         fullName: s.fullName,
+//         email: s.email,
+//         phoneNumber: s.phoneNumber,
+//         permission: s.permission,
+//       }));
+
+//       const payload = { staff: finalStaff };
+
+//       // ⭐ API MODE LOGIC
+//       if (mode === "create") {
+//         await axios.post(`${API_BASE_URL}/users/staff/bulk`, payload, {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "X-Tenant-ID": HOST_Tenant_ID,
+//           },
+//         });
+
+//         toast.success("Staff added successfully!");
+//       }
+
+//       if (mode === "edit") {
+//         await axios.put(
+//           `${API_BASE_URL}/users/staff/bulk/${finalEventId}`,
+//           payload,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${token}`,
+//               "X-Tenant-ID": HOST_Tenant_ID,
+//             },
+//           }
+//         );
+
+//         toast.success("Staff updated successfully!");
+
+//         if (onUpdated) onUpdated(); // refresh parent list
+//       }
+
+//       onClose();
+//     } catch (error: any) {
+//       console.error(error);
+//       toast.error(error?.response?.data?.message || "Failed to save staff");
+//     }
+//   };
+
+//   return (
+//     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40">
+//       <div className="relative rounded-2xl shadow-2xl bg-white dark:bg-[#101010] overflow-hidden sm:w-[600px] w-[320px]">
+//         {/* HEADER */}
+//         <div className="flex items-center justify-between px-8 pt-8 pb-6">
+//           <h2 className="sm:text-[24px] text-[20px] font-bold text-black dark:text-white">
+//             {mode === "edit" ? "Edit Event Staff" : "Event Staff"}
+//           </h2>
+
+//           <button
+//             onClick={handleAddMore}
+//             className="flex items-center gap-3 sm:px-4 px-2 sm:py-2.5 py-3 rounded-lg bg-black text-white text-[12px] sm:text-[14px] font-semibold"
+//           >
+//             <img src="/images/icons/plus-icon.png" className="h-4 w-4" />
+//             Add More
+//           </button>
+
+//           <button
+//             className="flex items-center gap-3 sm:px-4 px-2 sm:py-2.5 py-3 rounded-lg bg-black text-white text-[12px] sm:text-[14px] font-semibold"
+//           >
+//             <img src="/images/icons/plus-icon.png" className="h-4 w-4" />
+//             Add previous staff
+//           </button>
+//         </div>
+
+//         {/* CONTENT */}
+//         <div
+//           className="px-8 pb-8 overflow-y-auto"
+//           style={{ maxHeight: "calc(90vh - 180px)" }}
+//         >
+//           {staffMembers.map((member, index) => (
+//             <div
+//               key={index}
+//               className={
+//                 index > 0
+//                   ? "mt-8 pt-8 border-t border-gray-200 relative"
+//                   : "relative"
+//               }
+//             >
+//               {staffMembers.length > 1 && (
+//                 <button
+//                   onClick={() => handleDelete(index)}
+//                   className="absolute right-0 top-0 text-red-500 hover:text-red-700 text-sm"
+//                 >
+//                   ✕ Remove
+//                 </button>
+//               )}
+
+//               {/* FULL NAME */}
+//               <div className="mb-6 mt-4">
+//                 <label className="block font-medium mb-2">
+//                   Full Name <span className="text-red-600">*</span>
+//                 </label>
+//                 <input
+//                   type="text"
+//                   value={member.fullName}
+//                   onChange={(e) =>
+//                     handleChange(index, "fullName", e.target.value)
+//                   }
+//                   className="w-full px-4 py-3 rounded-lg border"
+//                 />
+//               </div>
+
+//               {/* EMAIL */}
+//               <div className="mb-6">
+//                 <label className="block font-medium mb-2">
+//                   Email <span className="text-red-600">*</span>
+//                 </label>
+//                 <input
+//                   type="email"
+//                   value={member.email}
+//                   onChange={(e) => handleChange(index, "email", e.target.value)}
+//                   className="w-full px-4 py-3 rounded-lg border"
+//                 />
+//               </div>
+
+//               {/* PHONE */}
+//               <div className="mb-6">
+//                 <label className="block font-medium mb-2">
+//                   Phone Number <span className="text-red-600">*</span>
+//                 </label>
+//                 <input
+//                   type="tel"
+//                   value={member.phoneNumber}
+//                   onChange={(e) =>
+//                     handleChange(index, "phoneNumber", e.target.value)
+//                   }
+//                   className="w-full px-4 py-3 rounded-lg border"
+//                 />
+//               </div>
+
+//               {/* PERMISSION */}
+//               <div className="mb-6">
+//                 <label className="block font-medium mb-3">
+//                   Assign Permission <span className="text-red-600">*</span>
+//                 </label>
+
+//                 <label className="flex items-center gap-3 cursor-pointer">
+//                   <input
+//                     type="radio"
+//                     name={`permission-${index}`}
+//                     value="Check Tickets"
+//                     checked={member.permission === "Check Tickets"}
+//                     onChange={(e) =>
+//                       handleChange(index, "permission", e.target.value)
+//                     }
+//                     className="w-5 h-5"
+//                   />
+//                   <span>Check Tickets</span>
+//                 </label>
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* FOOTER */}
+//         <div className="px-8 pb-8 flex items-center gap-4">
+//           <button
+//             onClick={onClose}
+//             className="flex-1 py-3 rounded-lg"
+//             style={{ background: "#F5EDE5", color: "#D19537" }}
+//           >
+//             Cancel
+//           </button>
+
+//           <button
+//             onClick={handleSubmit}
+//             className="flex-1 py-3 rounded-lg text-white"
+//             style={{ background: "#D19537" }}
+//           >
+//             {mode === "edit" ? "Update" : "Add"}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 // "use client";
 

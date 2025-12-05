@@ -32,22 +32,29 @@ export default function Dashboard() {
     }
   };
 
-  // 🔥 FETCH EVENTS LIST
+  // ============================================
+  // 🔥 UPDATED API CALL
+  // GET /users/me/dashboard/events
+  // ============================================
   const fetchEventsList = async () => {
     try {
       setLoading(true);
       const token = getToken();
 
-      const response = await axios.get(`${API_BASE_URL}/eventsList`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      });
+      const response = await axios.get(
+        `${API_BASE_URL}/users/me/dashboard/events`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
 
-      const data = response.data?.events || response.data?.data || [];
+      const data =
+        response.data?.events || response.data?.data || response.data || [];
 
-      // Normalizing backend → frontend shape
+      // 🔄 Normalize backend → frontend keys
       const formatted = data.map((e: any) => ({
         name: e.eventName,
         date: e.eventDate,
@@ -68,7 +75,7 @@ export default function Dashboard() {
     fetchEventsList();
   }, []);
 
-  // PAGINATION CALC
+  // PAGINATION
   const indexOfLast = currentPage * entriesPerPage;
   const indexOfFirst = indexOfLast - entriesPerPage;
 
@@ -105,7 +112,6 @@ export default function Dashboard() {
 
         {/* Stats */}
         <div className="mx-4 sm:mx-6 md:mx-8 mt-6 mr-[410px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 justify-items-center md:justify-items-stretch">
-          {/* Cards */}
           <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
               <div className="rounded-full bg-blue-50 dark:bg-[#101010] p-4 mt-1">
@@ -216,10 +222,13 @@ export default function Dashboard() {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {/* LOADING STATE */}
+                {/* LOADING */}
                 {loading && (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="py-8 text-center text-gray-500 dark:text-white"
+                    >
                       Loading events...
                     </td>
                   </tr>
@@ -228,13 +237,16 @@ export default function Dashboard() {
                 {/* NO EVENTS */}
                 {!loading && events.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="py-8 text-center text-gray-500 dark:text-white"
+                    >
                       No events found.
                     </td>
                   </tr>
                 )}
 
-                {/* EVENTS LIST */}
+                {/* EVENTS */}
                 {!loading &&
                   currentEvents.map((event, index) => (
                     <tr
@@ -250,14 +262,8 @@ export default function Dashboard() {
                       <td className="px-6 py-4 dark:text-white">
                         {event.address}
                       </td>
-                      <td className="px-6 py-4">
-                        {event.status === "Upcoming" ? (
-                          <span className="dark:text-white">
-                            {event.status}
-                          </span>
-                        ) : (
-                          <span className="text-red-600">{event.status}</span>
-                        )}
+                      <td className="px-6 py-4 dark:text-white">
+                        {event.status}
                       </td>
                       <td className="px-6 py-4">
                         {event.status === "Upcoming" ? (
@@ -268,7 +274,7 @@ export default function Dashboard() {
                           </Link>
                         ) : (
                           <button className="rounded-full bg-gray-300 px-5 py-2 text-sm font-medium text-gray-600">
-                            Expire
+                            Expired
                           </button>
                         )}
                       </td>

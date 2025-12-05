@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { API_BASE_URL } from "@/config/apiConfig";
 
 type AuthView = "signup" | "signin" | "forgot-password" | "reset-password";
 
@@ -29,7 +31,6 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // front-end validation
     const newErrors = {
       email: formData.email.trim() === "",
       password: formData.password.trim() === "",
@@ -44,14 +45,14 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
     try {
       const response = await axios.post(
-        "http://192.168.18.185:8080/auth/login",
+        `${API_BASE_URL}/auth/login`,
         {
           email: formData.email,
           password: formData.password,
         },
         {
           headers: {
-            "x-tenant-id": "883e6f70-8923-4c72-bf04-66905d24d736",
+            "x-tenant-id": HOST_Tenant_ID,
             "Content-Type": "application/json",
           },
         }
@@ -61,22 +62,37 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
       console.log("Login Response:", response.data);
 
-      // store token
-      if (response.data?.accessToken) {
-        localStorage.setItem("userToken", response.data.accessToken);
+      // ----------------------------------------------
+      // ✅ Extract token EXACTLY as backend sends it
+      // ----------------------------------------------
+      const token = response?.data?.data?.access_token;
+
+      if (!token) {
+        toast.error("No token received from server");
+        return;
       }
 
-      // redirect user (change if needed)
-      window.location.href = "/dashboard";
+      // ----------------------------------------------
+      // ✅ Save Buyer Token
+      // ----------------------------------------------
+      localStorage.setItem("buyerToken", token);
+
+      // OPTIONAL: save user info too
+      localStorage.setItem(
+        "buyerUser",
+        JSON.stringify(response.data.data.user)
+      );
+
+      // ----------------------------------------------
+      // Redirect user
+      // ----------------------------------------------
+      window.location.href = "/#";
     } catch (error: any) {
       console.error("Login Error:", error);
 
       toast.error(error?.response?.data?.message || "Invalid credentials");
 
-      setErrors({
-        email: true,
-        password: true,
-      });
+      setErrors({ email: true, password: true });
     }
   };
 
