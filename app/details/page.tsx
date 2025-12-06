@@ -67,6 +67,12 @@ export default function EventDetailPage() {
     ? new Date(`${eventData.date.fullDate} ${eventData.date.startTime}`)
     : new Date();
 
+  const safeEventId = eventId ?? "";
+
+  const eventActualDate = eventData?.date?.timestamp
+    ? new Date(eventData.date.timestamp)
+    : new Date(); // fallback
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#101010] text-black dark:text-white transition-colors duration-300">
       <Header />
@@ -305,14 +311,33 @@ export default function EventDetailPage() {
       <Footer />
 
       {/* Calendar Modal */}
-      <CalendarModal
+      {/* <CalendarModal
         isOpen={isCalendarOpen}
         onClose={() => setIsCalendarOpen(false)}
         eventTitle="Starry Nights Music Fest"
         eventDescription="A magical evening under the stars with live bands, food stalls, and an electric crowd."
         eventImage="/images/hero-image.png"
         initialDate={new Date(2025, 5, 10)}
-      />
+      /> */}
+
+      {eventData && (
+        <CalendarModal
+          isOpen={isCalendarOpen}
+          onClose={() => setIsCalendarOpen(false)}
+          eventTitle={eventData.title}
+          eventDescription={
+            eventData.description?.paragraphs?.[0] ||
+            "Event description not available."
+          }
+          eventImage={
+            eventData.bannerImage
+              ? eventData.bannerImage
+              : "/images/hero-image.png"
+          }
+          eventId={eventId ?? ""}
+          initialDate={eventActualDate} // ⭐ Correct Date Fix
+        />
+      )}
     </div>
   );
 }

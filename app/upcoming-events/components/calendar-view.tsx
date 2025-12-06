@@ -12,7 +12,7 @@ export default function CalendarView({
     checkOut: number | null;
   }) => void;
 }) {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 5));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [checkIn, setCheckIn] = useState<number | null>(null);
   const [checkOut, setCheckOut] = useState<number | null>(null);
 
