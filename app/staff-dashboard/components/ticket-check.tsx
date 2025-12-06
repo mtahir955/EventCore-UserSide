@@ -131,6 +131,11 @@ export default function TicketCheck() {
   // Total pages
   const totalPages = Math.ceil(attendees.length / attendeesPerPage);
 
+  const [isScanning, setIsScanning] = useState(false);
+  const [resultType, setResultType] = useState<"success" | "invalid" | null>(
+    null
+  );
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full bg-white font-sans">
       {/* Sidebar */}
@@ -199,9 +204,39 @@ export default function TicketCheck() {
                       type="text"
                       placeholder="Manual Enter Ticket ID"
                       value={ticketId}
-                      onChange={(e) => setTicketId(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setTicketId(value);
+
+                        if (value.trim().length > 0) {
+                          setIsScanning(true); // Start scanner animation
+                        } else {
+                          setIsScanning(false); // Stop scanner animation
+                          setShowResult(false);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const found = attendees.find(
+                            (a) =>
+                              a.ticketId.toLowerCase() ===
+                              ticketId.toLowerCase()
+                          );
+
+                          setIsScanning(false); // stop animation after checking
+
+                          if (found) {
+                            setResultType("success");
+                          } else {
+                            setResultType("invalid");
+                          }
+
+                          setShowResult(true);
+                        }
+                      }}
                       className="ticket-id-input"
                     />
+
                     <Image
                       src="/images/search-icon.png"
                       alt="Search"
@@ -222,7 +257,11 @@ export default function TicketCheck() {
                       height={280}
                       className="qr-code-image"
                     />
-                    <div className="scanner-line"></div>
+                    <div
+                      className={`scanner-line ${
+                        isScanning ? "animate-scan" : "animate-none"
+                      }`}
+                    ></div>
                     <Image
                       src="/images/scanner-frame.png"
                       alt="Scanner Frame"
@@ -241,21 +280,65 @@ export default function TicketCheck() {
 
                   <div className="result-card">
                     <div className="result-content">
-                      <Image
-                        src="/images/check-circle.png"
-                        alt="Valid"
-                        width={48}
-                        height={48}
-                        className="check-icon"
-                      />
+                      {/* Success Icon */}
+                      {resultType === "success" && (
+                        <Image
+                          src="/images/check-circle.png"
+                          alt="Valid"
+                          width={48}
+                          height={48}
+                          className="check-icon"
+                        />
+                      )}
+
+                      {/* Invalid Icon */}
+                      {resultType === "invalid" && (
+                        <Image
+                          src="/images/check-circle-red.png"
+                          alt="Invalid"
+                          width={48}
+                          height={48}
+                          className="check-icon"
+                        />
+                      )}
+
                       <div className="result-info">
-                        <h3 className="result-status">Valid Ticket</h3>
-                        <p className="result-details">
-                          JohnDoe-TCK-992134, VIP Ticket
-                        </p>
+                        {/* SUCCESS LABEL */}
+                        {resultType === "success" && (
+                          <>
+                            <h3
+                              className="result-status"
+                              style={{ color: "#22C55E" }}
+                            >
+                              Valid Ticket
+                            </h3>
+                            <p className="result-details">
+                              {ticketId}, Valid Ticket
+                            </p>
+                          </>
+                        )}
+
+                        {/* INVALID LABEL */}
+                        {resultType === "invalid" && (
+                          <>
+                            <h3
+                              className="result-status"
+                              style={{ color: "#EF4444" }}
+                            >
+                              Invalid Ticket
+                            </h3>
+                            <p className="result-details">
+                              Ticket code does not exist
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
-                    <button className="checkin-btn">Check-In</button>
+
+                    {/* Show check-in only if success */}
+                    {resultType === "success" && (
+                      <button className="checkin-btn">Check-In</button>
+                    )}
                   </div>
                 </div>
               )}
