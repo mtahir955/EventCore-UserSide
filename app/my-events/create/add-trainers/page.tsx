@@ -47,7 +47,7 @@ export default function AddTrainersSection({
   const [eventType, setEventType] = useState<"ticketed" | "free">("ticketed");
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
-  const handleGoBack = () => setActivePage("create");
+  const handleGoBack = () => setActivePage("set-eventsettings");
 
   const saveTrainersToLocalStorage = (updatedTrainers: Trainer[]) => {
     if (typeof window === "undefined") return;

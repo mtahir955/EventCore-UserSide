@@ -79,7 +79,7 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
   };
 
   const handleGoBack = () => {
-    setActivePage("create");
+    setActivePage("set-ticketingdetailsT");
   };
 
   const handleSaveAndContinue = () => {

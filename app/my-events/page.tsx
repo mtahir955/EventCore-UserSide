@@ -495,6 +495,9 @@ export default function MyEventsPage() {
           </div>
         </header>
 
+        {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
+
         {/* Filters Section */}
         <div className="px-4 md:px-8 mt-4">
           {/* Create + Filter Row */}

@@ -14,6 +14,7 @@ const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
   const { setTheme } = useTheme();
 
   const [theme, setThemeLocal] = useState(host.theme || "light");
+  const [isCreditEnabled, setIsCreditEnabled] = useState(true);
 
   // ⭐ APPLY THEME INSTANTLY WHEN DROPDOWN CHANGES
   useEffect(() => {
@@ -94,6 +95,7 @@ const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
 
   return (
     <div className="bg-white dark:bg-[#101010] rounded-2xl border p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Settings2 size={24} />
         <h3 className="text-xl font-bold">Account Settings</h3>
@@ -102,10 +104,29 @@ const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
       {/* Change Password Button */}
       <button
         onClick={() => setShowChangePasswordModal(true)}
-        className="px-4 py-2 bg-[#D19537] text-white rounded-lg hover:bg-[#c2872f]"
+        className="px-4 py-2 bg-[#D19537] text-white rounded-lg hover:bg-[#e2a64c]"
       >
         Change Password
       </button>
+
+      {/* 🔥 CREDIT APPLICATION WITH ENABLE/DISABLE BUTTON */}
+      <div className="space-y-2">
+        <h4 className="text-lg font-semibold">Credit Application</h4>
+
+        <div className="border rounded-xl bg-white dark:bg-[#181818] px-4 py-5 text-gray-900 dark:text-gray-100 leading-relaxed">
+          Credit application is currently{" "}
+          <span className="font-semibold">
+            {isCreditEnabled ? "enabled" : "disabled"}
+          </span>
+        </div>
+
+        <button
+          onClick={() => setIsCreditEnabled(!isCreditEnabled)}
+          className="px-4 py-2 border rounded-lg bg-[#D19537] text-white hover:bg-[#e2a64c] transition"
+        >
+          {isCreditEnabled ? "Disable" : "Enable"}
+        </button>
+      </div>
 
       {/* THEME SELECTOR */}
       <div className="space-y-2">

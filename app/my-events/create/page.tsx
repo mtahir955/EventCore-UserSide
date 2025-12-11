@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import EventSettingsPageInline from "./event-settings-inline";
 
 const STORAGE_KEY = "eventDraft";
 
@@ -87,6 +88,8 @@ export default function CreateEventPage() {
 
   const stepOrder = [
     "create",
+    "set-eventsettings", // NEW STEP INSERTED
+    "set-ticketingdetailsT",
     "set-images",
     "set-ticketingdetails",
     "preview-event",
@@ -96,16 +99,21 @@ export default function CreateEventPage() {
     { num: 1, label: "Event Details", active: ActivePage === "create" },
     {
       num: 2,
+      label: "Event Settings",
+      active: ActivePage === "set-eventsettings",
+    },
+    {
+      num: 3,
       label: "Add Trainers",
       active: ActivePage === "set-ticketingdetailsT",
     },
-    { num: 3, label: "Set Images", active: ActivePage === "set-images" },
+    { num: 4, label: "Set Images", active: ActivePage === "set-images" },
     {
-      num: 4,
+      num: 5,
       label: "Ticketing Details",
       active: ActivePage === "set-ticketingdetails",
     },
-    { num: 5, label: "Preview Event", active: ActivePage === "preview-event" },
+    { num: 6, label: "Preview Event", active: ActivePage === "preview-event" },
   ].map((step, index) => {
     const currentIndex = stepOrder.indexOf(ActivePage);
     return { ...step, isdone: index < currentIndex };
@@ -162,7 +170,7 @@ export default function CreateEventPage() {
     // ✅ Save to localStorage before moving to next step
     saveEventDetailsToLocalStorage();
 
-    setActivePage("set-ticketingdetailsT");
+    setActivePage("set-eventsettings");
   };
 
   const [hostName, setHostName] = useState("Host");
@@ -343,6 +351,9 @@ export default function CreateEventPage() {
             </div>
           </div>
         </header>
+
+        {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
 
         {/* Back Button + Step Bar */}
         <div className="px-4 sm:px-6 md:px-8 mt-4 md:mt-6 mb-6">
@@ -712,6 +723,9 @@ export default function CreateEventPage() {
         )}
         {ActivePage === "preview-event" && (
           <PreviewEventPage setActivePage={setActivePage} />
+        )}
+        {ActivePage === "set-eventsettings" && (
+          <EventSettingsPageInline setActivePage={setActivePage} />
         )}
       </main>
     </div>

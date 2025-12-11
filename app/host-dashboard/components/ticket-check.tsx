@@ -361,6 +361,9 @@ export default function TicketCheck() {
               </div>
             </div>
           </header>
+
+          {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
         </div>
 
         {/* ✅ Optional mobile navbar */}

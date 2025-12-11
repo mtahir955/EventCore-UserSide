@@ -175,6 +175,9 @@ export function HostManagementTable({
             <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
               Status
             </th>
+            <th className="text-center px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
+              Actions
+            </th>
           </tr>
         </thead>
 
@@ -271,6 +274,22 @@ export function HostManagementTable({
                   >
                     {host.status}
                   </span>
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <button
+                    // onClick={(e) => {
+                    //   e.stopPropagation(); // prevent row click
+                    //   // router.push(`/host-management/edit?id=${host.id}`);
+                    //   router.push(`/host-management/edit`);
+                    // }}
+                    onClick={(e) =>{
+                      e.stopPropagation();
+                      router.push(`/host-management/edit`)
+                    }}
+                    className="px-4 py-1.5 text-sm rounded-lg bg-[#0077F7] text-white hover:bg-blue-600 transition"
+                  >
+                    Edit
+                  </button>
                 </td>
               </tr>
             ))}

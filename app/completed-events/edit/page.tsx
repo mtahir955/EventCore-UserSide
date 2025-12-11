@@ -287,6 +287,9 @@ export default function EditEventPage() {
           </div>
         </header>
 
+        {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
+
         {/* Page content */}
         <div className="px-1 md:px-8 py-6">
           {/* Top bar with back button and actions */}

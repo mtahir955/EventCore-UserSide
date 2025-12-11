@@ -355,7 +355,7 @@ export function Header() {
                     localStorage.clear();
                     setIsLoggedIn(false); // ⭐ UPDATE LOGIN STATE
                     setShowLogoutModal(false);
-                    window.location.href = "/sign-up";
+                    window.location.href = "/#";
                   }}
                   className="h-14 w-full bg-[#0077F7] font-medium text-white transition-colors hover:bg-blue-600 sm:w-[212px]"
                   style={{ borderRadius: "50px" }}

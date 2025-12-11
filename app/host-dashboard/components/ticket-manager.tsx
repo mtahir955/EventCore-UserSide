@@ -453,10 +453,13 @@ export default function TicketManager() {
               </div>
             </div>
           </header>
+
+          {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
         </div>
 
         {/* 🔍 Search & Filters */}
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mt-18 sm:mt-0 mx-8 p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mt-18 sm:mt-6 mx-8 p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-4">Search Tickets</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input

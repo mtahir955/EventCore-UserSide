@@ -400,6 +400,9 @@ export default function TransferRequestsPage() {
           </div>
         </header>
 
+        {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
+
         {/* Search Bar */}
         <div className="px-4 sm:px-6 md:px-8 py-4 md:py-6 bg-[#FAFAFB] dark:bg-[#101010]">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">

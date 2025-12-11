@@ -322,77 +322,113 @@ const BasicInformationSection = forwardRef((props, ref) => {
         </h4>
 
         <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="passServiceFee"
               checked={formData.passServiceFee}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Pass service fee to customer
+            <span className="group-hover:text-[#D19537] transition">
+              Pass service fee to customer
+            </span>
           </label>
 
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="absorbFee"
               checked={formData.absorbFee}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Absorb fee from earnings
+            <span className="group-hover:text-[#D19537] transition">
+              Absorb fee from earnings
+            </span>
           </label>
 
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="allowTransfers"
               checked={formData.allowTransfers}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Allow ticket transfers
+            <span className="group-hover:text-[#D19537] transition">
+              Allow ticket transfers
+            </span>
           </label>
 
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="manualCreditAdjust"
               checked={formData.manualCreditAdjust}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Enable manual credit adjustments
+            <span className="group-hover:text-[#D19537] transition">
+              Enable manual credit adjustments
+            </span>
           </label>
 
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="paymentPlans"
               checked={formData.paymentPlans}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Enable payment plans
+            <span className="group-hover:text-[#D19537] transition">
+              Allow Payment Plan Options for Tickets
+            </span>
           </label>
 
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="showLoginHelp"
               checked={formData.showLoginHelp}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Show login help link
+            <span className="group-hover:text-[#D19537] transition">
+              Show Help Center / Login Help Links
+            </span>
           </label>
 
-          <label className="flex gap-3 items-center cursor-pointer">
+          <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="creditExpiration"
               checked={formData.creditExpiration}
               onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
             />
-            Enable credit expiration
+            <span className="group-hover:text-[#D19537] transition">
+              Enable credit expiration
+            </span>
           </label>
         </div>
       </div>
+
       {/* Save Button */}
       <div className="flex justify-end">
         <Button

@@ -1,100 +1,54 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "../host-dashboard/components/sidebar";
-import Image from "next/image";
-import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
-import { PaymentWithdrawalTable } from "../admin/components/payment-withdrawal-table";
-import { Bell, User, X, LogOut, Moon, Sun, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 import { useTheme } from "next-themes";
-import { PaymentSuccessTable } from "../admin/components/payment-success-table";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import Link from "next/link";
 
-interface WithdrawalRequest {
-  id: string;
-  name: string;
-  avatar: string;
-  email: string;
-  category: string;
-  address: string;
-  amount: number;
-}
-
-const withdrawalRequests: WithdrawalRequest[] = [
-  {
-    id: "1",
-    name: "Daniel Carter",
-    avatar: "/icons/user-avatar-placeholder.png",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    amount: 1220,
-  },
-  {
-    id: "2",
-    name: "Sarah Mitchell",
-    avatar: "/icons/user-avatar-placeholder.png",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    amount: 1220,
-  },
-  {
-    id: "3",
-    name: "Emily Carter",
-    avatar: "/icons/user-avatar-placeholder.png",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    amount: 1220,
-  },
-  {
-    id: "4",
-    name: "Nathan Blake",
-    avatar: "/icons/user-avatar-placeholder.png",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    amount: 1220,
-  },
-  {
-    id: "5",
-    name: "Taylor Morgan",
-    avatar: "/icons/user-avatar-placeholder.png",
-    email: "Info@gmail.com",
-    category: "Organizer/Host",
-    address: "Washington DC, USA",
-    amount: 1220,
-  },
-];
-
-export default function PaymentWithdrawalPage() {
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  // Click outside handler
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(e.target as Node)
-      ) {
-        setShowProfileDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const { resolvedTheme, theme, setTheme } = useTheme();
+export default function EventSettingsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState<
+    "general" | "advanced" | "payments"
+  >("general");
+
+  // General tab checkboxes
+  const [passServiceFee, setPassServiceFee] = useState(false);
+  const [allowCredits, setAllowCredits] = useState(false);
+  const [allowTransfer, setAllowTransfer] = useState(false);
+
+  // Advanced (dummy)
+  const [autoApprove, setAutoApprove] = useState(false);
+  const [limitPerUser, setLimitPerUser] = useState(false);
+
+  // Payments (dummy)
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [refundAllowed, setRefundAllowed] = useState(false);
+
+  // Host name
+  const [hostName, setHostName] = useState("Host");
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("hostUser");
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setHostName(user.userName || user.fullName || "Host");
+    } else {
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   // Dropdowns
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   // Dummy notifications
   const notifications = [
@@ -123,88 +77,49 @@ export default function PaymentWithdrawalPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [hostName, setHostName] = useState("Host");
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("hostUser");
-
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-
-      // Host Name
-      setHostName(user.userName || user.fullName || "Host");
-
-      console.log("HOST DASHBOARD USER:", user);
-      console.log("HOST SUBDOMAIN:", user?.subDomain);
-    } else {
-      // Force redirect if no host session found
-      window.location.href = "/sign-in-host";
-    }
-  }, []);
-
   return (
-    <div className="flex min-h-screen bg-secondary">
+    <div className="relative bg-[#FAFAFB] w-full min-h-screen flex flex-col lg:flex-row dark:bg-[#101010]">
       {/* Sidebar */}
       <Sidebar
-        active="Payment"
+        active="Event Settings"
         isOpen={sidebarOpen}
         onToggle={setSidebarOpen}
       />
-      {/* Main Section */}
-      <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
-        {/* ===== Header ===== */}
+
+      {/* Drawer for mobile */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-black/40"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="relative w-[260px] h-full bg-white dark:bg-[#101010] shadow-lg z-50">
+            <Sidebar active="Event Settings" />
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 lg:ml-[256px] mt-14 sm:mt-0 h-full">
+        {/* HEADER (same as Transfer Requests page) */}
         <header className="hidden md:flex items-center justify-between px-4 sm:px-6 md:px-8 pt-6 md:pt-8 pb-4 md:pb-6 bg-[#FAFAFB] dark:bg-[#101010]">
-          <div className="flex items-center gap-4">
-            {/* Hamburger icon on tablet (hidden on lg) */}
+          <div className="flex items-center gap-3">
+            {/* Hamburger for mobile */}
             <button
               className="lg:hidden p-2 rounded-md hover:bg-gray-100"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar menu"
+              aria-label="Open sidebar"
             >
               <Menu className="w-6 h-6 text-gray-800" />
             </button>
-
-            <h1 className="text-[24px] sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.02em] text-foreground">
-              Payments
+            <h1 className="text-[22px] sm:text-[26px] md:text-[28px] font-semibold text-foreground">
+              Event Settings
             </h1>
           </div>
 
           {/* Right section */}
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
-              {/* Light/Dark toggle */}
-              {/* <Button
-                onClick={() =>
-                  setTheme(resolvedTheme === "light" ? "dark" : "light")
-                }
-                variant="ghost"
-                size="sm"
-                className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
-              >
-                {theme === "light" ? (
-                  <>
-                    <Moon className="h-4 w-4" /> Dark Mode
-                  </>
-                ) : (
-                  <>
-                    <Sun className="h-4 w-4" /> Light Mode
-                  </>
-                )}
-              </Button> */}
-
-              {/* Mobile toggle */}
-              {/* <button
-                onClick={() =>
-                  setTheme(resolvedTheme === "light" ? "dark" : "light")
-                }
-                className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
-              >
-                {theme === "light" ? (
-                  <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
-                ) : (
-                  <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
-                )}
-              </button> */}
               {/* Notification icon */}
               <div ref={notificationsRef} className="relative">
                 <button
@@ -321,36 +236,97 @@ export default function PaymentWithdrawalPage() {
         {/* Bottom Divider Line */}
         <div className="border-b border-gray-200 dark:border-gray-800"></div>
 
-        {/* Mobile Header Spacer */}
-        <div className="lg:hidden h-[56px]" />
-
-        {/* ===== Page Content ===== */}
-        <div className="p-4 sm:p-6 md:p-8">
-          {/* ===== Payment Withdrawal Table ===== */}
-          <div className="mt-2 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Payments History
-            </h3>
-
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentSuccessTable />
-            </div>
+        {/* Page Content */}
+        <div className="px-4 sm:px-6 md:px-8 py-6">
+          {/* Tabs */}
+          <div className="flex gap-6 border-b pb-3 mb-6 dark:border-gray-700">
+            {["general", "advanced", "payments"].map((tab) => (
+              <button
+                key={tab}
+                className={`pb-2 font-medium text-[15px] tracking-wide ${
+                  activeTab === tab
+                    ? "border-b-2 border-black dark:border-white text-black dark:text-white"
+                    : "text-gray-600 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab(tab as any)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
 
-          {/* ===== Payment Withdrawal Table ===== */}
-          <div className="mt-8 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Refund Payment Requests
-            </h3>
+          {/* TAB CONTENT */}
+          <div className="space-y-5">
+            {/* GENERAL TAB UI */}
+            {activeTab === "general" && (
+              <>
+                <SettingToggle
+                  label="Pass service fee to customer"
+                  checked={passServiceFee}
+                  onToggle={() => setPassServiceFee(!passServiceFee)}
+                />
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentWithdrawalTable />
-            </div>
+                <SettingToggle
+                  label="Allow credits to be used for this event"
+                  checked={allowCredits}
+                  onToggle={() => setAllowCredits(!allowCredits)}
+                />
+
+                <SettingToggle
+                  label="Allow ticket transfer between users"
+                  checked={allowTransfer}
+                  onToggle={() => setAllowTransfer(!allowTransfer)}
+                />
+              </>
+            )}
+
+            {/* ADVANCED */}
+            {activeTab === "advanced" && (
+              <>
+                <SettingToggle
+                  label="Automatically approve event registrations"
+                  checked={autoApprove}
+                  onToggle={() => setAutoApprove(!autoApprove)}
+                />
+
+                <SettingToggle
+                  label="Limit number of tickets per user"
+                  checked={limitPerUser}
+                  onToggle={() => setLimitPerUser(!limitPerUser)}
+                />
+              </>
+            )}
+
+            {/* PAYMENTS */}
+            {activeTab === "payments" && (
+              <>
+                <SettingToggle
+                  label="Enable Stripe payments for this event"
+                  checked={stripeEnabled}
+                  onToggle={() => setStripeEnabled(!stripeEnabled)}
+                />
+
+                <SettingToggle
+                  label="Allow users to request refunds"
+                  checked={refundAllowed}
+                  onToggle={() => setRefundAllowed(!refundAllowed)}
+                />
+              </>
+            )}
+          </div>
+
+          {/* SAVE BUTTON */}
+          <div className="mt-8">
+            <button
+              className="w-full sm:w-auto px-8 py-3 rounded-xl text-white font-medium text-[15px] hover:opacity-90"
+              style={{ backgroundColor: "#D19537" }}
+            >
+              Save Settings
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Logout Modal */}
       <LogoutModalHost
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
@@ -360,5 +336,57 @@ export default function PaymentWithdrawalPage() {
         }}
       />
     </div>
+  );
+}
+
+// Reusable Checkbox With Styling
+function SettingToggle({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer select-none group">
+      {/* Checkbox */}
+      <div
+        onClick={onToggle}
+        className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all
+          ${
+            checked
+              ? "bg-[#D19537] border-[#D19537]"
+              : "border-gray-400 dark:border-gray-600 bg-white dark:bg-[#181818]"
+          }
+          group-hover:border-[#D19537]
+        `}
+      >
+        {/* Tick mark (hidden until checked) */}
+        {checked && (
+          <svg
+            className="text-white"
+            width="16"
+            height="16"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path
+              d="M5 10L8.5 13.5L15 7"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </div>
+
+      {/* Label */}
+      <span className="text-[16px] text-gray-800 dark:text-gray-200">
+        {label}
+      </span>
+    </label>
   );
 }

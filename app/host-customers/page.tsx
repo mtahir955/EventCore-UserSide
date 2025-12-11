@@ -420,6 +420,9 @@ export default function CustomersPage() {
           </div>
         </header>
 
+        {/* Bottom Divider Line */}
+        <div className="border-b border-gray-200 dark:border-gray-800"></div>
+
         {/* Search Bar */}
         <div className="px-8 py-6 bg-[#FAFAFB] dark:bg-[#101010]">
           <div className="flex flex-col sm:flex-row gap-4">
