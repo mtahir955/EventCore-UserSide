@@ -463,9 +463,15 @@ export default function MyEventsPage() {
                         </button>
                       </Link>
 
-                      <Link href="/payment-setup">
+                      <Link href="/ticket-manager">
                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                          Payment Setup
+                          Ticket Manager
+                        </button>
+                      </Link>
+
+                      <Link href="/host-payments">
+                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                          Payments
                         </button>
                       </Link>
 

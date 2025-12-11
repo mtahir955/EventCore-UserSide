@@ -72,7 +72,7 @@ export function EventCard({ event }: EventCardProps) {
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 line-clamp-1 pr-10">
               {event.title}
             </h3>
-            <Button
+            {/* <Button
               size="icon"
               variant="ghost"
               className="bg-white/90 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 rounded-full w-8 h-8 transition"
@@ -88,7 +88,7 @@ export function EventCard({ event }: EventCardProps) {
                     : "text-gray-700 dark:text-gray-300"
                 }`}
               />
-            </Button>
+            </Button> */}
           </div>
 
           {/* Description */}

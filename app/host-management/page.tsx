@@ -29,7 +29,7 @@ export default function HostManagementPage() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Click outside handler
+  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -46,64 +46,45 @@ export default function HostManagementPage() {
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [adminName, setAdminName] = useState("Admin");
 
+  // Load admin name safely (prevents infinite re-render)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("adminUser");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setAdminName(parsed.userName || "Admin");
+      }
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-secondary">
-      {/* Sidebar (responsive handled inside component) */}
+      {/* Sidebar */}
       <Sidebar activePage="Tenant Host" />
 
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
-        {/* ===== Desktop Header ===== */}
+        {/* Desktop Header */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
           <h1 className="text-3xl font-semibold text-foreground">
             Tenant Host
           </h1>
-          <div className="flex items-center gap-4">
-            {/* Light/Dark toggle */}
-            {/* <Button
-              onClick={() =>
-                setTheme(resolvedTheme === "light" ? "dark" : "light")
-              }
-              variant="ghost"
-              size="sm"
-              className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
-            >
-              {theme === "light" ? (
-                <>
-                  <Moon className="h-4 w-4" /> Dark Mode
-                </>
-              ) : (
-                <>
-                  <Sun className="h-4 w-4" /> Light Mode
-                </>
-              )}
-            </Button> */}
 
-            {/* Mobile toggle */}
-            {/* <button
-              onClick={() =>
-                setTheme(resolvedTheme === "light" ? "dark" : "light")
-              }
-              className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
-            >
-              {theme === "light" ? (
-                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
-              ) : (
-                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
-              )}
-            </button> */}
+          <div className="flex items-center gap-4">
+            {/* Notifications */}
             <Link href="/push-notification">
               <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
                 <Bell className="h-5 w-5 text-gray-600" />
               </button>
             </Link>
-            {/* Profile Name + Icon + Dropdown */}
+
+            {/* Profile */}
             <div className="relative flex items-center gap-2" ref={profileRef}>
               {/* Admin Name */}
               <span className="hidden sm:block font-semibold text-black dark:text-white">
                 {adminName}
               </span>
 
-              {/* Profile Icon Wrapper for relative dropdown */}
+              {/* Profile Icon */}
               <div className="relative">
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -116,7 +97,7 @@ export default function HostManagementPage() {
                   />
                 </button>
 
-                {/* Dropdown — Positioned relative to icon */}
+                {/* Dropdown */}
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
                     <Link href="/tenant-form">
@@ -156,12 +137,12 @@ export default function HostManagementPage() {
           </div>
         </header>
 
-        {/* Spacer for mobile navbar */}
+        {/* Mobile spacer */}
         <div className="lg:hidden h-[56px]" />
 
-        {/* ===== Content Section ===== */}
+        {/* Content */}
         <div className="p-4 sm:p-6 md:p-8">
-          {/* ===== Send Invitation Section ===== */}
+          {/* Send Invitation */}
           <div className="bg-background flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl p-4 mb-6">
             <div className="flex-1">
               <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2">
@@ -188,9 +169,9 @@ export default function HostManagementPage() {
             </div>
           </div>
 
-          {/* ===== Search and Filter Section ===== */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap md:flex-nowrap gap-3 sm:gap-4 mb-6">
-            {/* Search Input */}
+          {/* Search + Filters */}
+          <div className="flex flex-col sm:flex-row md:flex-nowrap gap-3 sm:gap-4 mb-6">
+            {/* Search */}
             <div className="flex-1 relative min-w-[180px]">
               <input
                 type="text"
@@ -232,7 +213,7 @@ export default function HostManagementPage() {
               />
             </div>
 
-            {/* Filter Button */}
+            {/* Filter */}
             <button
               onClick={handleFilter}
               className="px-8 sm:px-10 md:px-12 py-2.5 sm:py-3 bg-[#D19537] text-white rounded-lg font-medium hover:opacity-90 transition-opacity w-full sm:w-auto"
@@ -241,7 +222,7 @@ export default function HostManagementPage() {
             </button>
           </div>
 
-          {/* ===== Host Management Table ===== */}
+          {/* Table */}
           <div className="overflow-hidden rounded-lg">
             <HostManagementTable
               searchQuery={searchQuery}

@@ -19,7 +19,7 @@ export default function Page() {
           <div className="space-y-8">
             <BasicInformation />
             <ContactDetails />
-            <PaymentDetails />
+            {/* <PaymentDetails /> */}
           </div>
 
           {/* Right column - Order Summary */}

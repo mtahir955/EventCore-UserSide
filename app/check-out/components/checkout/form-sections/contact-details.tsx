@@ -4,6 +4,27 @@ import Image from "next/image";
 import SectionShell from "./section-shell";
 import { useState } from "react";
 
+{
+  /* Phone Number */
+}
+const countryOptions = [
+  {
+    code: "+1",
+    label: "United States",
+    flag: "/images/flag-us.png",
+  },
+  {
+    code: "+1",
+    label: "Canada",
+    flag: "/images/flag-canada.png",
+  },
+  {
+    code: "+52",
+    label: "Mexico",
+    flag: "/images/flag-mexico.png",
+  },
+];
+
 export default function ContactDetails() {
   const [form, setForm] = useState({
     phone: "",
@@ -11,7 +32,12 @@ export default function ContactDetails() {
     pincode: "",
     address: "",
     website: "",
+    countryCode: "+1",
   });
+
+  const selectedCountry = countryOptions.find(
+    (c) => c.code === form.countryCode
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -28,23 +54,41 @@ export default function ContactDetails() {
           <label className="text-sm text-gray-700 dark:text-gray-200">
             Phone Number:
           </label>
+
           <div
             className={`flex h-11 items-center gap-2 rounded-md border 
-              ${
-                !form.phone
-                  ? "border-gray-300 dark:border-gray-700"
-                  : "border-gray-300 dark:border-gray-700"
-              } 
-              bg-white dark:bg-[#101010] px-3`}
+      ${
+        !form.phone
+          ? "border-gray-300 dark:border-gray-700"
+          : "border-gray-300 dark:border-gray-700"
+      }
+      bg-white dark:bg-[#101010] px-3 relative`}
           >
+            {/* Selected Flag */}
             <Image
-              src="/images/flag-us.png"
-              alt="US Flag"
+              src={selectedCountry?.flag || "/images/flag-us.png"}
+              alt="Flag"
               width={20}
               height={20}
               className="rounded-full"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">+1</span>
+
+            {/* Dropdown */}
+            <select
+              value={form.countryCode}
+              onChange={(e) =>
+                setForm({ ...form, countryCode: e.target.value })
+              }
+              className="bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none cursor-pointer"
+            >
+              {countryOptions.map((country) => (
+                <option key={country.code + country.label} value={country.code}>
+                  {country.label} ({country.code})
+                </option>
+              ))}
+            </select>
+
+            {/* Phone Input */}
             <input
               name="phone"
               value={form.phone}
@@ -132,4 +176,3 @@ export default function ContactDetails() {
     </SectionShell>
   );
 }
-

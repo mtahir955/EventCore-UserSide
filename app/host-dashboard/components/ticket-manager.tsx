@@ -422,9 +422,15 @@ export default function TicketManager() {
                           </button>
                         </Link>
 
-                        <Link href="/payment-setup">
+                        <Link href="/ticket-manager">
                           <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                            Payment Setup
+                            Ticket Manager
+                          </button>
+                        </Link>
+
+                        <Link href="/host-payments">
+                          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                            Payments
                           </button>
                         </Link>
 
@@ -770,34 +776,6 @@ export default function TicketManager() {
                 enabled={isRefundable}
                 onToggle={() => setIsRefundable(!isRefundable)}
               />
-
-              {/* Early Bird */}
-              <ToggleRow
-                label="Early Bird Option"
-                enabled={isEarlyBird}
-                onToggle={() => {
-                  setIsEarlyBird(!isEarlyBird);
-                  setEarlyBirdQuantity(!isEarlyBird ? 0 : null); // default 10 when ON
-                }}
-              />
-
-              {isEarlyBird && (
-                <div className="col-span-1 sm:col-span-2">
-                  <label className="text-sm font-medium mb-2 block">
-                    Early Bird Quantity (Limited Seats)
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={earlyBirdQuantity ?? ""}
-                    onChange={(e) =>
-                      setEarlyBirdQuantity(Number(e.target.value))
-                    }
-                    placeholder="Enter Early Bird Quantity"
-                    className="w-full h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
-                  />
-                </div>
-              )}
 
               {/* Enable Discount */}
               <div className="col-span-1 sm:col-span-2">

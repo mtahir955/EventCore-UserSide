@@ -183,29 +183,21 @@ export default function TransferRequestsPage() {
   const [hostName, setHostName] = useState("Host");
 
   useEffect(() => {
-      const savedUser = localStorage.getItem("hostUser");
-  
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-  
-        // Host Name
-        setHostName(user.userName || user.fullName || "Host");
-  
-        // Subdomain (optional)
-        // setHostSubdomain(user.subDomain || "");
-  
-        console.log("HOST DASHBOARD USER:", user);
-        console.log("HOST SUBDOMAIN:", user?.subDomain);
-  
-        // Theme (optional)
-        if (user.theme) {
-          // syncThemeWithBackend(user);
-        }
-      } else {
-        // Force redirect if no host session found
-        window.location.href = "/sign-in-host";
-      }
-    }, []);
+    const savedUser = localStorage.getItem("hostUser");
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+
+      // Host Name
+      setHostName(user.userName || user.fullName || "Host");
+
+      console.log("HOST DASHBOARD USER:", user);
+      console.log("HOST SUBDOMAIN:", user?.subDomain);
+    } else {
+      // Force redirect if no host session found
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
@@ -376,9 +368,15 @@ export default function TransferRequestsPage() {
                         </button>
                       </Link>
 
-                      <Link href="/payment-setup">
+                      <Link href="/ticket-manager">
                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                          Payment Setup
+                          Ticket Manager
+                        </button>
+                      </Link>
+
+                      <Link href="/host-payments">
+                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                          Payments
                         </button>
                       </Link>
 

@@ -86,6 +86,15 @@ export default function CalendarView({
   const monthName = currentDate.toLocaleString("default", { month: "long" });
   const year = currentDate.getFullYear();
 
+  let eventsForDay = eventsMap.filter((e: any) => e.date === dayNum);
+
+  // ⭐ FIX: Remove duplicates by id + type
+  eventsForDay = eventsForDay.filter(
+    (event, index, self) =>
+      index ===
+      self.findIndex((e) => e.id === event.id && e.type === event.type)
+  );
+
   return (
     <section className="mx-auto mt-6 sm:mt-8 max-w-full relative">
       <div className="rounded-2xl border bg-card p-4 sm:p-6 md:p-8 shadow-sm transition-all">
@@ -112,7 +121,7 @@ export default function CalendarView({
           </span>
 
           <span className="inline-flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-[#FC1100]" /> You
+            <span className="h-3 w-3 rounded-full bg-[#FC1100]" /> Pinned
           </span>
 
           <span className="inline-flex items-center gap-1">
@@ -162,7 +171,7 @@ export default function CalendarView({
                   <div className="mt-5 space-y-1">
                     {eventsForDay.map((event: any) => (
                       <div
-                        key={event.id}
+                        key={`${event.type}-${event.id}`} // <-- FIXED UNIQUE KEY
                         onMouseEnter={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setHoveredEvent(event);
@@ -178,10 +187,10 @@ export default function CalendarView({
                               ? "bg-[#6D10F5] text-white"
                               : event.type === "virtual"
                               ? "bg-[#89FC00] text-black"
-                              : event.type === "you"
-                              ? "bg-[#FC1100] text-white"
                               : event.type === "purchased"
                               ? "bg-[#0077F7] text-white"
+                              : event.type === "pinned"
+                              ? "bg-red-500 text-white"
                               : ""
                           }
                         `}

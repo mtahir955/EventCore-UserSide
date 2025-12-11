@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ConfirmationModal } from "./confirmation-modal";
 
 type Props = {
-  id: string; // ⭐ ADDED
+  id: string;
   imageSrc: string;
   price: string;
   isEditEvent: boolean;
@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function MyEventsCard({
-  id, // ⭐ ACCEPTED
+  id,
   imageSrc,
   price,
   isEditEvent,
@@ -35,13 +35,11 @@ export function MyEventsCard({
     }
 
     isEditEvent
-      ? (window.location.href = `/my-events/edit?id=${id}`) // ⭐ FIXED
+      ? (window.location.href = `/my-events/edit?id=${id}`)
       : (window.location.href = `/completed-events/edit?id=${id}`);
   };
 
-  const handleDelete = () => {
-    setShowDeleteConfirmation(true);
-  };
+  const handleDelete = () => setShowDeleteConfirmation(true);
 
   const handleConfirmDelete = () => {
     console.log("[v0] Event deleted");
@@ -50,16 +48,17 @@ export function MyEventsCard({
 
   return (
     <>
-      <div
-        className="relative rounded-2xl overflow-hidden"
-        style={{ height: 248 }}
-      >
-        <img
-          src={imageSrc || "/placeholder.svg"}
-          alt="event cover"
-          className="h-full w-full object-cover"
-        />
+      <div className="relative rounded-2xl overflow-hidden w-full max-w-full">
+        {/* Image */}
+        <div className="h-[220px] sm:h-[240px] md:h-[260px] w-full">
+          <img
+            src={imageSrc || "/placeholder.svg"}
+            alt="event cover"
+            className="h-full w-full object-cover"
+          />
+        </div>
 
+        {/* Gradient Overlay */}
         <div
           className="absolute inset-0"
           style={{
@@ -68,82 +67,91 @@ export function MyEventsCard({
           }}
         />
 
-        <div className="absolute top-3 right-3 flex items-center gap-2">
+        {/* Top Buttons */}
+        <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
           <button
             onClick={handleEdit}
             aria-label="Edit"
-            className="h-7 w-7 rounded-full grid place-items-center bg-white shadow-md hover:cursor-pointer"
+            className="h-7 w-7 rounded-full grid place-items-center bg-white shadow-md hover:scale-105 transition"
           >
             <img
               src="/images/icons/pencil-gold-2.png"
-              alt=""
               className="h-3.5 w-3.5"
+              alt="edit"
             />
           </button>
 
           <button
             onClick={handleDelete}
             aria-label="Delete"
-            className="h-7 w-7 rounded-full grid place-items-center bg-white shadow-md hover:cursor-pointer"
+            className="h-7 w-7 rounded-full grid place-items-center bg-white shadow-md hover:scale-105 transition"
           >
             <img
               src="/images/icons/delete-gold.png"
-              alt=""
               className="h-3.5 w-3.5"
+              alt="delete"
             />
           </button>
 
           <div
-            className="h-7 px-3 rounded-full text-[12px] grid place-items-center font-semibold"
+            className="h-7 px-3 rounded-full text-[12px] grid place-items-center font-semibold whitespace-nowrap"
             style={{
-              background: "var(--brand, #D19537)",
-              color: "var(--brand-on, #FFFFFF)",
+              background: "#D19537",
+              color: "#FFFFFF",
             }}
           >
             ${price}
           </div>
         </div>
 
-        <div className="absolute left-4 right-4 bottom-4 text-white">
-          <div className="flex justify-between">
-            <div>
-              <div className="mt-1 text-[18px] font-semibold">{title}</div>
-            </div>
+        {/* Bottom Text Content */}
+        <div className="absolute left-4 right-4 bottom-4 text-white z-10">
+          {/* Title */}
+          <div className="font-semibold text-[16px] sm:text-[18px] md:text-[20px] leading-tight line-clamp-2 break-words">
+            {title}
           </div>
 
-          <div className="mt-1 text-[12px] opacity-90">{description}</div>
+          {/* Description */}
+          <div className="mt-1 text-[11px] sm:text-[12px] opacity-90 line-clamp-2 break-words">
+            {description}
+          </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px]">
-            <span className="inline-flex items-center gap-1">
+          {/* Event Details Row */}
+          <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] sm:text-[12px] break-words">
+            {/* Location */}
+            <span className="inline-flex items-center gap-1 min-w-0 truncate">
               <img
                 src="/images/icons/location-icon-orange.png"
-                className="h-3 w-3"
-                alt=""
+                className="h-3 w-3 flex-shrink-0"
+                alt="location"
               />
-              {location}
+              <span className="truncate">{location}</span>
             </span>
 
-            <span className="inline-flex items-center gap-1">
+            {/* Date */}
+            <span className="inline-flex items-center gap-1 min-w-0 truncate">
               <img
                 src="/images/icons/calendar-icon-orange.png"
-                className="h-3 w-3"
-                alt=""
+                className="h-3 w-3 flex-shrink-0"
+                alt="date"
               />
-              {date}
+              <span className="truncate">{date}</span>
             </span>
 
-            <span className="inline-flex items-center gap-1">
+            {/* Time */}
+            <span className="inline-flex items-center gap-1 min-w-0 truncate">
               <img
                 src="/images/icons/time-icon-orange.png"
-                className="h-3 w-3"
-                alt=""
+                className="h-3 w-3 flex-shrink-0"
+                alt="time"
               />
-              {time}
+              <span className="truncate">{time}</span>
             </span>
           </div>
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteConfirmation}
         onClose={() => setShowDeleteConfirmation(false)}

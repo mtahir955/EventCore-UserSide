@@ -258,14 +258,26 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
           {privacyPolicies.map((p: any, index: number) => (
             <div
               key={index}
-              className="flex justify-between items-start bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-lg border"
+              className="
+        flex flex-col sm:flex-row 
+        justify-between 
+        items-start 
+        bg-gray-50 dark:bg-[#1a1a1a] 
+        p-4 rounded-lg border
+        gap-4
+        w-full
+      "
             >
-              <div>
-                <h5 className="font-semibold">{p.title}</h5>
-                <p className="text-sm mt-1">{p.description}</p>
+              {/* TEXT BLOCK */}
+              <div className="flex-1 break-words leading-relaxed w-full">
+                <h5 className="font-semibold break-words">{p.title}</h5>
+                <p className="text-sm mt-1 break-words whitespace-pre-line">
+                  {p.description}
+                </p>
               </div>
 
-              <div className="flex gap-3">
+              {/* BUTTONS BLOCK */}
+              <div className="flex gap-3 shrink-0 self-end sm:self-start">
                 <button
                   onClick={() => handleEditPrivacy(index)}
                   className="text-blue-500"
@@ -324,14 +336,26 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
           {faqs.map((f: any, index: number) => (
             <div
               key={index}
-              className="flex justify-between items-start bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-lg border"
+              className="
+        flex flex-col sm:flex-row 
+        justify-between 
+        items-start 
+        bg-gray-50 dark:bg-[#1a1a1a] 
+        p-4 rounded-lg border
+        gap-4
+        w-full
+      "
             >
-              <div>
-                <h5 className="font-semibold">Q: {f.question}</h5>
-                <p className="text-sm mt-1">A: {f.answer}</p>
+              {/* TEXT BLOCK */}
+              <div className="flex-1 w-full break-words leading-relaxed">
+                <h5 className="font-semibold break-words">Q: {f.question}</h5>
+                <p className="text-sm mt-1 break-words whitespace-pre-line">
+                  A: {f.answer}
+                </p>
               </div>
 
-              <div className="flex gap-3">
+              {/* BUTTON BLOCK */}
+              <div className="flex gap-3 shrink-0 self-end sm:self-start">
                 <button
                   onClick={() => handleEditFaq(index)}
                   className="text-blue-500"
@@ -394,14 +418,26 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
           {terms.map((t: any, index: number) => (
             <div
               key={index}
-              className="flex justify-between items-start bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-lg border"
+              className="
+        flex flex-col sm:flex-row
+        justify-between 
+        items-start 
+        bg-gray-50 dark:bg-[#1a1a1a] 
+        p-4 rounded-lg border
+        gap-4
+        w-full
+      "
             >
-              <div>
-                <h5 className="font-semibold">{t.title}</h5>
-                <p className="text-sm mt-1">{t.description}</p>
+              {/* TEXT BLOCK */}
+              <div className="flex-1 w-full break-words leading-relaxed">
+                <h5 className="font-semibold break-words">{t.title}</h5>
+                <p className="text-sm mt-1 break-words whitespace-pre-line">
+                  {t.description}
+                </p>
               </div>
 
-              <div className="flex gap-3">
+              {/* ACTION BUTTONS */}
+              <div className="flex gap-3 shrink-0 self-end sm:self-start">
                 <button
                   onClick={() => handleEditTerms(index)}
                   className="text-blue-500"

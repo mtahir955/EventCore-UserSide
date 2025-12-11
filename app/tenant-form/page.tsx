@@ -17,7 +17,22 @@ export default function Home() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Click outside handler
+  const { resolvedTheme, theme, setTheme } = useTheme();
+
+  const [adminName, setAdminName] = useState("Admin");
+
+  // ✅ Load Admin Name ONLY ONCE on mount (Fix infinite re-render issue)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("adminUser");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setAdminName(parsed.userName || "Admin");
+      }
+    }
+  }, []);
+
+  // ✅ Dropdown close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -31,9 +46,6 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const { resolvedTheme, theme, setTheme } = useTheme();
-  const [adminName, setAdminName] = useState("Admin");
-
   return (
     <div className={isDark ? "dark" : ""}>
       <div className="flex min-h-screen bg-background">
@@ -42,51 +54,21 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
+          {/* Header */}
           <header className="hidden sm:ml-[250px] lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
             <h1 className="text-3xl font-semibold text-foreground">
               Tenant Form
             </h1>
 
             <div className="flex items-center gap-4">
-              {/* Light/Dark toggle */}
-              {/* <Button
-                onClick={() =>
-                  setTheme(resolvedTheme === "light" ? "dark" : "light")
-                }
-                variant="ghost"
-                size="sm"
-                className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
-              >
-                {theme === "light" ? (
-                  <>
-                    <Moon className="h-4 w-4" /> Dark Mode
-                  </>
-                ) : (
-                  <>
-                    <Sun className="h-4 w-4" /> Light Mode
-                  </>
-                )}
-              </Button> */}
-
-              {/* Mobile toggle */}
-              {/* <button
-                onClick={() =>
-                  setTheme(resolvedTheme === "light" ? "dark" : "light")
-                }
-                className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
-              >
-                {theme === "light" ? (
-                  <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
-                ) : (
-                  <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
-                )}
-              </button> */}
+              {/* Notifications */}
               <Link href="/push-notification">
                 <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
                   <Bell className="h-5 w-5 text-gray-600" />
                 </button>
               </Link>
-              {/* Profile Name + Icon + Dropdown */}
+
+              {/* Profile Dropdown */}
               <div
                 className="relative flex items-center gap-2"
                 ref={profileRef}
@@ -96,7 +78,7 @@ export default function Home() {
                   {adminName}
                 </span>
 
-                {/* Profile Icon Wrapper for relative dropdown */}
+                {/* Profile Icon */}
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -109,7 +91,7 @@ export default function Home() {
                     />
                   </button>
 
-                  {/* Dropdown — Positioned relative to icon */}
+                  {/* Dropdown Menu */}
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
                       <Link href="/tenant-form">
@@ -136,6 +118,7 @@ export default function Home() {
                         </button>
                       </Link>
 
+                      {/* Logout */}
                       <button
                         onClick={() => setShowLogoutModal(true)}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
@@ -153,13 +136,9 @@ export default function Home() {
           <div className="flex-1 overflow-auto bg-neutral-100">
             <HostManagementForm />
           </div>
-
-          {/* Theme Toggle */}
-          {/* <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-border bg-background">
-            <ThemeToggle isDark={isDark} setIsDark={setIsDark} />
-          </div> */}
         </div>
       </div>
+
       {/* Logout Modal */}
       <LogoutModal
         isOpen={showLogoutModal}

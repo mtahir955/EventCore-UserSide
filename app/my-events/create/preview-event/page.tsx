@@ -52,12 +52,8 @@ export default function PreviewEventPage({
         return;
       }
 
-      // -----------------------------
-      // 1) Build FormData
-      // -----------------------------
       const formData = new FormData();
 
-      // Basic fields
       formData.append("eventTitle", draft.details.eventTitle || "");
       formData.append("eventDescription", draft.details.eventDescription || "");
       formData.append("eventCategory", draft.details.eventCategory || "");
@@ -68,9 +64,6 @@ export default function PreviewEventPage({
       formData.append("endTime", draft.details.endTime || "");
       formData.append("eventLocation", draft.details.eventLocation || "");
 
-      // -----------------------------
-      // 2) Helper: base64 → File
-      // -----------------------------
       const dataURLtoFile = (dataUrl: string, filename: string): File => {
         const arr = dataUrl.split(",");
         const mimeMatch = arr[0].match(/:(.*?);/);
@@ -84,52 +77,30 @@ export default function PreviewEventPage({
         return new File([u8arr], filename, { type: mime });
       };
 
-      // -----------------------------
-      // 3) Banner image (File)
-      // -----------------------------
       if (draft.bannerImage) {
-        try {
-          const bannerFile = dataURLtoFile(draft.bannerImage, "banner.jpg");
-          formData.append("bannerImage", bannerFile); // field name as backend expects
-        } catch (e) {
-          console.error("Failed to convert banner image:", e);
-          toast.error("Invalid banner image format");
-          return;
-        }
+        const bannerFile = dataURLtoFile(draft.bannerImage, "banner.jpg");
+        formData.append("bannerImage", bannerFile);
       }
 
-      // -----------------------------
-      // 4) Trainers (remove id + send image as file)
-      // -----------------------------
       const rawTrainers: any[] = Array.isArray(draft.trainers)
         ? draft.trainers
         : [];
 
       const trainersSanitized = rawTrainers.map((trainer, index) => {
-        // 4a) trainer image → file
         if (trainer.image) {
-          try {
-            const trainerFile = dataURLtoFile(
-              trainer.image,
-              `trainer-${index + 1}.jpg`
-            );
-            // same field name for all trainer images (backend will treat as array)
-            formData.append("trainerImages", trainerFile);
-          } catch (e) {
-            console.error(`Failed to convert trainer ${index + 1} image:`, e);
-          }
+          const trainerFile = dataURLtoFile(
+            trainer.image,
+            `trainer-${index + 1}.jpg`
+          );
+          formData.append("trainerImages", trainerFile);
         }
 
-        // 4b) strip id + image from JSON payload
         const { id, image, ...rest } = trainer;
         return rest;
       });
 
       formData.append("trainers", JSON.stringify(trainersSanitized));
 
-      // -----------------------------
-      // 5) Tickets (remove id)
-      // -----------------------------
       const rawTickets: any[] = Array.isArray(draft.tickets)
         ? draft.tickets
         : [];
@@ -141,9 +112,6 @@ export default function PreviewEventPage({
 
       formData.append("tickets", JSON.stringify(ticketsSanitized));
 
-      // -----------------------------
-      // 6) Get Token (universal cleaner)
-      // -----------------------------
       let rawToken =
         localStorage.getItem("hostToken") ||
         localStorage.getItem("hostUser") ||
@@ -160,15 +128,10 @@ export default function PreviewEventPage({
       }
 
       if (!token) {
-        console.log("No token found in localStorage");
         toast.error("Authentication token missing");
         return;
       }
 
-      // -----------------------------
-      // 7) POST multipart/form-data
-      // -----------------------------
-      // 7) POST multipart/form-data
       const res = await axios.post(`${API_BASE_URL}/events`, formData, {
         headers: {
           "X-Tenant-ID": HOST_Tenant_ID,
@@ -176,25 +139,15 @@ export default function PreviewEventPage({
         },
       });
 
-      // EXTRACT EVENT ID
       const createdEvent = res?.data?.data;
 
       if (createdEvent?.id || createdEvent?.eventId) {
         const eventId = createdEvent.id || createdEvent.eventId;
-
-        // ⭐ Save eventId for staff creation
         localStorage.setItem("lastPublishedEventId", eventId);
       }
 
-      // SUCCESS UI
       toast.success("Event Published Successfully!");
       localStorage.removeItem("eventDraft");
-      setShowSuccessModal(true);
-
-      // Clear draft data
-      localStorage.removeItem("eventDraft");
-
-      // 🎉 OPEN SUCCESS MODAL
       setShowSuccessModal(true);
     } catch (error: any) {
       console.error(error);
@@ -204,12 +157,12 @@ export default function PreviewEventPage({
 
   return (
     <>
-      <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-6 md:py-8">
+      <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-6 md:py-8 w-full overflow-x-hidden">
         <div
-          className="rounded-2xl p-6 sm:p-8 mx-auto bg-white dark:bg-[#191919]"
+          className="rounded-2xl p-6 sm:p-8 mx-auto bg-white dark:bg-[#191919] max-w-full"
           style={{ maxWidth: 1200 }}
         >
-          {/* Hero Image */}
+          {/* Hero */}
           <div className="w-full mb-6">
             <img
               src={bannerImage || "/images/event-venue.png"}
@@ -218,58 +171,51 @@ export default function PreviewEventPage({
             />
           </div>
 
-          {/* Two Column Layout */}
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-14">
-            {/* Left Column - Event Details */}
-            <div className="flex-1 lg:w-1/2 w-full">
-              <h1 className="text-[26px] sm:text-[32px] md:text-[36px] lg:text-[40px] font-bold mb-6 leading-tight">
-                {details.eventTitle || "Starry Nights Music Fest"}
+          {/* Layout */}
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-14 w-full min-w-0">
+            {/* LEFT */}
+            <div className="flex-1 lg:w-1/2 w-full min-w-0">
+              <h1 className="text-[26px] sm:text-[32px] md:text-[36px] lg:text-[40px] font-bold mb-6 leading-tight break-words">
+                {details.eventTitle}
               </h1>
 
-              {/* Date and Time Section */}
+              {/* Date Time */}
               <div className="mb-6">
                 <h3 className="text-[18px] sm:text-[20px] font-semibold mb-4">
                   Date and Time
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 mb-4 items-center justify-items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 mb-4 items-start justify-items-start w-full min-w-0">
                   {/* Location */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 break-words min-w-0">
                     <img
                       src="/images/icons/location-new.png"
-                      alt="location"
                       className="h-5 w-5"
                     />
-                    <span className="text-[15px] sm:text-[16px]">
-                      {details.eventLocation || "California"}
+                    <span className="text-[15px] sm:text-[16px] break-words">
+                      {details.eventLocation}
                     </span>
                   </div>
 
                   {/* Date */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 break-words min-w-0">
                     <img
                       src="/images/icons/calendar-icon.png"
-                      alt="date"
                       className="h-5 w-5"
                     />
-                    <span className="text-[15px] sm:text-[16px]">
-                      {details.startDate && details.endDate
-                        ? `${details.startDate} - ${details.endDate}`
-                        : "13 June 2025"}
+                    <span className="text-[15px] sm:text-[16px] break-words">
+                      {details.startDate} - {details.endDate}
                     </span>
                   </div>
 
                   {/* Time */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 break-words min-w-0">
                     <img
                       src="/images/icons/clock-icon.png"
-                      alt="time"
                       className="h-5 w-5"
                     />
-                    <span className="text-[15px] sm:text-[16px]">
-                      {details.startTime && details.endTime
-                        ? `${details.startTime} - ${details.endTime}`
-                        : "08:00 PM - 09:00 PM"}
+                    <span className="text-[15px] sm:text-[16px] break-words">
+                      {details.startTime} - {details.endTime}
                     </span>
                   </div>
                 </div>
@@ -282,296 +228,133 @@ export default function PreviewEventPage({
                 </button>
               </div>
 
-              {/* Event Description */}
-              <div className="mb-6">
+              {/* Description */}
+              <div className="mb-6 w-full break-words overflow-hidden">
                 <h3 className="text-[18px] sm:text-[20px] font-semibold mb-4">
                   Event Description
                 </h3>
-                <div className="space-y-4 text-[15px] sm:text-[16px] leading-relaxed text-gray-700 dark:text-gray-400">
-                  <p>
-                    {details.eventDescription
-                      ? details.eventDescription
-                      : "Get ready to kick off the Christmas season in Mumbai with SOUND OF CHRISTMAS - your favourite LIVE Christmas concert!"}
+                <div className="space-y-4 text-[15px] sm:text-[16px] leading-relaxed text-gray-700 dark:text-gray-400 break-words overflow-hidden">
+                  <p className="break-words overflow-hidden">
+                    {details.eventDescription}
                   </p>
-                  {!details.eventDescription && (
-                    <>
-                      <p>
-                        City Youth Movement invites you to the 4th edition of
-                        our annual Christmas festivities - by the youth and for
-                        the youth! Feat. your favourite worship leaders, carols,
-                        quizzes and some exciting surprises!
-                      </p>
-                      <p>
-                        Bring your family and friends and sing along your
-                        favourite Christmas carols on the 2nd of December, 6:30
-                        PM onwards at the Balgandharva Rang Mandir, Bandra West.
-                        Book your tickets now!
-                      </p>
-                      <div>
-                        <p className="font-semibold mb-2">
-                          3 Reasons to attend the event:
-                        </p>
-                        <ol className="list-decimal list-inside space-y-1">
-                          <li>The FIRST Christmas concert of Mumbai!</li>
-                          <li>A special Christmas Choir!</li>
-                          <li>
-                            Special Dance performances and many more surprises!
-                          </li>
-                        </ol>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Sidebar */}
-            <div className="lg:w-1/2 w-full lg:pl-8 mt-8 lg:mt-0">
+            {/* RIGHT */}
+            <div className="lg:w-1/2 w-full lg:pl-8 mt-8 lg:mt-0 min-w-0 break-words">
               {/* Trainers */}
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                  Trainers
-                </h3>
+              <h3 className="text-xl font-bold mb-4">Trainers</h3>
 
-                {Array.isArray(trainers) && trainers.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                    {trainers.map((trainer: any, i: number) => (
-                      <div
-                        key={trainer.id || i}
-                        className="bg-white dark:bg-[#191919] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5 flex flex-col items-center text-center transition hover:shadow-md hover:-translate-y-1 duration-300"
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full min-w-0">
+                {trainers.map((trainer: any, i: number) => (
+                  <div
+                    key={i}
+                    className="
+        bg-white dark:bg-[#191919] border border-gray-200 dark:border-gray-700 
+        rounded-xl shadow-sm p-5 
+        flex flex-col items-center text-center 
+        transition hover:shadow-md hover:-translate-y-1 duration-300
+        w-full min-w-0 
+      "
+                  >
+                    {trainer.image && (
+                      <img
+                        src={trainer.image}
+                        alt={trainer.name}
+                        className="h-12 w-12 rounded-full object-cover mb-3"
+                      />
+                    )}
+
+                    {/* NAME */}
+                    <h4 className="text-lg font-semibold break-words break-all w-full">
+                      {trainer.name}
+                    </h4>
+
+                    {/* DESIGNATION */}
+                    <p className="text-sm text-[#D19537] mb-2 break-words break-all w-full">
+                      {trainer.designation}
+                    </p>
+
+                    {/* SOCIAL ICONS */}
+                    <div className="flex items-center gap-3 w-full justify-center">
+                      <a
+                        href={trainer.facebook}
+                        target="_blank"
+                        className="h-8 w-8 rounded-full bg-gray-100 grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
                       >
-                        {trainer.image && (
-                          <img
-                            src={trainer.image}
-                            alt={trainer.name}
-                            className="h-12 w-12 rounded-full object-cover mb-3"
-                          />
-                        )}
-                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {trainer.name}
-                        </h4>
-                        <p className="text-sm text-[#D19537] mb-2">
-                          {trainer.designation}
-                        </p>
-
-                        <div className="flex items-center gap-3">
-                          <a
-                            href={trainer.facebook || "#"}
-                            target="_blank"
-                            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
-                          >
-                            <Facebook className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
-                          </a>
-                          <a
-                            href={trainer.instagram || "#"}
-                            target="_blank"
-                            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
-                          >
-                            <Instagram className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
-                          </a>
-                          <a
-                            href={trainer.linkedin || "#"}
-                            target="_blank"
-                            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
-                          >
-                            <Linkedin className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                    {[
-                      {
-                        name: "Ethan Brooks",
-                        role: "Lead Motivational Coach",
-                        image: "/images/pic1.png",
-                        bio: "Certified personal trainer with 8 years of experience helping athletes improve endurance and muscle strength.",
-                        socials: {
-                          facebook: "https://facebook.com/",
-                          instagram: "https://instagram.com/",
-                          linkedin: "https://linkedin.com/",
-                        },
-                      },
-                      {
-                        name: "Sophia Hayes",
-                        role: "Wellness & Lifestyle Mentor",
-                        image: "/images/pic2.png",
-                        bio: "Passionate about holistic fitness, mindfulness, and flexibility training. Certified Yoga instructor since 2016.",
-                        socials: {
-                          facebook: "https://facebook.com/",
-                          instagram: "https://instagram.com/",
-                          linkedin: "https://linkedin.com/",
-                        },
-                      },
-                      {
-                        name: "Olivia Grant",
-                        role: "Corporate Leadership Coach",
-                        image: "/images/pic4.png",
-                        bio: "Nutrition specialist focusing on balanced diets, weight management, and overall wellness transformation.",
-                        socials: {
-                          facebook: "https://facebook.com/",
-                          instagram: "https://instagram.com/",
-                          linkedin: "https://linkedin.com/",
-                        },
-                      },
-                      {
-                        name: "Daniel Carter",
-                        role: "Fitness & Performance Trainer",
-                        image: "/images/pic5.png",
-                        bio: "Energetic HIIT coach dedicated to helping clients achieve peak physical performance through high-intensity training.",
-                        socials: {
-                          facebook: "https://facebook.com/",
-                          instagram: "https://instagram.com/",
-                          linkedin: "https://linkedin.com/",
-                        },
-                      },
-                    ].map((trainer, i) => (
-                      <div
-                        key={i}
-                        className="bg-white dark:bg-[#191919] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5 flex flex-col items-center text-center transition hover:shadow-md hover:-translate-y-1 duration-300"
+                        <Facebook className="h-4 w-4" />
+                      </a>
+                      <a
+                        href={trainer.instagram}
+                        target="_blank"
+                        className="h-8 w-8 rounded-full bg-gray-100 grid place-items-center hover:bg-[#0077F7]"
                       >
-                        <img
-                          src={trainer.image}
-                          alt={trainer.name}
-                          className="h-12 w-12 rounded-full object-cover mb-3"
-                        />
-                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {trainer.name}
-                        </h4>
-                        <p className="text-sm text-[#D19537] mb-2">
-                          {trainer.role}
-                        </p>
-
-                        <div className="flex items-center gap-3">
-                          <a
-                            href={trainer.socials.facebook}
-                            target="_blank"
-                            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
-                          >
-                            <Facebook className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
-                          </a>
-                          <a
-                            href={trainer.socials.instagram}
-                            target="_blank"
-                            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
-                          >
-                            <Instagram className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
-                          </a>
-                          <a
-                            href={trainer.socials.linkedin}
-                            target="_blank"
-                            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-[#222] grid place-items-center hover:bg-[#0077F7] hover:text-white transition"
-                          >
-                            <Linkedin className="h-4 w-4 text-gray-700 hover:text-white dark:text-white" />
-                          </a>
-                        </div>
-                      </div>
-                    ))}
+                        <Instagram className="h-4 w-4" />
+                      </a>
+                      <a
+                        href={trainer.linkedin}
+                        target="_blank"
+                        className="h-8 w-8 rounded-full bg-gray-100 grid place-items-center hover:bg-[#0077F7]"
+                      >
+                        <Linkedin className="h-4 w-4" />
+                      </a>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
 
-              {/* Share with friends */}
-              <div className="mb-6">
+              {/* Share */}
+              <div className="mb-6 mt-6 w-full break-words">
                 <h3 className="text-[17px] sm:text-[18px] font-semibold mb-3">
                   Share with friends
                 </h3>
+
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
-                  <img
-                    src="/images/social/facebook.png"
-                    alt="Facebook"
-                    className="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer"
-                  />
-                  <img
-                    src="/images/social/whatsapp.png"
-                    alt="WhatsApp"
-                    className="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer"
-                  />
-                  <img
-                    src="/images/social/linkedin.png"
-                    alt="LinkedIn"
-                    className="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer"
-                  />
-                  <img
-                    src="/images/social/twitter.png"
-                    alt="Twitter"
-                    className="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer"
-                  />
-                  <img
-                    src="/images/icons/more-icon.png"
-                    alt="More"
-                    className="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer"
-                  />
+                  <img src="/images/social/facebook.png" className="h-9 w-9" />
+                  <img src="/images/social/whatsapp.png" className="h-9 w-9" />
+                  <img src="/images/social/linkedin.png" className="h-9 w-9" />
+                  <img src="/images/social/twitter.png" className="h-9 w-9" />
+                  <img src="/images/icons/more-icon.png" className="h-9 w-9" />
                 </div>
               </div>
 
-              {/* Price Per Ticket */}
-              <div className="mb-6">
+              {/* Tickets */}
+              <div className="mb-6 w-full break-words">
                 <h3 className="text-[17px] sm:text-[18px] font-semibold mb-4">
                   Price Per Ticket:
                 </h3>
+
                 <div className="space-y-3">
-                  {Array.isArray(tickets) && tickets.length > 0 ? (
-                    tickets.map((ticket: any) => (
-                      <div
-                        className="flex items-center justify-between"
-                        key={ticket.id}
-                      >
-                        <span className="text-[15px] sm:text-[16px] flex items-center gap-2">
-                          {ticket.name}
-                          {ticket.type && (
-                            <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase">
-                              {ticket.type}
-                            </span>
-                          )}
+                  {tickets.map((ticket: any) => (
+                    <div
+                      className="flex items-center justify-between w-full break-words"
+                      key={ticket.id}
+                    >
+                      <span className="text-[15px] sm:text-[16px] break-words flex items-center gap-2">
+                        {ticket.name}
+                        {ticket.type && (
+                          <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase break-words">
+                            {ticket.type}
+                          </span>
+                        )}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[15px] sm:text-[16px] font-semibold">
+                          ${ticket.price}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[15px] sm:text-[16px] font-semibold">
-                            ${ticket.price}
-                          </span>
-                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[15px] sm:text-[16px]">
-                          General Ticket
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[15px] sm:text-[16px] font-semibold">
-                            $199.99
-                          </span>
-                          <span className="text-[13px] sm:text-[14px] text-gray-400 line-through">
-                            $229.99
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[15px] sm:text-[16px]">
-                          VIP Ticket
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[15px] sm:text-[16px] font-semibold">
-                            $299.99
-                          </span>
-                          <span className="text-[13px] sm:text-[14px] text-gray-400 line-through">
-                            $339.99
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 px-4 sm:px-8 py-6 bg-white dark:bg-[#191919] border-t mt-6">
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 px-4 sm:px-8 py-6 bg-white dark:bg-[#191919] border-t mt-6 w-full">
           <button
             className="w-full sm:w-auto px-8 py-3 rounded-lg font-medium text-[15px] sm:text-[16px]"
             style={{ backgroundColor: "#FFF4E6", color: "#D19537" }}
@@ -579,13 +362,13 @@ export default function PreviewEventPage({
           >
             Discard
           </button>
+
           <button
             type="button"
             className="w-full sm:w-auto px-8 py-3 rounded-lg text-white font-medium text-[15px] sm:text-[16px]"
             style={{ backgroundColor: "#D19537" }}
             onClick={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               publishEvent();
             }}
           >

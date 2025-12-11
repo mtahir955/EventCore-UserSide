@@ -25,20 +25,33 @@ const SocialMediaLinksSection = forwardRef(({ tenant }: any, ref) => {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border p-6 space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border p-6 sm:p-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 flex-wrap">
         <Share2 size={24} className="text-gray-700 dark:text-white" />
-        <h3 className="text-xl font-bold">Social Media Links</h3>
+        <h3 className="text-xl font-bold whitespace-nowrap">
+          Social Media Links
+        </h3>
       </div>
 
+      {/* Inputs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {Object.entries(links).map(([key, value]) => (
           <div key={key} className="space-y-2">
-            <label className="block text-sm font-medium">
+            <label className="block text-sm font-medium capitalize whitespace-nowrap">
               {key.replace("social", "")}
             </label>
+
             <input
-              className="w-full px-4 py-2 border rounded bg-gray-100 dark:bg-[#181818]"
+              className="
+                w-full 
+                px-4 py-2 
+                border rounded 
+                bg-gray-100 dark:bg-[#181818] 
+                text-sm 
+                break-all 
+                focus:outline-none focus:ring-2 focus:ring-[#D19537]
+              "
               value={value}
               onChange={(e) => updateLink(key, e.target.value)}
             />

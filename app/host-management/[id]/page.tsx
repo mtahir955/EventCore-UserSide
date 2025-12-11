@@ -35,6 +35,17 @@ export default function HostDetailsPage() {
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [adminName, setAdminName] = useState("Admin");
 
+  // ✅ Load Admin Name ONLY ONCE on mount (Fix infinite re-render issue)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("adminUser");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setAdminName(parsed.userName || "Admin");
+      }
+    }
+  }, []);
+
   // -----------------------------------------
   // FETCH TENANT DETAILS
   // -----------------------------------------

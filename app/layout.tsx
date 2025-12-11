@@ -9,6 +9,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "react-hot-toast";
 import ThemeInitializer from "@/components/ThemeInitializer";
 
+// ⭐ IMPORT NEW CLIENT WRAPPER
+import GoogleProviderWrapper from "@/components/GoogleProviderWrapper";
+
 export const metadata: Metadata = {
   title: "Event Core - Good Life Trainings",
   description: "Discover and attend amazing events",
@@ -22,11 +25,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apple Login SDK */}
+        <script src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
+      </head>
+
       <body
         suppressHydrationWarning
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
-        {/* 🔥 Apply theme BEFORE React loads (no flash) */}
+        {/* Theme before hydration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -44,23 +52,23 @@ export default function RootLayout({
           }}
         />
 
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="class" // 🔥 Prevents forced light mode
-          enableSystem={false}
-          storageKey="theme"
-        >
-          {/* 🔥 Ensures hydration theme matches DOM */}
-          <ThemeInitializer />
+        {/* ⭐ Wrap entire app in GoogleOAuthProvider INSIDE CLIENT COMPONENT */}
+        <GoogleProviderWrapper>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="class"
+            enableSystem={false}
+            storageKey="theme"
+          >
+            <ThemeInitializer />
 
-          <Suspense fallback={<div>Loading...</div>}>
-            {children}
-            <Analytics />
-
-            {/* Toast container */}
-            <Toaster position="bottom-right" reverseOrder={false} />
-          </Suspense>
-        </ThemeProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              {children}
+              <Analytics />
+              <Toaster position="bottom-right" reverseOrder={false} />
+            </Suspense>
+          </ThemeProvider>
+        </GoogleProviderWrapper>
       </body>
     </html>
   );

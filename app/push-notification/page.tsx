@@ -85,6 +85,17 @@ export default function PushNotificationPage() {
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [adminName, setAdminName] = useState("Admin");
 
+  // ✅ Load Admin Name ONLY ONCE on mount (Fix infinite re-render issue)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("adminUser");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setAdminName(parsed.userName || "Admin");
+      }
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar */}

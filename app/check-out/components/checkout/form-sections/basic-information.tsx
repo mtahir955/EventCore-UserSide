@@ -8,6 +8,7 @@ export default function BasicInformation() {
     firstName: "",
     lastName: "",
     gender: "",
+    email: "",
   });
 
   const handleChange = (
@@ -19,7 +20,7 @@ export default function BasicInformation() {
 
   return (
     <SectionShell title="Basic Information">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 text-gray-900 dark:text-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-900 dark:text-gray-100">
         {/* First Name */}
         <div className="space-y-2">
           <label className="text-sm text-gray-700 dark:text-gray-200">
@@ -58,7 +59,27 @@ export default function BasicInformation() {
           />
         </div>
 
-        {/* Gender (Dropdown) */}
+        {/* Email */}
+        <div className="space-y-2">
+          <label className="text-sm text-gray-700 dark:text-gray-200">
+            Email:
+          </label>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+            placeholder="Enter email address"
+            className={`h-11 w-full rounded-md border ${
+              !form.email
+                ? "border-gray-300 dark:border-gray-700"
+                : "border-gray-300 dark:border-gray-700"
+            } bg-white dark:bg-[#101010] px-3 text-[15px] outline-none focus:ring-2 focus:ring-primary transition-colors`}
+          />
+        </div>
+
+        {/* Gender */}
         <div className="space-y-2">
           <label className="text-sm text-gray-700 dark:text-gray-200">
             Gender:
@@ -75,8 +96,8 @@ export default function BasicInformation() {
             } bg-white dark:bg-[#101010] px-3 text-[15px] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-primary transition-colors`}
           >
             <option value="">Select gender</option>
-            <option value="Female">Male</option>
-            <option value="Male">Female</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
           </select>
         </div>
       </div>

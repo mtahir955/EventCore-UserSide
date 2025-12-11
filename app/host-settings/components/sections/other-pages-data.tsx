@@ -9,55 +9,65 @@ export default function OtherPagesDataSection({ tenant }: any) {
   const terms = tenant.termsAndConditions || [];
 
   return (
-    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border p-6 sm:p-8 space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="w-full bg-white dark:bg-[#101010] rounded-2xl border p-4 sm:p-6 md:p-8 space-y-6 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 flex-wrap">
         <FileText size={24} className="text-gray-700 dark:text-white" />
-        <h3 className="text-xl font-bold">Other Pages Data</h3>
+        <h3 className="text-lg sm:text-xl font-bold break-words">
+          Other Pages Data
+        </h3>
       </div>
 
       {/* ABOUT PAGE */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label>About Title</label>
-          <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg">
+        {/* About Title */}
+        <div className="space-y-2 min-w-0">
+          <label className="text-sm sm:text-base">About Title</label>
+          <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg break-words whitespace-pre-wrap">
             {about.title || "N/A"}
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label>Subtitle</label>
-          <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg">
+        {/* Subtitle */}
+        <div className="space-y-2 min-w-0">
+          <label className="text-sm sm:text-base">Subtitle</label>
+          <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg break-words whitespace-pre-wrap">
             {about.subtitle || "N/A"}
           </div>
         </div>
       </div>
 
+      {/* Main Headline */}
       <div className="space-y-2">
-        <label>Main Headline</label>
-        <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg">
+        <label className="text-sm sm:text-base">Main Headline</label>
+        <div className="px-4 py-2 bg-gray-100 dark:bg-[#181818] border rounded-lg break-words whitespace-pre-wrap">
           {about.mainHeadline || "N/A"}
         </div>
       </div>
 
+      {/* Description */}
       <div className="space-y-2">
-        <label>About Description</label>
-        <div className="px-4 py-2 bg-gray-100 leading-relaxed dark:bg-[#181818] border rounded-lg whitespace-pre-line">
+        <label className="text-sm sm:text-base">About Description</label>
+        <div className="px-4 py-2 bg-gray-100 leading-relaxed dark:bg-[#181818] border rounded-lg whitespace-pre-wrap break-words">
           {about.description || "N/A"}
         </div>
       </div>
 
       {/* PRIVACY POLICIES */}
       <div className="space-y-2">
-        <label>Privacy Policies</label>
+        <label className="text-sm sm:text-base">Privacy Policies</label>
+
         {privacy.length > 0 ? (
           <div className="space-y-3">
             {privacy.map((p: any, i: number) => (
               <div
                 key={i}
-                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg"
+                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg break-words whitespace-pre-wrap"
               >
-                <strong>{p.title}</strong>
-                <p className="text-sm mt-1">{p.description}</p>
+                <strong className="block text-base break-words">
+                  {p.title}
+                </strong>
+                <p className="text-sm mt-1 break-words">{p.description}</p>
               </div>
             ))}
           </div>
@@ -70,16 +80,19 @@ export default function OtherPagesDataSection({ tenant }: any) {
 
       {/* FAQ */}
       <div className="space-y-2">
-        <label>FAQs</label>
+        <label className="text-sm sm:text-base">FAQs</label>
+
         {faqs.length > 0 ? (
           <div className="space-y-3">
             {faqs.map((f: any, i: number) => (
               <div
                 key={i}
-                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg"
+                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg break-words whitespace-pre-wrap"
               >
-                <strong>Q: {f.question}</strong>
-                <p className="text-sm mt-1">A: {f.answer}</p>
+                <strong className="block text-base break-words">
+                  Q: {f.question}
+                </strong>
+                <p className="text-sm mt-1 break-words">A: {f.answer}</p>
               </div>
             ))}
           </div>
@@ -92,17 +105,19 @@ export default function OtherPagesDataSection({ tenant }: any) {
 
       {/* TERMS & CONDITIONS */}
       <div className="space-y-2">
-        <label>Terms & Conditions</label>
+        <label className="text-sm sm:text-base">Terms & Conditions</label>
 
         {terms.length > 0 ? (
           <div className="space-y-3">
             {terms.map((t: any, i: number) => (
               <div
                 key={i}
-                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg"
+                className="p-3 bg-gray-100 dark:bg-[#181818] border rounded-lg break-words whitespace-pre-wrap"
               >
-                <strong>{t.title}</strong>
-                <p className="text-sm mt-1">{t.description}</p>
+                <strong className="block text-base break-words">
+                  {t.title}
+                </strong>
+                <p className="text-sm mt-1 break-words">{t.description}</p>
               </div>
             ))}
           </div>

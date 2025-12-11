@@ -1,15 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Header } from "../../../components/header";
 import { Footer } from "../../../components/footer";
-import { CalendarModal } from "../../check-out/components/calendar-modal";
+import { CalendarModal } from "../components/calendar-modal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import Link from "next/link";
+import axios from "axios";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 export default function PaymentSuccessPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
+
+  const [qrCode, setQrCode] = useState<string | null>(null);
+
+  // Load confirmed purchase response from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("confirmedPurchase");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setPaymentData(parsed?.data);
+    }
+  }, []);
+
+  const getToken = () => {
+    if (typeof window === "undefined") return null;
+
+    const raw =
+      localStorage.getItem("buyerToken") ||
+      localStorage.getItem("staffToken") ||
+      localStorage.getItem("hostToken") ||
+      localStorage.getItem("token");
+
+    return raw || null; // 🔥 DO NOT PARSE
+  };
+
+  useEffect(() => {
+    if (!paymentData) return;
+
+    const fetchQr = async () => {
+      try {
+        const token = getToken(); // 🔥 Use raw token string
+
+        const res = await axios.get(
+          `${API_BASE_URL}/payments/purchase/${paymentData.purchaseId}/qrcode`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "X-Tenant-ID": HOST_Tenant_ID,
+            },
+          }
+        );
+
+        setQrCode(res.data?.data?.qrCode || null);
+      } catch (err) {
+        console.error("QR Code fetch failed:", err);
+      }
+    };
+
+    fetchQr();
+  }, [paymentData]);
 
   return (
     <main className="bg-white text-black dark:bg-[#101010] dark:text-gray-100 transition-colors duration-300">
@@ -24,7 +78,9 @@ export default function PaymentSuccessPage() {
             Payment Successful!
           </h1>
           <p className="mt-2 text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-300">
-            You got your ticket. Download it here.
+            {paymentData?.event?.name
+              ? `You got your ticket for ${paymentData.event.name}. Download it here.`
+              : "You got your ticket. Download it here."}
           </p>
         </div>
 
@@ -35,11 +91,12 @@ export default function PaymentSuccessPage() {
             <h2 className="text-[18px] sm:text-[22px] font-bold mb-2">
               Congratulations!
             </h2>
+
             <p className="text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-300 leading-relaxed mb-6 sm:mb-8">
               You’ve successfully purchased the ticket for:
               <br />
               <span className="font-medium text-gray-900 dark:text-gray-100">
-                Starry Nights Music Fest
+                {paymentData?.event?.name || "Event Name"}
               </span>
             </p>
 
@@ -51,10 +108,27 @@ export default function PaymentSuccessPage() {
                 Item Details
               </h3>
               <div className="space-y-1 sm:space-y-2 text-[14px] sm:text-[15px]">
-                <Line label="Item" value="Starry Nights Music Fest" />
-                <Line label="Ticket" value="General Ticket" />
-                <Line label="Quantity" value="2 Tickets" />
-                <Line label="Amount" value="$800" />
+                <Line label="Item" value={paymentData?.event?.name || "N/A"} />
+                <Line
+                  label="Ticket"
+                  value={paymentData?.ticket?.name || "N/A"}
+                />
+                <Line
+                  label="Quantity"
+                  value={
+                    paymentData?.ticket?.quantity
+                      ? `${paymentData.ticket.quantity} Ticket(s)`
+                      : "N/A"
+                  }
+                />
+                <Line
+                  label="Amount"
+                  value={
+                    paymentData?.payment?.totalAmount
+                      ? `$${paymentData.payment.totalAmount}`
+                      : "$0"
+                  }
+                />
               </div>
             </div>
 
@@ -66,17 +140,17 @@ export default function PaymentSuccessPage() {
                 Customer details
               </h3>
               <div className="space-y-1 sm:space-y-2 text-[14px] sm:text-[15px]">
-                <Line label="Name" value="Jasmine Marina" />
-                <Line label="Contact Number" value="125-559-8852" />
-                <Line label="Email" value="jasmine@gmail.com" />
+                <Line label="Name" value={paymentData?.buyer?.name || "N/A"} />
+                <Line
+                  label="Email"
+                  value={paymentData?.buyer?.email || "N/A"}
+                />
+                {/* <Line label="Contact Number" value="Not Provided" /> */}
               </div>
             </div>
 
             <p className="text-[16px] sm:text-[20px] leading-relaxed">
-              Thank you for choosing to buy from{" "}
-              <span className="italic font-semibold text-black dark:text-white">
-                EventLand!
-              </span>
+              Thank you for choosing us
             </p>
           </div>
 
@@ -88,41 +162,59 @@ export default function PaymentSuccessPage() {
                 <h4 className="text-[16px] sm:text-[18px] font-semibold mb-1">
                   Download Your Tickets!
                 </h4>
+
                 <p className="text-xs sm:text-sm text-white/90 mb-3 sm:mb-4">
-                  Starry Nights Music Fest
+                  {paymentData?.event?.name || "Event Name"}
                 </p>
 
                 {/* QR */}
                 <div className="flex flex-col items-center mb-3 sm:mb-4">
-                  <Image
-                    src="/images/qr.png"
-                    alt="QR code"
-                    width={180}
-                    height={180}
-                    className="h-[150px] sm:h-[200px] w-[150px] sm:w-[200px] object-contain"
-                  />
+                  {qrCode ? (
+                    // <Image
+                    //   src={qrCode}
+                    //   alt="Ticket QR Code"
+                    //   width={180}
+                    //   height={180}
+                    //   className="h-[150px] sm:h-[200px] w-[150px] sm:w-[200px] object-contain"
+                    // />
+                    <img
+                      src={qrCode}
+                      alt="QR Code"
+                      className="h-[150px] sm:h-[200px] w-[150px] sm:w-[200px] object-contain"
+                    />
+                  ) : (
+                    <p className="text-white/80 text-sm">Loading QR Code...</p>
+                  )}
+
                   <p className="mt-2 sm:mt-3 text-center text-[10px] sm:text-[12px] tracking-wider text-white/80">
-                    TCK-482917-AB56
+                    {paymentData?.confirmationNumber || "TCK-XXXXXX"}
                   </p>
                 </div>
 
                 {/* Ticket Info */}
                 <div className="text-[12px] sm:text-[14px] space-y-2 sm:space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">1 Tickets</span>
-                    <span className="font-semibold">$205.35</span>
+                    <span className="font-semibold">
+                      {paymentData?.ticket?.quantity || 1} Ticket(s)
+                    </span>
+                    <span className="font-semibold">
+                      ${paymentData?.payment?.totalAmount || "0.00"}
+                    </span>
                   </div>
+
                   <p className="font-semibold">
-                    Location: <span className="font-normal">California</span>
+                    Event:{" "}
+                    <span className="font-normal">
+                      {paymentData?.event?.name || "N/A"}
+                    </span>
                   </p>
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">
-                      Date: <span className="font-normal">4 June</span>
-                    </p>
-                    <p className="font-semibold">
-                      Time: <span className="font-normal">8 pm</span>
-                    </p>
-                  </div>
+
+                  <p className="font-semibold">
+                    Status:{" "}
+                    <span className="font-normal capitalize">
+                      {paymentData?.status || "Succeeded"}
+                    </span>
+                  </p>
                 </div>
               </div>
 
@@ -131,12 +223,13 @@ export default function PaymentSuccessPage() {
                 <button className="h-9 sm:h-10 w-full flex-1 rounded-[10px] bg-[#0077F7] sm:text-[12px] text-[10px] font-medium text-white hover:bg-[#0066D6] transition">
                   Download Ticket
                 </button>
-                <button
-                  onClick={() => setIsCalendarOpen(true)}
-                  className="h-9 sm:h-10 w-full flex-1 rounded-[10px] bg-black dark:bg-gray-200 sm:text-[12px] text-[10px] font-medium text-white dark:text-black hover:bg-black/90 dark:hover:bg-gray-300 transition"
-                >
-                  Add to Calendar
-                </button>
+
+                <Link href="/tickets">
+                  <button className="h-9 sm:h-10 w-[90px] sm:w-[110px] flex-1 rounded-[10px] bg-black dark:bg-gray-200 sm:text-[12px] text-[10px] font-medium text-white dark:text-black hover:bg-black/90 dark:hover:bg-gray-300 transition">
+                    My Tickets
+                  </button>
+                </Link>
+
                 <button
                   onClick={() => setIsShareModalOpen(true)}
                   className="h-9 sm:h-10 w-full flex-1 rounded-[10px] bg-[#E5EBF3] dark:bg-gray-800 sm:text-[12px] text-[10px] font-medium text-black dark:text-gray-100 hover:bg-[#d6dee7] dark:hover:bg-gray-700 transition"
@@ -156,10 +249,10 @@ export default function PaymentSuccessPage() {
       <CalendarModal
         isOpen={isCalendarOpen}
         onClose={() => setIsCalendarOpen(false)}
-        eventTitle="Starry Nights Music Fest"
-        eventDescription="A magical evening under the stars with live bands, food stalls, and an electric crowd."
+        eventTitle={paymentData?.event?.name || "Event"}
+        eventDescription="Enjoy your event!"
         eventImage="/images/hero-image.png"
-        initialDate={new Date(2025, 5, 10)}
+        initialDate={new Date()}
       />
 
       {/* Share Ticket Modal */}
@@ -183,28 +276,30 @@ export default function PaymentSuccessPage() {
                 Download Your Tickets!
               </p>
               <p className="mt-1 text-[11px] sm:text-sm text-center text-[#E6F0FF]">
-                Starry Nights Music Fest
+                {paymentData?.event?.name || "Event Name"}
               </p>
 
               <div className="mt-3 sm:mt-2 flex items-center justify-center">
                 <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/frame%201-EsnnyeVb9lwC0UehvuRIFhcDpflOoj.png"
+                  src="/images/qr.png"
                   alt="Ticket QR"
                   className="h-[120px] sm:h-[160px] w-[150px] sm:w-[200px] object-contain"
                 />
               </div>
 
               <p className="mt-3 sm:mt-4 text-center text-[9px] sm:text-[10px] text-[#E6F0FF]">
-                TCK-482917-AB56
+                {paymentData?.confirmationNumber || "TCK-XXXXXX"}
               </p>
 
               <div className="mt-2 grid grid-cols-2 gap-y-1 sm:gap-y-2 text-[12px] sm:text-[15px] font-semibold text-white">
-                <p>1 Tickets</p>
-                <p className="text-right">$205.35</p>
-                <p>Location: California</p>
+                <p>{paymentData?.ticket?.quantity || 1} Ticket(s)</p>
+                <p className="text-right">
+                  ${paymentData?.payment?.totalAmount || "0.00"}
+                </p>
+                <p>Event: {paymentData?.event?.name || "N/A"}</p>
                 <span />
-                <p>Date: 4 June</p>
-                <p className="text-right">Time: 8 pm</p>
+                <p>Status: {paymentData?.status || "Succeeded"}</p>
+                <p className="text-right"></p>
               </div>
             </div>
 
@@ -264,14 +359,14 @@ export default function PaymentSuccessPage() {
                   Event URL
                 </p>
                 <p className="mt-[2px] text-[12px] sm:text-[14px] text-black dark:text-gray-300 truncate">
-                  https://viagoevents.com/v2/events/928
+                  https://event.com/{paymentData?.event?.id || ""}
                 </p>
               </div>
               <button
                 aria-label="Copy event URL"
                 onClick={() =>
                   navigator.clipboard.writeText(
-                    "https://viagoevents.com/v2/events/928"
+                    `https://event.com/${paymentData?.event?.id || ""}`
                   )
                 }
                 className="h-[38px] sm:h-[44px] w-[40px] sm:w-[45px] rounded-full grid place-items-center border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition"

@@ -80,9 +80,16 @@ export default function HostManagementForm() {
       "
     >
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end w-full flex-shrink-0">
         <Link href="/host-settings/edit">
-          <Button className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-6 py-4 rounded-lg transition">
+          <Button className="bg-[#D19537] sm:mt-10 lg:mt-0 hover:bg-[#e59618] text-white font-medium px-6 py-4 rounded-lg transition">
+            Edit
+          </Button>
+        </Link>
+      </div>
+      <div className="flex justify-end w-full sm:hidden mt-2">
+        <Link href="/host-settings/edit">
+          <Button className="bg-[#D19537] hover:bg-[#e59618] text-white font-medium px-5 py-3 rounded-lg text-sm transition">
             Edit
           </Button>
         </Link>

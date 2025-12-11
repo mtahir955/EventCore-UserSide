@@ -8,6 +8,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import AddCreditModal from "../host-dashboard/components/AddCreditModal"
 
 type Customer = {
   id: string;
@@ -129,6 +130,12 @@ export default function CustomersPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showAddCreditModal, setShowAddCreditModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+
   // 🔍 Filtering logic
   const filteredData = searchQuery
     ? mockData.filter((c) => {
@@ -187,29 +194,29 @@ export default function CustomersPage() {
   const [hostName, setHostName] = useState("Host");
 
   useEffect(() => {
-      const savedUser = localStorage.getItem("hostUser");
-  
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-  
-        // Host Name
-        setHostName(user.userName || user.fullName || "Host");
-  
-        // Subdomain (optional)
-        // setHostSubdomain(user.subDomain || "");
-  
-        console.log("HOST DASHBOARD USER:", user);
-        console.log("HOST SUBDOMAIN:", user?.subDomain);
-  
-        // Theme (optional)
-        if (user.theme) {
-          // syncThemeWithBackend(user);
-        }
-      } else {
-        // Force redirect if no host session found
-        window.location.href = "/sign-in-host";
+    const savedUser = localStorage.getItem("hostUser");
+
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+
+      // Host Name
+      setHostName(user.userName || user.fullName || "Host");
+
+      // Subdomain (optional)
+      // setHostSubdomain(user.subDomain || "");
+
+      console.log("HOST DASHBOARD USER:", user);
+      console.log("HOST SUBDOMAIN:", user?.subDomain);
+
+      // Theme (optional)
+      if (user.theme) {
+        // syncThemeWithBackend(user);
       }
-    }, []);
+    } else {
+      // Force redirect if no host session found
+      window.location.href = "/sign-in-host";
+    }
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
@@ -381,9 +388,15 @@ export default function CustomersPage() {
                         </button>
                       </Link>
 
-                      <Link href="/payment-setup">
+                      <Link href="/ticket-manager">
                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                          Payment Setup
+                          Ticket Manager
+                        </button>
+                      </Link>
+
+                      <Link href="/host-payments">
+                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                          Payments
                         </button>
                       </Link>
 
@@ -464,10 +477,12 @@ export default function CustomersPage() {
               {currentEntries.map((c) => (
                 <div
                   key={c.id}
-                  onClick={() => handleRowClick(c)}
-                  className="min-w-[1050px] grid grid-cols-[160px_200px_150px_150px_120px_120px_120px] px-6 py-4 text-[14px] border-b text-center hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer"
+                  className="min-w-[1100px] grid grid-cols-[160px_200px_150px_150px_120px_120px_120px_50px] px-6 py-4 text-[14px] border-b text-center hover:bg-gray-50 dark:hover:bg-gray-900 relative"
                 >
-                  <div className="flex items-center justify-center gap-3">
+                  <div
+                    className="flex items-center justify-center gap-3 cursor-pointer"
+                    onClick={() => handleRowClick(c)}
+                  >
                     <Image
                       src={c.avatar}
                       alt={c.name}
@@ -484,6 +499,35 @@ export default function CustomersPage() {
                   <div>{c.gender}</div>
                   <div>{c.category}</div>
                   <div>{c.ticketQuantity}</div>
+
+                  {/* Three Dots */}
+                  <div className="flex justify-center items-center relative">
+                    <button
+                      className="p-2 hover:bg-gray-200 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === c.id ? null : c.id);
+                      }}
+                    >
+                      ⋯
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {openMenuId === c.id && (
+                      <div className="absolute right-0 top-10 bg-white shadow-lg border rounded-lg w-40 z-50">
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                          onClick={() => {
+                            setSelectedCustomer(c);
+                            setShowAddCreditModal(true);
+                            setOpenMenuId(null);
+                          }}
+                        >
+                          Add Credit
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -536,6 +580,20 @@ export default function CustomersPage() {
         onLogout={() => {
           localStorage.clear();
           window.location.href = "/sign-in-host";
+        }}
+      />
+
+      <AddCreditModal
+        isOpen={showAddCreditModal}
+        onClose={() => setShowAddCreditModal(false)}
+        customer={selectedCustomer}
+        onSave={(data) => {
+          console.log("SAVE CREDIT:", data);
+
+          // here you will call backend API later
+          // await axios.post("/credit", data)
+
+          setShowAddCreditModal(false);
         }}
       />
     </div>

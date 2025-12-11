@@ -49,48 +49,116 @@ export default function CalendarPage() {
     checkOut: number | null;
   }>({ checkIn: null, checkOut: null });
 
-  // -----------------------------------------
-  // 🔥 FETCH API /user/events/mine (with token)
-  // -----------------------------------------
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const token = getAuthToken();
+  // -----------------------------------------------------
+  // 🔥 FETCH USER EVENTS (/users/events/mine)
+  // -----------------------------------------------------
+  const fetchEvents = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
 
-        if (!token) {
-          console.log("❌ No token found");
-          return;
-        }
+      const res = await axios.get(`${API_BASE_URL}/users/events/mine`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-id": HOST_Tenant_ID,
+        },
+      });
 
-        console.log("🔐 Sending Token:", token);
+      const data = res.data?.data;
 
-        const res = await axios.get(`${API_BASE_URL}/users/events/mine`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-          },
+      setCalendarEvents(data.calendarEvents || {});
+      setEventsGrid(data.eventsGrid || {});
+    } catch (err: any) {
+      console.error("❌ Error fetching events:", err.response);
+
+      if (err.response?.status === 401) {
+        localStorage.removeItem("buyerToken");
+        localStorage.removeItem("userToken");
+      }
+    }
+  };
+
+  // -----------------------------------------------------
+  // 🔥 FETCH PINNED REMINDERS (/users/calendar)
+  // -----------------------------------------------------
+  const fetchPinnedCalendar = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const res = await axios.get(`${API_BASE_URL}/users/calendar`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-id": HOST_Tenant_ID,
+        },
+      });
+
+      const entries = res.data?.data?.entries || [];
+      const formatted: any = {};
+
+      entries.forEach((entry: any) => {
+        if (!entry.reminderDate) return;
+
+        const dateObj = new Date(entry.reminderDate);
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1;
+        const day = dateObj.getDate();
+
+        if (!formatted[year]) formatted[year] = {};
+        if (!formatted[year][month]) formatted[year][month] = [];
+
+        formatted[year][month].push({
+          id: entry.id,
+          title: entry.event?.title || "Pinned Event",
+          date: day,
+          location: entry.event?.location || "",
+          type: "pinned",
+        });
+      });
+
+      // ⭐ MERGE without overwriting existing event data
+      setCalendarEvents((prev: any) => {
+        const updated = { ...prev };
+
+        Object.keys(formatted).forEach((year) => {
+          if (!updated[year]) updated[year] = {};
+
+          Object.keys(formatted[year]).forEach((month) => {
+            if (!updated[year][month]) updated[year][month] = [];
+
+            updated[year][month] = [
+              ...updated[year][month], // existing "you", "purchased", etc.
+              ...formatted[year][month], // appended pinned entries
+            ];
+          });
         });
 
-        const data = res.data.data;
+        return updated;
+      });
+    } catch (err) {
+      console.log("❌ Error loading pinned calendar:", err);
+    }
+  };
 
-        setCalendarEvents(data.calendarEvents || {});
-        setEventsGrid(data.eventsGrid || {});
-      } catch (err: any) {
-        console.error("❌ Error fetching events:", err.response);
+  // -----------------------------------------------------
+  // 🔥 LOAD EVENTS + PINNED TOGETHER (NO MONTH API)
+  // -----------------------------------------------------
+  useEffect(() => {
+    const loadAll = async () => {
+      setLoading(true);
 
-        if (err.response?.status === 401) {
-          console.log("❌ Invalid or expired token, clearing localStorage...");
-          localStorage.removeItem("buyerToken");
-          localStorage.removeItem("userToken");
-        }
-      } finally {
-        setLoading(false);
-      }
+      await fetchEvents(); // purchased + joined events
+      await fetchPinnedCalendar(); // pinned reminders
+
+      setLoading(false);
     };
 
-    fetchEvents();
+    loadAll();
   }, []);
 
+  // -----------------------------------------------------
+  // 🔥 LOADING UI
+  // -----------------------------------------------------
   if (loading)
     return (
       <p className="text-center mt-20 text-gray-500 dark:text-gray-300">
@@ -98,6 +166,9 @@ export default function CalendarPage() {
       </p>
     );
 
+  // -----------------------------------------------------
+  // 🔥 PAGE UI (UNCHANGED)
+  // -----------------------------------------------------
   return (
     <main className="bg-background text-foreground min-h-screen">
       <Header />

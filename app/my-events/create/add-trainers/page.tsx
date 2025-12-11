@@ -335,37 +335,53 @@ export default function AddTrainersSection({
           </button>
         </div>
 
-        {/* Trainer List */}
         {trainers.length > 0 && (
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-3 w-full overflow-hidden">
             {trainers.map((trainer) => (
               <div
                 key={trainer.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+                className="
+          flex flex-col sm:flex-row 
+          sm:items-center sm:justify-between 
+          p-3 sm:p-4 rounded-lg border 
+          bg-[#FAFAFB] dark:bg-[#101010] 
+          border-[#E8E8E8]
+          gap-3
+          w-full
+          overflow-hidden
+        "
               >
-                <div className="flex items-center gap-4 mb-2 sm:mb-0">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 w-full overflow-hidden">
                   {trainer.image && (
                     <img
                       src={trainer.image}
                       alt={trainer.name}
-                      className="w-12 h-12 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                      className="
+                w-12 h-12 rounded-full object-cover 
+                border border-gray-300 dark:border-gray-600 
+                flex-shrink-0
+              "
                     />
                   )}
-                  <div>
-                    <div className="text-[14px] font-semibold">
+
+                  <div className="flex-1 w-full break-words whitespace-normal overflow-hidden">
+                    <div className="text-[14px] font-semibold break-words whitespace-normal">
                       {trainer.name}
                     </div>
-                    <div className="text-[13px] text-[#D19537] dark:text-[#e2b85b]">
+
+                    <div className="text-[13px] text-[#D19537] dark:text-[#e2b85b] break-words whitespace-normal">
                       {trainer.designation}
                     </div>
-                    <div className="text-[13px] text-[#666666] dark:text-gray-400">
+
+                    <div className="text-[13px] text-[#666666] dark:text-gray-400 break-words whitespace-normal leading-relaxed">
                       {trainer.description}
                     </div>
                   </div>
                 </div>
+
                 <button
                   onClick={() => handleRemoveTrainer(trainer.id)}
-                  className="text-[13px] sm:text-[14px] font-medium text-[#D6111A]"
+                  className="text-[13px] sm:text-[14px] font-medium text-[#D6111A] self-end sm:self-center"
                 >
                   Remove
                 </button>
