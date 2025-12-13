@@ -124,7 +124,12 @@ export default function HostManagementForm() {
       },
 
       // Ticket Transfers
-      allowTransfers: basic.allowTransfers,
+      allowTransfers: {
+        enabled: basic.allowTransfers ?? false,
+        maxMonths: basic.allowTransfers
+          ? Number(basic.transferExpiryMonths ?? null)
+          : null,
+      },
 
       // Credit System
       creditSystem: {

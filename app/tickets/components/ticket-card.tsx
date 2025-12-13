@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { TransferTicketModal } from "../components/transfer-ticket-modal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CalendarModal } from "../../check-out/components/calendar-modal";
+import { RefundRequestModal } from "../components/refund-request-modal";
 
 type TicketProps = {
   date: { day: string; month: string; weekday: string; time: string };
@@ -33,6 +34,9 @@ export function TicketCard({
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
 
   return (
     <>
@@ -107,13 +111,40 @@ export function TicketCard({
             {/* Price + Buttons */}
             <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:gap-3 gap-2 mt-2 sm:mt-0">
               {!ended && (
-                <button
-                  onClick={() => setTransferModalOpen(true)}
-                  className="rounded-full text-white px-3 sm:px-4 py-1 text-[11px] sm:text-[12px] bg-black dark:bg-[#0077F7] hover:bg-gray-800 dark:hover:bg-[#005fe0] transition"
-                >
-                  Transfer
-                </button>
+                <div className="relative flex items-center gap-2">
+                  {/* Transfer */}
+                  <button
+                    onClick={() => setTransferModalOpen(true)}
+                    className="rounded-full text-white px-3 sm:px-4 py-1 text-[11px] sm:text-[12px] bg-black dark:bg-[#0077F7]"
+                  >
+                    Transfer
+                  </button>
+
+                  {/* 3-dot menu */}
+                  <button
+                    onClick={() => setMenuOpen((p) => !p)}
+                    className="h-8 w-8 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center"
+                  >
+                    ⋯
+                  </button>
+
+                  {/* Dropdown */}
+                  {menuOpen && (
+                    <div className="absolute right-0 top-9 w-44 bg-white dark:bg-[#1f1f1f] border rounded-lg shadow-lg z-50">
+                      <button
+                        onClick={() => {
+                          setRefundModalOpen(true);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        Request Refund
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
+
               <div className="text-[16px] sm:text-[22px] font-semibold">
                 {price}
               </div>
@@ -281,6 +312,20 @@ export function TicketCard({
           </div>
         </DialogContent>
       </Dialog>
+
+      <RefundRequestModal
+        open={refundModalOpen}
+        onClose={() => setRefundModalOpen(false)}
+        onSubmit={(data) => {
+          console.log("REFUND REQUEST:", {
+            ticketTitle: title,
+            ...data,
+          });
+
+          // later:
+          // axios.post("/tickets/refund-request", payload)
+        }}
+      />
     </>
   );
 }

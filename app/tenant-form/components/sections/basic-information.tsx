@@ -27,7 +27,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
     /* Payment Plan → Credit Expiry */
     creditExpiryEnabled: false,
     creditExpiryValue: "",
-    creditExpiryUnit: "days", // days | months
+    creditExpiryUnit: "months", // days | months
 
     /* Credit System Rules */
     minOrderEligibilityEnabled: false,
@@ -35,6 +35,10 @@ const BasicInformationSection = forwardRef((props, ref) => {
 
     maxInstallmentsEnabled: false,
     maxInstallments: "",
+
+    // 🆕 Ticket Transfer Rules
+    transferExpiryEnabled: false,
+    transferExpiryMonths: "",
 
     /* ⭐ New Feature Toggles */
     serviceFee: false,
@@ -91,7 +95,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
           paymentPlans: false,
           creditExpiryEnabled: false,
           creditExpiryValue: "",
-          creditExpiryUnit: "days",
+          creditExpiryUnit: "months",
         };
       }
 
@@ -104,6 +108,16 @@ const BasicInformationSection = forwardRef((props, ref) => {
           minOrderValue: "",
           maxInstallmentsEnabled: false,
           maxInstallments: "",
+        };
+      }
+
+      // ⛔ Turn OFF transfer → reset months
+      if (name === "allowTransfers" && !checked) {
+        return {
+          ...prev,
+          allowTransfers: false,
+          transferExpiryEnabled: false,
+          transferExpiryMonths: "",
         };
       }
 
@@ -502,6 +516,39 @@ const BasicInformationSection = forwardRef((props, ref) => {
             </span>
           </label>
 
+          {formData.allowTransfers && (
+            <div className="ml-7 mt-3 space-y-3 max-w-xs">
+              <label className="text-sm text-gray-700 dark:text-gray-300">
+                Maximum transfer validity (months)
+              </label>
+
+              <input
+                type="number"
+                min={1}
+                max={24}
+                placeholder="e.g. 3"
+                value={formData.transferExpiryMonths}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value >= 1 && value <= 24) {
+                    setFormData((p) => ({
+                      ...p,
+                      transferExpiryEnabled: true,
+                      transferExpiryMonths: e.target.value,
+                    }));
+                  }
+                }}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-[#D19537]
+        bg-white dark:bg-[#101010]
+        border-gray-300 dark:border-gray-700"
+              />
+
+              <p className="text-xs text-gray-500">
+                Users can transfer tickets only within this time window
+              </p>
+            </div>
+          )}
+
           <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
@@ -675,7 +722,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
           bg-white dark:bg-[#101010]
           border-gray-300 dark:border-gray-700"
                   >
-                    <option value="days">Days</option>
+                    {/* <option value="days">Days</option> */}
                     <option value="months">Months</option>
                   </select>
                 </div>

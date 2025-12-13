@@ -54,6 +54,14 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
         }
       );
 
+      // 🔥 LOG EVERYTHING
+      console.log("LOGIN FULL RESPONSE:", response);
+      console.log("LOGIN RESPONSE DATA:", response.data);
+      console.log(
+        "LOGIN RESPONSE JSON:",
+        JSON.stringify(response.data, null, 2)
+      );
+
       toast.success("Login Successful! 🎉");
 
       // ✅ Correct nested values

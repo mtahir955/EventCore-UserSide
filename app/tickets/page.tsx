@@ -14,13 +14,59 @@ export default function Page() {
   const { tickets, setTickets } = useTicketsStore();
   const [activeTab, setActiveTab] = useState("Active");
 
+  const DUMMY_TICKET = {
+    date: {
+      day: "12",
+      month: "December",
+      weekday: "FRI",
+      time: "07:00 PM",
+    },
+    title: "Demo Event Ticket",
+    location: "Lahore, Pakistan",
+    type: "1 General Ticket",
+    price: "$49.99",
+    highlight: true,
+    ended: false,
+    transferred: false,
+  };
+
   // ⭐ FETCH REAL TICKETS FROM BACKEND
+  // useEffect(() => {
+  //   const fetchTickets = async () => {
+  //     try {
+  //       const token = localStorage.getItem("buyerToken");
+  //       if (!token) {
+  //         console.log("❌ No buyer token found");
+  //         return;
+  //       }
+
+  //       const res = await axios.get(`${API_BASE_URL}/users/tickets/mine`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //       });
+
+  //       if (res.data?.tickets) {
+  //         setTickets(res.data.tickets);
+  //       }
+  //     } catch (err) {
+  //       console.log("❌ Error fetching tickets:", err);
+  //     }
+  //   };
+
+  //   fetchTickets();
+  // }, []);
+
   useEffect(() => {
     const fetchTickets = async () => {
       try {
         const token = localStorage.getItem("buyerToken");
         if (!token) {
           console.log("❌ No buyer token found");
+
+          // 👉 Show dummy ticket if not logged in
+          setTickets([DUMMY_TICKET]);
           return;
         }
 
@@ -31,11 +77,18 @@ export default function Page() {
           },
         });
 
-        if (res.data?.tickets) {
+        // ✅ If backend returns tickets
+        if (res.data?.tickets && res.data.tickets.length > 0) {
           setTickets(res.data.tickets);
+        } else {
+          // ⚠️ No tickets from backend → show dummy
+          setTickets([DUMMY_TICKET]);
         }
       } catch (err) {
         console.log("❌ Error fetching tickets:", err);
+
+        // ⚠️ API error → still show dummy ticket
+        setTickets([DUMMY_TICKET]);
       }
     };
 

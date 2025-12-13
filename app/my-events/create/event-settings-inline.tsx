@@ -8,9 +8,7 @@ export default function EventSettingsPageInline({
   setActivePage: (page: string) => void;
 }) {
   // Tabs
-  const [activeTab, setActiveTab] = useState<
-    "general" | "payments"
-  >("general");
+  const [activeTab, setActiveTab] = useState<"general" | "payments">("general");
 
   // General tab checkboxes
   const [passServiceFee, setPassServiceFee] = useState(false);
@@ -29,6 +27,10 @@ export default function EventSettingsPageInline({
   // Pay over time plans
   const [installmentPlan, setInstallmentPlan] = useState<number | null>(null);
 
+  // Refund rules (only when ticket transfer is allowed)
+  const [refundDeadline, setRefundDeadline] = useState<string>("");
+  const [refundPercentage, setRefundPercentage] = useState<string>("");
+
   // BACK BUTTON → go to Create Event page
   const handleGoBack = () => setActivePage("create");
 
@@ -37,7 +39,13 @@ export default function EventSettingsPageInline({
     const settings = {
       passServiceFee,
       allowCredits,
-      allowTransfer,
+
+      ticketTransfer: {
+        enabled: allowTransfer,
+        refundDeadline: allowTransfer ? refundDeadline : null,
+        refundPercentage: allowTransfer ? Number(refundPercentage) : null,
+      },
+
       autoApprove,
       limitPerUser,
       passFee,
@@ -104,10 +112,73 @@ export default function EventSettingsPageInline({
               onToggle={() => setAllowCredits(!allowCredits)}
             />
             <SettingToggle
-              label="Allow ticket transfer between users"
+              label="Allow ticket transfer"
               checked={allowTransfer}
-              onToggle={() => setAllowTransfer(!allowTransfer)}
+              onToggle={() => {
+                const next = !allowTransfer;
+                setAllowTransfer(next);
+
+                if (!next) {
+                  setRefundDeadline("");
+                  setRefundPercentage("");
+                }
+              }}
             />
+
+            {allowTransfer && (
+              <div className="ml-8 mt-4 space-y-4 max-w-md">
+                {/* Refund Deadline */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Refund deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={refundDeadline}
+                    onChange={(e) => setRefundDeadline(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg
+          bg-white dark:bg-[#101010]
+          border-gray-300 dark:border-gray-700
+          focus:ring-[#D19537]"
+                  />
+                </div>
+
+                {/* Refund Percentage */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Refund amount (%)
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="e.g. 20"
+                      value={refundPercentage}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (value >= 0 && value <= 100) {
+                          setRefundPercentage(e.target.value);
+                        }
+                      }}
+                      className="w-full pr-10 px-4 py-2 border rounded-lg
+            bg-white dark:bg-[#101010]
+            border-gray-300 dark:border-gray-700
+            focus:ring-[#D19537]"
+                    />
+
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                      %
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Percentage of ticket price refunded if transferred
+                  </p>
+                </div>
+              </div>
+            )}
           </>
         )}
 

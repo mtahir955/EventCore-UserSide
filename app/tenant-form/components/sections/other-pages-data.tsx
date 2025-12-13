@@ -287,22 +287,33 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {privacyPolicies.map((p, index) => (
         <div
           key={index}
-          className="p-3 border rounded-lg flex justify-between mt-3 bg-gray-50 dark:bg-[#1a1a1a]"
+          className="
+      p-3 border rounded-lg mt-3
+      bg-gray-50 dark:bg-[#1a1a1a]
+      flex flex-col gap-3
+      sm:flex-row sm:items-start sm:justify-between
+    "
         >
-          <div>
-            <h5 className="font-semibold">{p.title}</h5>
-            <p className="text-sm">{p.description}</p>
+          {/* Text Content */}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold break-words">{p.title}</h5>
+
+            <p className="text-sm break-words text-gray-700 dark:text-gray-300">
+              {p.description}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* Action Buttons */}
+          <div className="flex gap-3 shrink-0 self-end sm:self-start">
             <button
-              className="text-blue-500"
+              className="text-blue-500 hover:opacity-80"
               onClick={() => handleEditPrivacy(index)}
             >
               <Pencil size={18} />
             </button>
+
             <button
-              className="text-red-500"
+              className="text-red-500 hover:opacity-80"
               onClick={() => handleRemovePrivacy(index)}
             >
               <Trash2 size={18} />
@@ -354,22 +365,33 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {faqs.map((f, index) => (
         <div
           key={index}
-          className="p-3 border rounded-lg flex justify-between mt-3 bg-gray-50 dark:bg-[#1a1a1a]"
+          className="
+      p-3 border rounded-lg mt-3
+      bg-gray-50 dark:bg-[#1a1a1a]
+      flex flex-col gap-3
+      sm:flex-row sm:items-start sm:justify-between
+    "
         >
-          <div>
-            <h5 className="font-semibold">Q: {f.question}</h5>
-            <p className="text-sm">A: {f.answer}</p>
+          {/* FAQ Text */}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold break-words">Q: {f.question}</h5>
+
+            <p className="text-sm break-words text-gray-700 dark:text-gray-300">
+              A: {f.answer}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* Action Buttons */}
+          <div className="flex gap-3 shrink-0 self-end sm:self-start">
             <button
-              className="text-blue-500"
+              className="text-blue-500 hover:opacity-80"
               onClick={() => handleEditFaq(index)}
             >
               <Pencil size={18} />
             </button>
+
             <button
-              className="text-red-500"
+              className="text-red-500 hover:opacity-80"
               onClick={() => handleRemoveFaq(index)}
             >
               <Trash2 size={18} />
@@ -422,22 +444,33 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {terms.map((t, index) => (
         <div
           key={index}
-          className="p-3 border rounded-lg flex justify-between mt-3 bg-gray-50 dark:bg-[#1a1a1a]"
+          className="
+      p-3 border rounded-lg mt-3
+      bg-gray-50 dark:bg-[#1a1a1a]
+      flex flex-col gap-3
+      sm:flex-row sm:items-start sm:justify-between
+    "
         >
-          <div>
-            <h5 className="font-semibold">{t.title}</h5>
-            <p className="text-sm">{t.description}</p>
+          {/* Terms Content */}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold break-words">{t.title}</h5>
+
+            <p className="text-sm break-words text-gray-700 dark:text-gray-300">
+              {t.description}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* Action Buttons */}
+          <div className="flex gap-3 shrink-0 self-end sm:self-start">
             <button
-              className="text-blue-500"
+              className="text-blue-500 hover:opacity-80"
               onClick={() => handleEditTerms(index)}
             >
               <Pencil size={18} />
             </button>
+
             <button
-              className="text-red-500"
+              className="text-red-500 hover:opacity-80"
               onClick={() => handleRemoveTerms(index)}
             >
               <Trash2 size={18} />
