@@ -1,238 +1,186 @@
 "use client";
 
 import { Sidebar } from "../host-dashboard/components/sidebar";
-import { UserInfoModal } from "../host-dashboard/components/user-info-modal";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import AddCreditModal from "../host-dashboard/components/AddCreditModal"
+import AddCreditModal from "../host-dashboard/components/AddCreditModal";
 
-type Customer = {
+/* ─────────────────────────────────────────
+   TYPES
+───────────────────────────────────────── */
+type Buyer = {
   id: string;
   name: string;
   avatar: string;
   email: string;
-  event: string;
-  ticketId: string;
-  ticketQuantity: number;
-  gender: string;
-  category: "General" | "VIP";
   phone: string;
-  address: string;
+  city: string;
+  gender: string;
+
+  // Credit system
+  creditBalance?: number;
 };
 
-// 🟧 Updated mock data with Category + Ticket Quantity
-const mockData: Customer[] = [
+/* ─────────────────────────────────────────
+   MOCK BUYERS (TENANT USERS)
+   Replace later with GET /host/buyers
+───────────────────────────────────────── */
+const mockBuyers: Buyer[] = [
   {
-    id: "1",
+    id: "u1",
     name: "Daniel Carter",
     avatar: "/images/avatars/daniel-carter-large.png",
-    email: "info@gmail.com",
-    event: "Starry Nights",
-    ticketId: "TCK-992134",
-    ticketQuantity: 2,
+    email: "daniel@gmail.com",
+    phone: "+1 555 892 111",
+    city: "Los Angeles",
     gender: "Male",
-    category: "General",
-    phone: "+44 7412 558492",
-    address: "1234 Sunset Blvd, Los Angeles, CA 90026",
+    creditBalance: 120,
   },
   {
-    id: "2",
+    id: "u2",
     name: "Sarah Mitchell",
     avatar: "/placeholder.svg",
-    email: "info@gmail.com",
-    event: "Starry Nights",
-    ticketId: "TCK-883421",
-    ticketQuantity: 4,
+    email: "sarah@gmail.com",
+    phone: "+1 555 892 222",
+    city: "San Diego",
     gender: "Female",
-    category: "VIP",
-    phone: "+44 7412 558493",
-    address: "5678 Ocean Ave, Santa Monica, CA 90401",
+    creditBalance: 0,
   },
   {
-    id: "3",
+    id: "u3",
     name: "Emily Carter",
     avatar: "/placeholder.svg",
-    email: "info@gmail.com",
-    event: "Music Galaxy",
-    ticketId: "TCK-552342",
-    ticketQuantity: 1,
+    email: "emily@gmail.com",
+    phone: "+1 555 892 333",
+    city: "New York",
     gender: "Female",
-    category: "General",
-    phone: "+44 7412 558494",
-    address: "9012 Hollywood Blvd, Hollywood, CA 90028",
+    creditBalance: 50,
   },
   {
-    id: "4",
+    id: "u4",
     name: "Nathan Blake",
     avatar: "/placeholder.svg",
-    email: "info@gmail.com",
-    event: "Tech Expo",
-    ticketId: "TCK-763223",
-    ticketQuantity: 3,
+    email: "nathan@gmail.com",
+    phone: "+1 555 892 444",
+    city: "Chicago",
     gender: "Male",
-    category: "VIP",
-    phone: "+44 7412 558495",
-    address: "3456 Venice Blvd, Venice, CA 90291",
+    creditBalance: 0,
   },
   {
-    id: "5",
-    name: "Taylor Morgan",
+    id: "u5",
+    name: "Nathan Blake",
     avatar: "/placeholder.svg",
-    email: "info@gmail.com",
-    event: "Summer Jam",
-    ticketId: "TCK-991234",
-    ticketQuantity: 1,
-    gender: "Non-binary",
-    category: "General",
-    phone: "+44 7412 558496",
-    address: "Beverly Hills, CA 90210",
+    email: "nathan@gmail.com",
+    phone: "+1 555 892 444",
+    city: "Chicago",
+    gender: "Male",
+    creditBalance: 0,
   },
   {
-    id: "6",
-    name: "Taylor Morgan",
+    id: "u6",
+    name: "Nathan Blake",
     avatar: "/placeholder.svg",
-    email: "info@gmail.com",
-    event: "Summer Jam",
-    ticketId: "TCK-991234",
-    ticketQuantity: 1,
-    gender: "Non-binary",
-    category: "General",
-    phone: "+44 7412 558496",
-    address: "Beverly Hills, CA 90210",
-  },
-  {
-    id: "7",
-    name: "Taylor Morgan",
-    avatar: "/placeholder.svg",
-    email: "info@gmail.com",
-    event: "Summer Jam",
-    ticketId: "TCK-991234",
-    ticketQuantity: 1,
-    gender: "Non-binary",
-    category: "General",
-    phone: "+44 7412 558496",
-    address: "Beverly Hills, CA 90210",
+    email: "nathan@gmail.com",
+    phone: "+1 555 892 444",
+    city: "Chicago",
+    gender: "Male",
+    creditBalance: 0,
   },
 ];
 
-export default function CustomersPage() {
+export default function BuyersPage() {
+  const { theme } = useTheme();
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<Customer | null>(null);
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showAddCreditModal, setShowAddCreditModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+  const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
 
-  // 🔍 Filtering logic
-  const filteredData = searchQuery
-    ? mockData.filter((c) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          c.name.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          c.ticketId.toLowerCase().includes(q)
-        );
-      })
-    : mockData;
-
-  const handleRowClick = (customer: Customer) => {
-    setSelectedUser(customer);
-    setIsModalOpen(true);
-  };
-
-  const handleSearch = () => setSearchQuery(searchInput);
-  const handleClearSearch = () => {
-    setSearchInput("");
-    setSearchQuery("");
-  };
-
-  // notifications + profile dropdown
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const [hostName, setHostName] = useState("Host");
+
+  /* ─────────────────────────────────────────
+     AUTH CHECK
+  ───────────────────────────────────────── */
+  useEffect(() => {
+    const savedUser = localStorage.getItem("hostUser");
+    if (!savedUser) {
+      window.location.href = "/sign-in-host";
+      return;
+    }
+
+    const user = JSON.parse(savedUser);
+    setHostName(user.userName || user.fullName || "Host");
+  }, []);
+
+  /* ─────────────────────────────────────────
+     SEARCH FILTER
+  ───────────────────────────────────────── */
+  const filteredBuyers = searchQuery
+    ? mockBuyers.filter((b) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          b.name.toLowerCase().includes(q) ||
+          b.email.toLowerCase().includes(q) ||
+          b.phone.toLowerCase().includes(q)
+        );
+      })
+    : mockBuyers;
+
+  /* ─────────────────────────────────────────
+     PAGINATION
+  ───────────────────────────────────────── */
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const indexOfLast = currentPage * entriesPerPage;
+  const indexOfFirst = indexOfLast - entriesPerPage;
+  const currentEntries = filteredBuyers.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredBuyers.length / entriesPerPage);
+
+  // Dummy notifications
   const notifications = [
     { id: 1, message: "Your event 'Tech Summit' was approved!" },
     { id: 2, message: "You sold 3 tickets for 'Lahore Music Fest'." },
     { id: 3, message: "New user message received." },
   ];
 
+  /* ─────────────────────────────────────────
+     CLICK OUTSIDE HANDLER
+  ───────────────────────────────────────── */
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(e.target as Node)
-      ) {
-        setShowNotifications(false);
-      }
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(e.target as Node)
-      ) {
-        setShowProfileDropdown(false);
-      }
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+      setShowNotifications(false);
+      setShowProfileDropdown(false);
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const { theme, setTheme } = useTheme();
-  const [hostName, setHostName] = useState("Host");
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("hostUser");
-
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-
-      // Host Name
-      setHostName(user.userName || user.fullName || "Host");
-
-      // Subdomain (optional)
-      // setHostSubdomain(user.subDomain || "");
-
-      console.log("HOST DASHBOARD USER:", user);
-      console.log("HOST SUBDOMAIN:", user?.subDomain);
-
-      // Theme (optional)
-      if (user.theme) {
-        // syncThemeWithBackend(user);
-      }
-    } else {
-      // Force redirect if no host session found
-      window.location.href = "/sign-in-host";
-    }
-  }, []);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const entriesPerPage = 5;
-
-  // Pagination calculations
-  const indexOfLast = currentPage * entriesPerPage;
-  const indexOfFirst = indexOfLast - entriesPerPage;
-
-  // Slice the filtered results
-  const currentEntries = filteredData.slice(indexOfFirst, indexOfLast);
-
-  // Total pages
-  const totalPages = Math.ceil(filteredData.length / entriesPerPage);
-
+  /* ─────────────────────────────────────────
+     RENDER
+  ───────────────────────────────────────── */
   return (
-    <div className="relative bg-[#FAFAFB] dark:bg-[#101010] w-full min-h-screen flex overflow-x-hidden">
+    <div className="relative bg-[#FAFAFB] dark:bg-[#101010] min-h-screen flex">
       {/* Sidebar */}
       <Sidebar
         active="Customers"
@@ -240,73 +188,49 @@ export default function CustomersPage() {
         onToggle={setSidebarOpen}
       />
 
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/40"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="relative w-[260px] h-full bg-white shadow-lg z-50">
-            <Sidebar active="Customers" />
-          </div>
-        </div>
-      )}
-
-      {/* MAIN */}
-      <main className="flex-1 lg:ml-[256px] sm:w-[1168px] mt-14 sm:mt-0 dark:bg-[#101010] overflow-x-hidden">
+      {/* Main */}
+      <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* Header */}
-        <header className="hidden md:flex items-center justify-between px-4 sm:px-6 md:px-8 pt-6 md:pt-8 pb-4 md:pb-6 bg-[#FAFAFB] dark:bg-[#101010]">
-          <div className="flex items-center gap-3">
-            {/* Hamburger for mobile */}
-            <button
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
-            >
-              <Menu className="w-6 h-6 text-gray-800" />
-            </button>
-            <h1 className="text-[22px] sm:text-[26px] md:text-[28px] font-semibold text-foreground">
-              Customers
-            </h1>
-          </div>
-
+        <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
+          <h1 className="text-[32px] font-semibold tracking-[-0.02em]">
+            Customers
+          </h1>
           {/* Right section */}
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
               {/* Light/Dark toggle */}
               {/* <Button
-                onClick={() =>
-                  setTheme(resolvedTheme === "light" ? "dark" : "light")
-                }
-                variant="ghost"
-                size="sm"
-                className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
-              >
-                {theme === "light" ? (
-                  <>
-                    <Moon className="h-4 w-4" /> Dark Mode
-                  </>
-                ) : (
-                  <>
-                    <Sun className="h-4 w-4" /> Light Mode
-                  </>
-                )}
-              </Button> */}
+                  onClick={() =>
+                    setTheme(resolvedTheme === "light" ? "dark" : "light")
+                  }
+                  variant="ghost"
+                  size="sm"
+                  className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+                >
+                  {theme === "light" ? (
+                    <>
+                      <Moon className="h-4 w-4" /> Dark Mode
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="h-4 w-4" /> Light Mode
+                    </>
+                  )}
+                </Button> */}
 
               {/* Mobile toggle */}
               {/* <button
-                onClick={() =>
-                  setTheme(resolvedTheme === "light" ? "dark" : "light")
-                }
-                className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
-              >
-                {theme === "light" ? (
-                  <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
-                ) : (
-                  <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
-                )}
-              </button> */}
+                  onClick={() =>
+                    setTheme(resolvedTheme === "light" ? "dark" : "light")
+                  }
+                  className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+                >
+                  {theme === "light" ? (
+                    <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+                  ) : (
+                    <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+                  )}
+                </button> */}
               {/* Notification icon */}
               <div ref={notificationsRef} className="relative">
                 <button
@@ -420,155 +344,220 @@ export default function CustomersPage() {
           </div>
         </header>
 
-        {/* Bottom Divider Line */}
-        <div className="border-b border-gray-200 dark:border-gray-800"></div>
+        <div className="border-b border-gray-200 dark:border-gray-800" />
 
-        {/* Search Bar */}
-        <div className="px-8 py-6 bg-[#FAFAFB] dark:bg-[#101010]">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search name, email or ticket ID..."
-                value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value);
-                  if (!e.target.value) setSearchQuery("");
-                }}
-                className="w-full h-12 pl-12 pr-10 rounded-xl border text-[14px]"
-              />
-              {searchInput && (
-                <button
-                  className="absolute right-4 top-1/2 -translate-y-1/2"
-                  onClick={handleClearSearch}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+        {/* Search */}
+        <div className="px-8 sm:mt-8 mt-20 mb-6 flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Search name, email or phone..."
+            className="h-12 w-full rounded-xl border px-4"
+            value={searchInput}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              if (!e.target.value) setSearchQuery("");
+            }}
+          />
 
-            <button
-              onClick={handleSearch}
-              className="h-12 px-8 rounded-xl text-white font-medium"
-              style={{ backgroundColor: "#D19537" }}
-            >
-              Search
-            </button>
-          </div>
+          <button
+            onClick={() => setSearchQuery(searchInput)}
+            className="h-12 w-full sm:w-auto px-8 rounded-xl text-white bg-[#D19537]"
+          >
+            Search
+          </button>
         </div>
 
-        {/* TABLE */}
-        <div className="px-8 pb-10">
-          <div className="bg-white dark:bg-[#101010] rounded-xl shadow-sm">
-            {/* WRAPPER: Scroll only on mobile */}
-            <div className="overflow-x-auto md:overflow-visible w-full">
-              {/* TABLE HEADER */}
-              <div
-                className="min-w-[1050px] grid grid-cols-[160px_200px_150px_150px_120px_120px_120px] px-6 py-4 font-semibold text-[14px] text-center"
-                style={{ backgroundColor: "#F5EDE5" }}
-              >
-                <div className="dark:text-black">Customer Name</div>
-                <div className="dark:text-black">Email</div>
-                <div className="dark:text-black">Event</div>
-                <div className="dark:text-black">Ticket ID</div>
-                <div className="dark:text-black">Gender</div>
-                <div className="dark:text-black">Category</div>
-                <div className="dark:text-black">Tickets Qty</div>
-              </div>
+        {/* Table */}
+        <div className="mx-4 sm:mx-8 bg-white dark:bg-[#101010] rounded-xl shadow-sm overflow-hidden">
+          {/* DESKTOP HEADER */}
+          <div
+            className="
+      hidden md:grid
+      grid-cols-[280px_250px_200px_180px_120px_60px]
+      px-6 py-4 font-semibold text-sm
+    "
+            style={{ backgroundColor: "#F5EDE5" }}
+          >
+            <div>Name</div>
+            <div>Email</div>
+            <div>Phone</div>
+            <div>City</div>
+            <div>Gender</div>
+            <div />
+          </div>
 
-              {/* TABLE BODY */}
-              {currentEntries.map((c) => (
-                <div
-                  key={c.id}
-                  className="min-w-[1100px] grid grid-cols-[160px_200px_150px_150px_120px_120px_120px_50px] px-6 py-4 text-[14px] border-b text-center hover:bg-gray-50 dark:hover:bg-gray-900 relative"
-                >
-                  <div
-                    className="flex items-center justify-center gap-3 cursor-pointer"
-                    onClick={() => handleRowClick(c)}
-                  >
-                    <Image
-                      src={c.avatar}
-                      alt={c.name}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                    <span>{c.name}</span>
-                  </div>
+          {/* ROWS */}
+          {currentEntries.map((b) => (
+            <div
+              key={b.id}
+              className="
+        border-b
 
-                  <div>{c.email}</div>
-                  <div>{c.event}</div>
-                  <div>{c.ticketId}</div>
-                  <div>{c.gender}</div>
-                  <div>{c.category}</div>
-                  <div>{c.ticketQuantity}</div>
+        /* MOBILE */
+        p-4 space-y-3
 
-                  {/* Three Dots */}
-                  <div className="flex justify-center items-center relative">
-                    <button
-                      className="p-2 hover:bg-gray-200 rounded-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(openMenuId === c.id ? null : c.id);
-                      }}
-                    >
-                      ⋯
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {openMenuId === c.id && (
-                      <div className="absolute right-0 top-10 bg-white shadow-lg border rounded-lg w-40 z-50">
-                        <button
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                          onClick={() => {
-                            setSelectedCustomer(c);
-                            setShowAddCreditModal(true);
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          Add Credit
-                        </button>
-                      </div>
-                    )}
+        /* DESKTOP */
+        md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
+        md:px-6 md:py-4 md:space-y-0
+        hover:bg-gray-50 dark:hover:bg-gray-900
+      "
+            >
+              {/* NAME + MENU */}
+              <div className="flex items-center justify-between md:justify-start md:gap-3">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={b.avatar}
+                    alt={b.name}
+                    width={36}
+                    height={36}
+                    className="rounded-full"
+                  />
+                  <div>
+                    <p className="font-medium">{b.name}</p>
+                    <p className="text-xs text-gray-500 md:hidden">{b.email}</p>
                   </div>
                 </div>
-              ))}
+
+                {/* MOBILE MENU */}
+                <div className="relative md:hidden">
+                  <button
+                    className="p-2 rounded-full hover:bg-gray-200"
+                    onClick={() =>
+                      setOpenMenuId(openMenuId === b.id ? null : b.id)
+                    }
+                  >
+                    ⋯
+                  </button>
+
+                  {openMenuId === b.id && (
+                    <div className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50">
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        onClick={() => {
+                          setSelectedBuyer(b);
+                          setShowAddCreditModal(true);
+                          setOpenMenuId(null);
+                        }}
+                      >
+                        Add Credit
+                      </button>
+
+                      {b.creditBalance && b.creditBalance > 0 && (
+                        <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                          Remove Credit
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* MOBILE INFO GRID */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm md:hidden">
+                <div>
+                  <p className="text-xs text-gray-500">Phone</p>
+                  <p>{b.phone}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500">City</p>
+                  <p>{b.city}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500">Gender</p>
+                  <p>{b.gender}</p>
+                </div>
+              </div>
+
+              {/* DESKTOP COLUMNS */}
+              <div className="hidden md:block">{b.email}</div>
+              <div className="hidden md:block">{b.phone}</div>
+              <div className="hidden md:block">{b.city}</div>
+              <div className="hidden md:block">{b.gender}</div>
+
+              {/* DESKTOP MENU */}
+              <div className="hidden md:flex justify-center relative">
+                <button
+                  className="p-2 rounded-full hover:bg-gray-200"
+                  onClick={() =>
+                    setOpenMenuId(openMenuId === b.id ? null : b.id)
+                  }
+                >
+                  ⋯
+                </button>
+
+                {openMenuId === b.id && (
+                  <div className="absolute right-0 top-8 w-44 bg-white border rounded-lg shadow-lg z-50">
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => {
+                        setSelectedBuyer(b);
+                        setShowAddCreditModal(true);
+                        setOpenMenuId(null);
+                      }}
+                    >
+                      Add Credit
+                    </button>
+
+                    {b.creditBalance && b.creditBalance > 0 && (
+                      <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                        Remove Credit
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* PAGINATION */}
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-4 mb-6">
-            {/* Prev Button */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-6 mb-8">
+            {/* Previous */}
             <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+              className="
+        px-4 py-2 rounded-md border text-sm
+        disabled:opacity-40 disabled:cursor-not-allowed
+        hover:bg-gray-100 dark:hover:bg-gray-800
+      "
             >
               Prev
             </button>
 
             {/* Page Numbers */}
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`px-4 py-2 border rounded-md ${
-                  currentPage === i + 1
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "dark:border-gray-700 dark:bg-[#181818]"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+            {[...Array(totalPages)].map((_, i) => {
+              const page = i + 1;
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`
+            px-4 py-2 rounded-md border text-sm
+            ${
+              currentPage === page
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+            }
+          `}
+                >
+                  {page}
+                </button>
+              );
+            })}
 
-            {/* Next Button */}
+            {/* Next */}
             <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+              className="
+        px-4 py-2 rounded-md border text-sm
+        disabled:opacity-40 disabled:cursor-not-allowed
+        hover:bg-gray-100 dark:hover:bg-gray-800
+      "
             >
               Next
             </button>
@@ -576,7 +565,7 @@ export default function CustomersPage() {
         )}
       </main>
 
-      {/* Logout Modal */}
+      {/* Modals */}
       <LogoutModalHost
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
@@ -589,13 +578,9 @@ export default function CustomersPage() {
       <AddCreditModal
         isOpen={showAddCreditModal}
         onClose={() => setShowAddCreditModal(false)}
-        customer={selectedCustomer}
+        customer={selectedBuyer}
         onSave={(data) => {
-          console.log("SAVE CREDIT:", data);
-
-          // here you will call backend API later
-          // await axios.post("/credit", data)
-
+          console.log("ADD CREDIT:", data);
           setShowAddCreditModal(false);
         }}
       />

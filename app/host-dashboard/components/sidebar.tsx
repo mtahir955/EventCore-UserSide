@@ -30,11 +30,11 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       href: "/host-dashboard",
     },
     { label: "My Events", icon: "/images/icons/10.png", href: "/my-events" },
-    {
-      label: "Event Settings",
-      icon: "/images/icons/16.png",
-      href: "/event-settings",
-    },
+    // {
+    //   label: "Event Settings",
+    //   icon: "/images/icons/16.png",
+    //   href: "/event-settings",
+    // },
 
     {
       label: "Ticket Manager",

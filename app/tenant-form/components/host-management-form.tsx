@@ -7,6 +7,7 @@ import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
 import OtherPagesDataSection from "./sections/other-pages-data";
 import SocialMediaLinksSection from "./sections/social-media-links";
+import EventcorePercentageSection from "./sections/eventcore-percentage";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../../config/apiConfig";
@@ -45,6 +46,7 @@ export default function HostManagementForm() {
   const contactDetailsRef = useRef<SectionRef>(null);
   const otherPagesRef = useRef<SectionRef>(null);
   const socialLinksRef = useRef<SectionRef>(null);
+  const eventcorePercentageRef = useRef<SectionRef>(null);
 
   // ==============================
   // CREATE TENANT HANDLER
@@ -64,9 +66,9 @@ export default function HostManagementForm() {
       dbConfigRef.current?.validate() &&
       accountSettingsRef.current?.validate() &&
       contactDetailsRef.current?.validate() &&
+      eventcorePercentageRef.current?.validate() &&
       otherPagesRef.current?.validate() &&
       socialLinksRef.current?.validate();
-
     if (!valid) {
       toast.error(
         "Please fill all required fields before creating the tenant."
@@ -81,6 +83,7 @@ export default function HostManagementForm() {
     const contact = contactDetailsRef.current!.getData();
     const other = otherPagesRef.current!.getData();
     const social = socialLinksRef.current!.getData();
+    const eventcore = eventcorePercentageRef.current!.getData();
 
     // ==============================
     // BUILD RAW PAYLOAD
@@ -104,6 +107,56 @@ export default function HostManagementForm() {
       // Account Settings
       status: account.accountStatus?.toUpperCase() || "ACTIVE",
       theme: account.themeStatus?.toLowerCase() || "light",
+
+      // ==============================
+      // FEATURES & PAYMENT RULES
+      // ==============================
+
+      // Service Fee
+      serviceFee: {
+        enabled: basic.serviceFee,
+        type: basic.serviceFeeType, // percentage | flat
+        value: basic.serviceFeeValue,
+        defaultHandling: {
+          passToBuyer: basic.defaultFeeHandling?.passToBuyer ?? false,
+          absorbByTenant: basic.defaultFeeHandling?.absorbByTenant ?? false,
+        },
+      },
+
+      // Ticket Transfers
+      allowTransfers: basic.allowTransfers,
+
+      // Credit System
+      creditSystem: {
+        enabled: basic.creditAdjust,
+
+        minOrderEligibility: {
+          enabled: basic.minOrderEligibilityEnabled,
+          value: basic.minOrderValue || null,
+        },
+
+        maxInstallments: {
+          enabled: basic.maxInstallmentsEnabled,
+          value: basic.maxInstallments || null,
+        },
+      },
+
+      // Payment Plans
+      paymentPlans: {
+        enabled: basic.paymentPlans,
+
+        creditExpiry: {
+          enabled: basic.creditExpiryEnabled,
+          duration: basic.creditExpiryValue || null,
+          unit: basic.creditExpiryUnit || null,
+        },
+      },
+
+      // UI Helpers
+      showLoginHelp: basic.showLoginHelp,
+
+      // EventCore Percentage (applies to each event)
+      eventcorePercentage: eventcore.eventcorePercentage,
 
       // Contact
       contactPhone: contact.phoneNumber,
@@ -175,6 +228,7 @@ export default function HostManagementForm() {
       <DatabaseConfigurationSection ref={dbConfigRef} />
       <AccountSettingsSection ref={accountSettingsRef} />
       <ContactDetailsSection ref={contactDetailsRef} />
+      <EventcorePercentageSection ref={eventcorePercentageRef} />
       <OtherPagesDataSection ref={otherPagesRef} />
       <SocialMediaLinksSection ref={socialLinksRef} />
 

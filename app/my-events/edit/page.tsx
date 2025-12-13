@@ -6,7 +6,7 @@ import { CircularProgress } from "../../host-dashboard/components/circular-progr
 import { StaffInfoModal } from "../../host-dashboard/components/staff-info-modal";
 import { Menu } from "lucide-react";
 import Link from "next/link";
-import { X, LogOut, Moon, Sun } from "lucide-react";
+import { X, LogOut, Moon, Sun, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
@@ -519,11 +519,7 @@ export default function EditEventPage() {
               onClick={() => fileInputRef.current?.click()}
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white grid place-items-center shadow-lg hover:scale-105 transition-transform"
             >
-              <img
-                src="/images/icons/edit-pencil-gold.png"
-                alt="Edit"
-                className="h-4 w-4 sm:h-5 sm:w-5"
-              />
+              <PencilLine color="#D19537" className="h-6 w-6"/>
             </button>
 
             {/* Hidden File Input */}

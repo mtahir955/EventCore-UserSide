@@ -276,20 +276,45 @@ export function HostManagementTable({
                   </span>
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <button
-                    // onClick={(e) => {
-                    //   e.stopPropagation(); // prevent row click
-                    //   // router.push(`/host-management/edit?id=${host.id}`);
-                    //   router.push(`/host-management/edit`);
-                    // }}
-                    onClick={(e) =>{
-                      e.stopPropagation();
-                      router.push(`/host-management/edit`)
-                    }}
-                    className="px-4 py-1.5 text-sm rounded-lg bg-[#0077F7] text-white hover:bg-blue-600 transition"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Details Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/host-management/details`);
+                      }}
+                      className="
+        px-4 py-1.5 
+        text-sm font-medium 
+        rounded-lg 
+        bg-[#E8F0FE] 
+        text-[#0077F7] 
+        hover:bg-[#dbe7fd] 
+        transition
+      "
+                    >
+                      Details
+                    </button>
+
+                    {/* Edit Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/host-management/edit`);
+                      }}
+                      className="
+        px-4 py-1.5 
+        text-sm font-medium 
+        rounded-lg 
+        bg-[#0077F7] 
+        text-white 
+        hover:bg-blue-600 
+        transition
+      "
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

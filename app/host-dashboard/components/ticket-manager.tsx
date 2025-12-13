@@ -461,8 +461,8 @@ export default function TicketManager() {
         {/* 🔍 Search & Filters */}
         <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mt-18 sm:mt-6 mx-8 p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-4">Search Tickets</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <input
               type="text"
               placeholder="Search by Event Name"
               value={searchEvent}
@@ -475,7 +475,7 @@ export default function TicketManager() {
               value={searchDate}
               onChange={(e) => setSearchDate(e.target.value)}
               className="h-11 px-4 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
-            />
+            /> */}
 
             <select
               value={ticketType}

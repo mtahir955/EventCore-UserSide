@@ -9,7 +9,7 @@ export default function EventSettingsPageInline({
 }) {
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    "general" | "advanced" | "payments"
+    "general" | "payments"
   >("general");
 
   // General tab checkboxes
@@ -22,8 +22,12 @@ export default function EventSettingsPageInline({
   const [limitPerUser, setLimitPerUser] = useState(false);
 
   // Payments
-  const [stripeEnabled, setStripeEnabled] = useState(false);
-  const [refundAllowed, setRefundAllowed] = useState(false);
+  const [passFee, setPassFee] = useState(false);
+  const [absorbFee, setAbsorbFee] = useState(false);
+  const [payOverTime, setPayOverTime] = useState(false);
+
+  // Pay over time plans
+  const [installmentPlan, setInstallmentPlan] = useState<number | null>(null);
 
   // BACK BUTTON → go to Create Event page
   const handleGoBack = () => setActivePage("create");
@@ -36,8 +40,8 @@ export default function EventSettingsPageInline({
       allowTransfer,
       autoApprove,
       limitPerUser,
-      stripeEnabled,
-      refundAllowed,
+      passFee,
+      absorbFee,
     };
 
     try {
@@ -70,7 +74,7 @@ export default function EventSettingsPageInline({
 
       {/* Tabs */}
       <div className="flex gap-6 border-b pb-3 mb-6 dark:border-gray-700">
-        {["general", "advanced", "payments"].map((tab) => (
+        {["general", "payments"].map((tab) => (
           <button
             key={tab}
             className={`pb-2 font-medium text-[15px] tracking-wide ${
@@ -90,7 +94,7 @@ export default function EventSettingsPageInline({
         {activeTab === "general" && (
           <>
             <SettingToggle
-              label="Pass service fee to customer"
+              label=" Service fee handling"
               checked={passServiceFee}
               onToggle={() => setPassServiceFee(!passServiceFee)}
             />
@@ -107,7 +111,7 @@ export default function EventSettingsPageInline({
           </>
         )}
 
-        {activeTab === "advanced" && (
+        {/* {activeTab === "advanced" && (
           <>
             <SettingToggle
               label="abcd"
@@ -120,20 +124,60 @@ export default function EventSettingsPageInline({
               onToggle={() => setLimitPerUser(!limitPerUser)}
             />
           </>
-        )}
+        )} */}
 
         {activeTab === "payments" && (
           <>
             <SettingToggle
-              label="abcd"
-              checked={stripeEnabled}
-              onToggle={() => setStripeEnabled(!stripeEnabled)}
+              label="Pass fee to buyer"
+              checked={passFee}
+              onToggle={() => setPassFee(!passFee)}
             />
             <SettingToggle
-              label="xyz"
-              checked={refundAllowed}
-              onToggle={() => setRefundAllowed(!refundAllowed)}
+              label="Absorb fee from earnings"
+              checked={absorbFee}
+              onToggle={() => setAbsorbFee(!absorbFee)}
             />
+            <SettingToggle
+              label="Pay over time"
+              checked={payOverTime}
+              onToggle={() => {
+                const next = !payOverTime;
+                setPayOverTime(next);
+
+                if (!next) {
+                  setInstallmentPlan(null); // reset plans when disabled
+                }
+              }}
+            />
+            {/* 🔽 Pay Over Time Plans */}
+            {payOverTime && (
+              <div className="ml-8 mt-3 space-y-3">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Choose plan:
+                </p>
+
+                {[2, 3, 4].map((count) => (
+                  <label
+                    key={count}
+                    className="flex items-center gap-3 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    <input
+                      type="radio"
+                      name="installmentPlan"
+                      checked={installmentPlan === count}
+                      onChange={() => setInstallmentPlan(count)}
+                      className="accent-[#D19537]"
+                    />
+                    <span>{count} Installments</span>
+                  </label>
+                ))}
+
+                <p className="text-xs text-gray-500">
+                  Buyers will pay the ticket price in selected installments.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>
