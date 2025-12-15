@@ -86,6 +86,18 @@ export default function HostManagementForm() {
     const eventcore = eventcorePercentageRef.current!.getData();
 
     // ==============================
+    // SERVICE FEE VALIDATION (IMPORTANT)
+    // ==============================
+    if (
+      basic.serviceFee &&
+      (basic.serviceFeeType == null ||
+        basic.serviceFeeValue == null ||
+        Number(basic.serviceFeeValue) <= 0)
+    ) {
+      toast.error("Please enter a valid service fee value");
+      return;
+    }
+    // ==============================
     // BUILD RAW PAYLOAD
     // ==============================
     const payload = {
@@ -113,15 +125,19 @@ export default function HostManagementForm() {
       // ==============================
 
       // Service Fee
-      serviceFee: {
-        enabled: basic.serviceFee,
-        type: basic.serviceFeeType, // percentage | flat
-        value: basic.serviceFeeValue,
-        defaultHandling: {
-          passToBuyer: basic.defaultFeeHandling?.passToBuyer ?? false,
-          absorbByTenant: basic.defaultFeeHandling?.absorbByTenant ?? false,
-        },
-      },
+      serviceFee: basic.serviceFee
+        ? {
+            enabled: true,
+            type: basic.serviceFeeType,
+            value: Number(basic.serviceFeeValue), // ✅ force number
+            defaultHandling: {
+              passToBuyer: basic.defaultFeeHandling?.passToBuyer ?? false,
+              absorbByTenant: basic.defaultFeeHandling?.absorbByTenant ?? false,
+            },
+          }
+        : {
+            enabled: false,
+          },
 
       // Ticket Transfers
       allowTransfers: {

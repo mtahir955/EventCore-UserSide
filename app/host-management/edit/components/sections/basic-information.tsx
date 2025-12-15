@@ -58,6 +58,57 @@ const BasicInformationSection = forwardRef((props, ref) => {
     },
 
     getData: () => formData,
+
+    setData: (data: any) => {
+      setFormData((prev) => ({
+        ...prev,
+
+        /* ---------- MEDIA ---------- */
+        logo: data.logoUrl ?? prev.logo,
+        banner: data.bannerUrl ?? prev.banner,
+
+        /* ---------- SERVICE FEE ---------- */
+        serviceFee: data.features?.serviceFee?.enabled ?? false,
+        serviceFeeType: data.features?.serviceFee?.type ?? null,
+        serviceFeeValue: data.features?.serviceFee?.value ?? null,
+        defaultFeeHandling: {
+          passToBuyer:
+            data.features?.serviceFee?.defaultHandling?.passToBuyer ?? true,
+          absorbByTenant:
+            data.features?.serviceFee?.defaultHandling?.absorbByTenant ?? true,
+        },
+
+        /* ---------- TRANSFERS ---------- */
+        allowTransfers: data.features?.allowTransfers?.enabled ?? false,
+        transferExpiryEnabled: !!data.features?.allowTransfers?.maxMonths,
+        transferExpiryMonths:
+          data.features?.allowTransfers?.maxMonths?.toString() ?? "",
+
+        /* ---------- CREDIT SYSTEM ---------- */
+        creditAdjust: data.features?.creditSystem?.enabled ?? false,
+        minOrderEligibilityEnabled:
+          data.features?.creditSystem?.minOrderEligibility?.enabled ?? false,
+        minOrderValue:
+          data.features?.creditSystem?.minOrderEligibility?.value?.toString() ??
+          "",
+        maxInstallmentsEnabled:
+          data.features?.creditSystem?.maxInstallments?.enabled ?? false,
+        maxInstallments:
+          data.features?.creditSystem?.maxInstallments?.value?.toString() ?? "",
+
+        /* ---------- PAYMENT PLANS ---------- */
+        paymentPlans: data.features?.paymentPlans?.enabled ?? false,
+        creditExpiryEnabled:
+          data.features?.paymentPlans?.creditExpiry?.enabled ?? false,
+        creditExpiryValue:
+          data.features?.paymentPlans?.creditExpiry?.duration?.toString() ?? "",
+        creditExpiryUnit:
+          data.features?.paymentPlans?.creditExpiry?.unit ?? "months",
+
+        /* ---------- UI ---------- */
+        showLoginHelp: data.features?.showLoginHelp ?? false,
+      }));
+    },
   }));
 
   const handleChange = (
@@ -310,7 +361,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
                       setFormData((p) => ({
                         ...p,
                         serviceFeeType: "percentage",
-                        serviceFeeValue: "",
+                        serviceFeeValue: null,
                       }))
                     }
                     className="accent-[#D19537]"
@@ -326,7 +377,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
                       setFormData((p) => ({
                         ...p,
                         serviceFeeType: "flat",
-                        serviceFeeValue: "",
+                        serviceFeeValue: null,
                       }))
                     }
                     className="accent-[#D19537]"
@@ -341,18 +392,19 @@ const BasicInformationSection = forwardRef((props, ref) => {
                   <input
                     type="number"
                     min={0}
-                    step="0.1"
-                    value={formData.serviceFeeValue}
+                    step={
+                      formData.serviceFeeType === "percentage" ? "0.1" : "1"
+                    }
+                    value={formData.serviceFeeValue ?? ""}
                     onChange={(e) =>
                       setFormData((p) => ({
                         ...p,
-                        serviceFeeValue: e.target.value,
+                        serviceFeeValue:
+                          e.target.value === "" ? null : Number(e.target.value),
                       }))
                     }
-                    placeholder="Enter value"
-                    className="w-full pr-10 px-4 py-2 border rounded-lg focus:ring-[#D19537]"
+                    className="w-full pr-10 px-4 py-2 border rounded-lg"
                   />
-
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                     {formData.serviceFeeType === "percentage" ? "%" : "$"}
                   </span>

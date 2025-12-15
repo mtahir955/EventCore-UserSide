@@ -30,33 +30,32 @@ export default function Page() {
     transferred: false,
   };
 
+  const DUMMY_REFUND_REQUESTS = [
+    {
+      id: "RF-001",
+      eventName: "Starry Nights Music Fest",
+      ticketId: "TCK-482917",
+      ticketType: "General",
+      paymentMethod: "Full Payment",
+      price: "$205.35",
+      requestDate: "2025-12-10",
+      accountNumber: "PK92SCBL0000001234567890",
+      status: "Pending",
+    },
+    {
+      id: "RF-002",
+      eventName: "Summer Beats Festival",
+      ticketId: "TCK-781245",
+      ticketType: "VIP",
+      paymentMethod: "Installments",
+      price: "$99.99",
+      requestDate: "2025-12-08",
+      accountNumber: "PK15HBL0000009876543210",
+      status: "Successful",
+    },
+  ];
+
   // ⭐ FETCH REAL TICKETS FROM BACKEND
-  // useEffect(() => {
-  //   const fetchTickets = async () => {
-  //     try {
-  //       const token = localStorage.getItem("buyerToken");
-  //       if (!token) {
-  //         console.log("❌ No buyer token found");
-  //         return;
-  //       }
-
-  //       const res = await axios.get(`${API_BASE_URL}/users/tickets/mine`, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           "X-Tenant-ID": HOST_Tenant_ID,
-  //         },
-  //       });
-
-  //       if (res.data?.tickets) {
-  //         setTickets(res.data.tickets);
-  //       }
-  //     } catch (err) {
-  //       console.log("❌ Error fetching tickets:", err);
-  //     }
-  //   };
-
-  //   fetchTickets();
-  // }, []);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -129,14 +128,15 @@ export default function Page() {
 
         {/* Ticket Categories */}
         <div className="mt-6 flex justify-center sm:justify-start gap-3">
-          {["Active", "Ended", "Transferred"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => {
-                setActiveTab(tab);
-                setCurrentPage(1); // Reset pagination
-              }}
-              className={`
+          {["Active", "Ended", "Transferred", "Refunded Requests"].map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setCurrentPage(1); // Reset pagination
+                }}
+                className={`
                 px-5 py-2 rounded-full text-sm font-medium transition-all
                 ${
                   activeTab === tab
@@ -144,14 +144,15 @@ export default function Page() {
                     : "bg-gray-100 dark:bg-[#1e1e1e] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2a2a2a]"
                 }
               `}
-            >
-              {tab}
-            </button>
-          ))}
+              >
+                {tab}
+              </button>
+            )
+          )}
         </div>
 
         {/* Tickets Grid */}
-        <section className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {/* <section className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {currentTickets.map((t, index) => (
             <TicketCard
               key={index}
@@ -165,10 +166,96 @@ export default function Page() {
               transferred={t.transferred}
             />
           ))}
+        </section> */}
+
+        {/* Tickets / Refund Requests Section */}
+        <section className="mt-8">
+          {activeTab === "Refunded Requests" ? (
+            /* 🔁 Refunded Requests Table */
+            <div className="overflow-x-auto rounded-xl border dark:border-gray-700">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-100 dark:bg-[#1e1e1e] text-gray-700 dark:text-gray-300">
+                  <tr>
+                    <th className="px-4 py-3">Event Name</th>
+                    <th className="px-4 py-3">Ticket ID</th>
+                    <th className="px-4 py-3">Ticket Type</th>
+                   
+                    <th className="px-4 py-3">Price</th>
+                    <th className="px-4 py-3">Request Date</th>
+                     <th className="px-4 py-3">Payment Method</th>
+                    <th className="px-4 py-3">Medium for Refund</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y dark:divide-gray-700">
+                  {DUMMY_REFUND_REQUESTS.map((r) => (
+                    <tr key={r.id} className="bg-white dark:bg-[#181818]">
+                      <td className="px-4 py-3 font-medium">{r.eventName}</td>
+                      <td className="px-4 py-3">{r.ticketId}</td>
+
+                      {/* Ticket Type */}
+                      <td className="px-4 py-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          {r.ticketType}
+                        </span>
+                      </td>
+
+                      
+
+                      <td className="px-4 py-3">{r.price}</td>
+                      <td className="px-4 py-3">{r.requestDate}</td>
+
+                      {/* Payment Method */}
+                      <td className="px-4 py-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                          {r.paymentMethod}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3 text-xs break-all">
+                        {r.accountNumber}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            r.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                              : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* 🎟️ Normal Tickets Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {currentTickets.map((t, index) => (
+                <TicketCard
+                  key={index}
+                  date={t.date}
+                  title={t.title}
+                  location={t.location}
+                  type={t.type}
+                  price={t.price}
+                  highlight={t.highlight}
+                  ended={t.ended}
+                  transferred={t.transferred}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ⭐ Pagination */}
-        {totalPages > 1 && (
+        {activeTab !== "Refunded Requests" && totalPages > 1 && (
           <div className="flex justify-center mt-8 space-x-2">
             <button
               onClick={() => setCurrentPage((p) => p - 1)}

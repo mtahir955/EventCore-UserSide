@@ -33,7 +33,18 @@ const EventcorePercentageSection = forwardRef<SectionRef>((_, ref) => {
 
   useImperativeHandle(ref, () => ({
     validate,
+
     getData,
+
+    setData: (data: any) => {
+      setPercentage(
+        data?.eventcorePercentage !== null &&
+          data?.eventcorePercentage !== undefined
+          ? String(data.eventcorePercentage)
+          : ""
+      );
+      setError(false);
+    },
   }));
 
   // 🟡 Local Save handler (same idea as AccountSettings)

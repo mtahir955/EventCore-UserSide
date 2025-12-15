@@ -37,26 +37,32 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
 
       Object.entries(links).forEach(([key, value]) => {
         const trimmed = value.trim();
-
-        // If field is NOT empty → validate URL
         if (trimmed && !urlPattern.test(trimmed)) {
           newErrors[key] = true;
         }
       });
 
       setErrors(newErrors);
-
       return Object.keys(newErrors).length === 0;
     },
 
-    getData: () => {
-      // Send clean trimmed values
-      return {
-        facebook: links.facebook.trim(),
-        instagram: links.instagram.trim(),
-        twitter: links.twitter.trim(),
-        youtube: links.youtube.trim(),
-      };
+    getData: () => ({
+      facebook: links.facebook.trim(),
+      instagram: links.instagram.trim(),
+      twitter: links.twitter.trim(),
+      youtube: links.youtube.trim(),
+    }),
+
+    // ✅ FIXED: MAP BACKEND RESPONSE CORRECTLY
+    setData: (data: any) => {
+      setLinks({
+        facebook: data?.socialFacebook || "",
+        instagram: data?.socialInstagram || "",
+        twitter: data?.socialTwitter || "",
+        youtube: data?.socialYoutube || "",
+      });
+
+      setErrors({});
     },
   }));
 

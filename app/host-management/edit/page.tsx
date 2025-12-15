@@ -6,22 +6,34 @@ import HostManagementForm from "./components/host-management-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Bell, User, X, LogOut, Moon, Sun } from "lucide-react";
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import LogoutModal from "@/components/modals/LogoutModal";
+import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 
 export default function Home() {
-  const [isDark, setIsDark] = useState(false);
-
+  /* =====================================================
+     STATE
+  ===================================================== */
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const { resolvedTheme, theme, setTheme } = useTheme();
-
+  const { theme, setTheme } = useTheme();
   const [adminName, setAdminName] = useState("Admin");
 
-  // ✅ Load Admin Name ONLY ONCE on mount (Fix infinite re-render issue)
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenantId");
+
+  const [tenantData, setTenantData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  /* =====================================================
+     LOAD ADMIN NAME (ONCE)
+  ===================================================== */
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedUser = localStorage.getItem("adminUser");
@@ -32,7 +44,9 @@ export default function Home() {
     }
   }, []);
 
-  // ✅ Dropdown close on outside click
+  /* =====================================================
+     CLOSE PROFILE DROPDOWN ON OUTSIDE CLICK
+  ===================================================== */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -46,8 +60,54 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /* =====================================================
+     GET TENANT DATA
+  ===================================================== */
+  useEffect(() => {
+    if (!tenantId) {
+      toast.error("Tenant ID missing");
+      setLoading(false);
+      return;
+    }
+
+    const fetchTenant = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+        if (!token) {
+          toast.error("Session expired. Please login again.");
+          return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-tenant-id": SAAS_Tenant_ID,
+          },
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          throw new Error(result.message || "Failed to fetch tenant");
+        }
+
+        setTenantData(result.data || result);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to load tenant data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTenant();
+  }, [tenantId]);
+
+  /* =====================================================
+     UI
+  ===================================================== */
   return (
-    <div className={isDark ? "dark" : ""}>
+    <div>
       <div className="flex min-h-screen bg-background">
         {/* Sidebar */}
         <Sidebar activePage="Tenant Host" />
@@ -68,73 +128,62 @@ export default function Home() {
                 </button>
               </Link>
 
-              {/* Profile Dropdown */}
+              {/* Profile */}
               <div
                 className="relative flex items-center gap-2"
                 ref={profileRef}
               >
-                {/* Admin Name */}
-                <span className="hidden sm:block font-semibold text-black dark:text-white">
+                <span className="hidden sm:block font-semibold">
                   {adminName}
                 </span>
 
-                {/* Profile Icon */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
-                  >
-                    <img
-                      src="/images/icons/profile-user.png"
-                      alt="profile"
-                      className="h-4 w-4"
-                    />
-                  </button>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="bg-black h-9 w-9 flex justify-center items-center rounded-full"
+                >
+                  <img
+                    src="/images/icons/profile-user.png"
+                    alt="profile"
+                    className="h-4 w-4"
+                  />
+                </button>
 
-                  {/* Dropdown Menu */}
-                  {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
-                      <Link href="/tenant-form">
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                          Create Tenant
-                        </button>
-                      </Link>
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border rounded-xl z-50 py-2">
+                    <Link href="/tenant-form">
+                      <button className="dropdown-btn">Create Tenant</button>
+                    </Link>
 
-                      <Link href="/host-management">
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                          Tenant Host
-                        </button>
-                      </Link>
+                    <Link href="/host-management">
+                      <button className="dropdown-btn">Tenant Host</button>
+                    </Link>
 
-                      <Link href="/tenant-management">
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                          Tenant Management
-                        </button>
-                      </Link>
+                    <Link href="/system-settings">
+                      <button className="dropdown-btn">System Settings</button>
+                    </Link>
 
-                      <Link href="/system-settings">
-                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
-                          System Settings
-                        </button>
-                      </Link>
-
-                      {/* Logout */}
-                      <button
-                        onClick={() => setShowLogoutModal(true)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    <button
+                      onClick={() => setShowLogoutModal(true)}
+                      className="dropdown-btn"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </header>
 
           {/* Page Content */}
           <div className="flex-1 overflow-auto bg-neutral-100">
-            <HostManagementForm />
+            {loading ? (
+              <div className="p-6 text-sm">Loading tenant data...</div>
+            ) : (
+              <HostManagementForm
+                tenantId={tenantId!}
+                initialData={tenantData}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -66,24 +66,29 @@ const ContactDetailsSection = forwardRef((props, ref) => {
       const newErrors: Record<string, boolean> = {};
 
       if (!formData.phoneNumber.trim()) newErrors.phoneNumber = true;
-
-      // Country code is always set, but keep validation
-      if (!formData.countryCode) newErrors.countryCode = true;
-
-      // City MUST be selected
-      if (!formData.city || formData.city === "") newErrors.city = true;
-
-      // Pincode trimmed
+      if (!formData.city) newErrors.city = true;
       if (!formData.pincode.trim()) newErrors.pincode = true;
-
       if (!formData.address.trim()) newErrors.address = true;
 
       setErrors(newErrors);
-
       return Object.keys(newErrors).length === 0;
     },
 
     getData: () => formData,
+
+    setData: (data: any) => {
+      const contact = data.contact ?? data;
+
+      setFormData((prev) => ({
+        ...prev,
+        phoneNumber: contact?.phone ?? "",
+        countryCode: contact?.countryCode ?? "+1",
+        city: contact?.city ?? "",
+        pincode: contact?.postalCode ?? "",
+        address: contact?.address ?? "",
+        nationalId: contact?.nationalIdNumber ?? "",
+      }));
+    },
   }));
 
   // 🔍 Local Save

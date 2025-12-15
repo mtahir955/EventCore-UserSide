@@ -18,7 +18,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
     gender: "Male",
 
     serviceFeeType: null, // percentage | flat
-    serviceFeeValue: "", // numeric input
+    serviceFeeValue: null as number | null,
     defaultFeeHandling: {
       passToBuyer: true,
       absorbByTenant: true,
@@ -407,7 +407,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
                       setFormData((p) => ({
                         ...p,
                         serviceFeeType: "percentage",
-                        serviceFeeValue: "",
+                        serviceFeeValue: null,
                       }))
                     }
                     className="accent-[#D19537]"
@@ -423,7 +423,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
                       setFormData((p) => ({
                         ...p,
                         serviceFeeType: "flat",
-                        serviceFeeValue: "",
+                        serviceFeeValue: null,
                       }))
                     }
                     className="accent-[#D19537]"
@@ -438,18 +438,19 @@ const BasicInformationSection = forwardRef((props, ref) => {
                   <input
                     type="number"
                     min={0}
-                    step="0.1"
-                    value={formData.serviceFeeValue}
+                    step={
+                      formData.serviceFeeType === "percentage" ? "0.1" : "1"
+                    }
+                    value={formData.serviceFeeValue ?? ""}
                     onChange={(e) =>
                       setFormData((p) => ({
                         ...p,
-                        serviceFeeValue: e.target.value,
+                        serviceFeeValue:
+                          e.target.value === "" ? null : Number(e.target.value),
                       }))
                     }
-                    placeholder="Enter value"
-                    className="w-full pr-10 px-4 py-2 border rounded-lg focus:ring-[#D19537]"
+                    className="w-full pr-10 px-4 py-2 border rounded-lg"
                   />
-
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                     {formData.serviceFeeType === "percentage" ? "%" : "$"}
                   </span>

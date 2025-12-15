@@ -237,6 +237,17 @@ export default function PaymentSuccessPage() {
                   Share Ticket
                 </button>
               </div>
+              {/* 🔴 Refund Deduction Note */}
+              <div className="mt-4 rounded-[12px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 px-4 py-3">
+                <p className="text-[12px] sm:text-[13px] text-red-700 dark:text-red-300 leading-relaxed">
+                  <span className="font-semibold">Important:</span> If you
+                  request a ticket refund, the service fee and processing fee
+                  will be deducted from the total payable amount. From the
+                  remaining ticket value, a portion will be credited to your
+                  account, and the remaining amount will be transferred to your
+                  provided payment method.
+                </p>
+              </div>
             </div>
           </aside>
         </div>

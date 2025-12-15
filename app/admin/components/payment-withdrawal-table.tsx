@@ -1,188 +1,204 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PaymentWithdrawalModal } from "./Payment-withdrawal-modal";
 
-interface Host {
+export interface RefundRequest {
   id: string;
-  name: string;
-  email: string;
-  date: string;
-  time: string;
+
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+
   eventName: string;
+  eventDate: string;
   amount: number;
-  avatar: string;
+
+  // details for modal
+  ticketId: string;
+  ticketType: "General" | "VIP";
+  ticketPrice: number;
+  requestDate: string;
+  paymentMethod: "Full Payment" | "Installments";
+  refundAccount: string;
+
+  status: "PENDING" | "APPROVED" | "DECLINED";
 }
 
-const hosts: Host[] = [
+const refundRequests: RefundRequest[] = [
   {
-    id: "1",
-    name: "Daniel Carter",
-    email: "danielc@gmail.com",
-    date: "12 Nov 2025",
-    time: "07:00 PM",
+    id: "RF-001",
+    buyerName: "Daniel Carter",
+    buyerEmail: "danielc@gmail.com",
+    buyerPhone: "+44 7412 558492",
+
     eventName: "Starry Nights Music Fest",
-    avatar: "/avatars/avatar-1.png",
-    amount: 2500,
+    eventDate: "12 Nov 2025",
+    amount: 205.35,
+
+    ticketId: "TCK-482917-AB56",
+    ticketType: "VIP",
+    ticketPrice: 205.35,
+    requestDate: "10 Nov 2025",
+    paymentMethod: "Full Payment",
+    refundAccount: "PK92SCBL0000001234567890",
+
+    status: "PENDING",
   },
+
   {
-    id: "2",
-    name: "Sarah Mitchell",
-    email: "sarahm@gmail.com",
-    date: "18 Nov 2025",
-    time: "06:30 PM",
+    id: "RF-002",
+    buyerName: "Sarah Mitchell",
+    buyerEmail: "sarahm@gmail.com",
+    buyerPhone: "+1 305 555 0142",
+
     eventName: "Good Life Trainings Meetup",
-    avatar: "/avatars/avatar-1.png",
-    amount: 4200,
+    eventDate: "18 Nov 2025",
+    amount: 99.99,
+
+    ticketId: "TCK-781245-ZX11",
+    ticketType: "General",
+    ticketPrice: 99.99,
+    requestDate: "17 Nov 2025",
+    paymentMethod: "Installments",
+    refundAccount: "PK15HBL0000009876543210",
+    status: "PENDING",
   },
   {
-    id: "3",
-    name: "Emily Carter",
-    email: "emilyc@gmail.com",
-    date: "20 Nov 2025",
-    time: "05:00 PM",
+    id: "RF-003",
+    buyerName: "Emily Carter",
+    buyerEmail: "emilyc@gmail.com",
+    buyerPhone: "+92 300 1234567",
+
     eventName: "Tech Innovators Expo",
-    avatar: "/avatars/avatar-1.png",
-    amount: 3900,
-  },
-  {
-    id: "4",
-    name: "Nathan Blake",
-    email: "nathanb@gmail.com",
-    date: "25 Nov 2025",
-    time: "08:00 PM",
-    eventName: "Cultural Food & Music Night",
-    avatar: "/avatars/avatar-1.png",
-    amount: 1800,
-  },
-  {
-    id: "5",
-    name: "Taylor Morgan",
-    email: "taylorm@gmail.com",
-    date: "30 Nov 2025",
-    time: "04:00 PM",
-    eventName: "Business Leadership Summit",
-    avatar: "/avatars/avatar-1.png",
-    amount: 2100,
+    eventDate: "20 Nov 2025",
+    amount: 149.0,
+
+    ticketId: "TCK-663901-KK90",
+    ticketType: "VIP",
+    ticketPrice: 149.0,
+    requestDate: "19 Nov 2025",
+    paymentMethod: "Full Payment",
+    refundAccount: "PK09MCBL0000001111222233",
+    status: "PENDING",
   },
 ];
 
 export function PaymentWithdrawalTable() {
-  const [ismodalopen, setIsmodalopen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selected, setSelected] = useState<RefundRequest | null>(null);
 
-  // 🔹 Pagination state (5 entries per page)
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
 
-  const indexOfLast = currentPage * entriesPerPage;
-  const indexOfFirst = indexOfLast - entriesPerPage;
+  const totalPages = Math.ceil(refundRequests.length / entriesPerPage);
 
-  const currentHosts = hosts.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(hosts.length / entriesPerPage);
+  const currentRows = useMemo(() => {
+    const indexOfLast = currentPage * entriesPerPage;
+    const indexOfFirst = indexOfLast - entriesPerPage;
+    return refundRequests.slice(indexOfFirst, indexOfLast);
+  }, [currentPage]);
 
   return (
     <div className="flex flex-col w-full gap-10">
-      {/* ====================== Pending Withdrawal Requests Table ====================== */}
       <div className="flex justify-center w-full">
         <div className="bg-background rounded-xl border border-border overflow-x-auto w-full max-w-7xl pb-6">
-          <table className="w-full text-center">
+          <table className="w-full text-left">
             <thead>
               <tr
                 className="border-b border-border"
                 style={{ background: "rgba(245, 237, 229, 1)" }}
               >
-                <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                  Name
+                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                  Buyer
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground">
                   Email
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                  Date & Time
+                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                  Phone
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground">
                   Event Name
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                  Date
+                </th>
+                <th className="px-6 py-4 text-sm font-semibold text-foreground text-right">
                   Amount
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold dark:text-black text-foreground">
-                  Action
+                <th className="px-6 py-4 text-sm font-semibold text-foreground text-center">
+                  Status
                 </th>
               </tr>
             </thead>
 
             <tbody>
-              {currentHosts.map((host, index) => (
+              {currentRows.map((req) => (
                 <tr
-                  key={`${host.id}-${index}`}
-                  onClick={() => setIsmodalopen(true)}
+                  key={req.id}
+                  onClick={() => {
+                    setSelected(req);
+                    setIsModalOpen(true);
+                  }}
                   className="border-b border-border last:border-b-0 hover:bg-secondary/50 cursor-pointer transition-colors"
                 >
-                  {/* USER NAME + AVATAR */}
-                  <td className="pl-10 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden">
-                        <Image
-                          src={host.avatar}
-                          alt={host.name}
-                          width={40}
-                          height={40}
-                          className="object-cover"
-                        />
-                      </div>
-                      <span className="text-sm text-foreground font-medium">
-                        {host.name}
-                      </span>
+                  {/* BUYER */}
+                  <td className="px-6 py-4">
+                    <div className="leading-tight">
+                      <p className="text-sm font-medium text-foreground">
+                        {req.buyerName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{req.id}</p>
                     </div>
                   </td>
 
                   {/* EMAIL */}
-                  <td className="px-6 py-4 text-sm text-foreground">
-                    {host.email}
-                  </td>
+                  <td className="px-6 py-4 text-sm">{req.buyerEmail}</td>
 
-                  {/* DATE + TIME */}
-                  <td className="px-6 py-4 text-sm text-foreground">
-                    {host.date} <br />
-                    <span className="text-xs text-muted-foreground">
-                      {host.time}
-                    </span>
-                  </td>
+                  {/* PHONE */}
+                  <td className="px-6 py-4 text-sm">{req.buyerPhone}</td>
 
-                  {/* EVENT NAME */}
-                  <td className="px-6 py-4 text-sm text-foreground">
-                    {host.eventName}
-                  </td>
+                  {/* EVENT */}
+                  <td className="px-6 py-4 text-sm">{req.eventName}</td>
+
+                  {/* DATE */}
+                  <td className="px-6 py-4 text-sm">{req.eventDate}</td>
 
                   {/* AMOUNT */}
-                  <td className="px-6 py-4 text-sm text-foreground">
-                    ${host.amount}
+                  <td className="px-6 py-4 text-sm text-right font-medium">
+                    ${req.amount.toFixed(2)}
                   </td>
 
-                  {/* ACTION BUTTONS */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 justify-center">
-                      <button
-                        className="rounded-full px-6 py-1.5 text-sm font-medium text-white"
-                        style={{ background: "rgba(209, 149, 55, 1)" }}
-                      >
-                        Accept
-                      </button>
-                      <button className="rounded-full bg-accent px-6 py-1.5 text-sm font-medium text-accent-foreground">
-                        Reject
-                      </button>
-                    </div>
+                  <td className="px-6 py-4 text-center">
+                    <span
+                      className={`
+      inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+      ${
+        req.status === "PENDING"
+          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+          : req.status === "APPROVED"
+          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+      }
+    `}
+                    >
+                      {req.status === "PENDING"
+                        ? "Pending"
+                        : req.status === "APPROVED"
+                        ? "Approved"
+                        : "Declined"}
+                    </span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {/* PAGINATION MUST BE HERE */}
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4 mb-4">
+            <div className="flex justify-center gap-2 mt-4 mb-2">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => p - 1)}
@@ -215,10 +231,14 @@ export function PaymentWithdrawalTable() {
             </div>
           )}
 
-          {/* 🔹 Modal */}
+          {/* Modal */}
           <PaymentWithdrawalModal
-            isOpen={ismodalopen}
-            onClose={() => setIsmodalopen(false)}
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            request={selected}
+            onDecision={(payload) => console.log("DECISION:", payload)}
+            onSendReceipt={(payload) => console.log("RECEIPT:", payload)}
+            onAddCredit={(payload) => console.log("ADD CREDIT:", payload)}
           />
         </div>
       </div>
@@ -299,11 +319,21 @@ export function PaymentWithdrawalTable() {
 // export function PaymentWithdrawalTable() {
 //   const [ismodalopen, setIsmodalopen] = useState(false);
 
+//   // 🔹 Pagination state (5 entries per page)
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const entriesPerPage = 5;
+
+//   const indexOfLast = currentPage * entriesPerPage;
+//   const indexOfFirst = indexOfLast - entriesPerPage;
+
+//   const currentHosts = hosts.slice(indexOfFirst, indexOfLast);
+//   const totalPages = Math.ceil(hosts.length / entriesPerPage);
+
 //   return (
 //     <div className="flex flex-col w-full gap-10">
 //       {/* ====================== Pending Withdrawal Requests Table ====================== */}
 //       <div className="flex justify-center w-full">
-//         <div className="bg-background rounded-xl border border-border overflow-hidden overflow-x-auto w-full max-w-7xl">
+//         <div className="bg-background rounded-xl border border-border overflow-x-auto w-full max-w-7xl pb-6">
 //           <table className="w-full text-center">
 //             <thead>
 //               <tr
@@ -332,7 +362,7 @@ export function PaymentWithdrawalTable() {
 //             </thead>
 
 //             <tbody>
-//               {hosts.map((host, index) => (
+//               {currentHosts.map((host, index) => (
 //                 <tr
 //                   key={`${host.id}-${index}`}
 //                   onClick={() => setIsmodalopen(true)}
@@ -398,6 +428,42 @@ export function PaymentWithdrawalTable() {
 //             </tbody>
 //           </table>
 
+//           {/* PAGINATION MUST BE HERE */}
+//           {totalPages > 1 && (
+//             <div className="flex justify-center gap-2 mt-4 mb-4">
+//               <button
+//                 disabled={currentPage === 1}
+//                 onClick={() => setCurrentPage((p) => p - 1)}
+//                 className="px-3 py-1 border rounded disabled:opacity-40"
+//               >
+//                 Prev
+//               </button>
+
+//               {[...Array(totalPages)].map((_, i) => (
+//                 <button
+//                   key={i}
+//                   onClick={() => setCurrentPage(i + 1)}
+//                   className={`px-3 py-1 border rounded ${
+//                     currentPage === i + 1
+//                       ? "bg-black text-white dark:bg-white dark:text-black"
+//                       : ""
+//                   }`}
+//                 >
+//                   {i + 1}
+//                 </button>
+//               ))}
+
+//               <button
+//                 disabled={currentPage === totalPages}
+//                 onClick={() => setCurrentPage((p) => p + 1)}
+//                 className="px-3 py-1 border rounded disabled:opacity-40"
+//               >
+//                 Next
+//               </button>
+//             </div>
+//           )}
+
+//           {/* 🔹 Modal */}
 //           <PaymentWithdrawalModal
 //             isOpen={ismodalopen}
 //             onClose={() => setIsmodalopen(false)}

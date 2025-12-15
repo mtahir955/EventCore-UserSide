@@ -146,7 +146,7 @@ export default function PaymentWithdrawalPage() {
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar */}
       <Sidebar
-        active="Payment"
+        active="Refund Requests"
         isOpen={sidebarOpen}
         onToggle={setSidebarOpen}
       />
@@ -165,7 +165,7 @@ export default function PaymentWithdrawalPage() {
             </button>
 
             <h1 className="text-[24px] sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.02em] text-foreground">
-              Payments
+              Refund Requests
             </h1>
           </div>
 
@@ -327,24 +327,24 @@ export default function PaymentWithdrawalPage() {
         {/* ===== Page Content ===== */}
         <div className="p-4 sm:p-6 md:p-8">
           {/* ===== Payment Withdrawal Table ===== */}
-          <div className="mt-2 space-y-4">
+          <div className="mt-1 space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Payments History
+              Refund Requests
             </h3>
 
             <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentSuccessTable />
+              <PaymentWithdrawalTable />
             </div>
           </div>
 
           {/* ===== Payment Withdrawal Table ===== */}
           <div className="mt-8 space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Refund Payment Requests
+              Successful Refunds History
             </h3>
 
             <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentWithdrawalTable />
+              <PaymentSuccessTable />
             </div>
           </div>
         </div>

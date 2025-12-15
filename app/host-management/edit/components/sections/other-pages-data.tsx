@@ -63,16 +63,61 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
         (t) => !t.title.trim() || !t.description.trim()
       );
 
-      if (hasPrivacyError || hasFaqError || hasTermsError) return false;
-      return true;
+      return !(hasPrivacyError || hasFaqError || hasTermsError);
     },
 
     getData: () => ({
       privacyPolicies: privacyPolicies.map((p) => ({ ...p })),
       faqs: faqs.map((f) => ({ ...f })),
-      termsAndConditions: terms.map((t) => ({ ...t })), // ⭐ NEW ARRAY
+      termsAndConditions: terms.map((t) => ({ ...t })),
       formData,
     }),
+
+    // ✅ ADD THIS FOR EDIT MODE
+    setData: (data: any) => {
+      /* ---------------- ABOUT PAGE ---------------- */
+      setFormData({
+        tenantName: data?.tenantName || "",
+        email: data?.email || "",
+        description: data?.aboutPage?.description || "",
+        subdomain: data?.subdomain || "",
+        logo: data?.logoUrl || "",
+        banner: data?.bannerUrl || "",
+        aboutTitle: data?.aboutPage?.title || "",
+        aboutSubtitle: data?.aboutPage?.subtitle || "",
+        mainHeadline: data?.aboutPage?.mainHeadline || "",
+      });
+
+      /* ---------------- PRIVACY POLICIES ---------------- */
+      setPrivacyPolicies(
+        Array.isArray(data?.privacyPolicies)
+          ? data.privacyPolicies.map((p: any) => ({
+              title: p.title || "",
+              description: p.description || "",
+            }))
+          : []
+      );
+
+      /* ---------------- FAQs ---------------- */
+      setFaqs(
+        Array.isArray(data?.faqs)
+          ? data.faqs.map((f: any) => ({
+              question: f.question || "",
+              answer: f.answer || "",
+            }))
+          : []
+      );
+
+      /* ---------------- TERMS & CONDITIONS ---------------- */
+      setTerms(
+        Array.isArray(data?.termsAndConditions)
+          ? data.termsAndConditions.map((t: any) => ({
+              title: t.title || "",
+              description: t.description || "",
+            }))
+          : []
+      );
+    },
   }));
 
   // -----------------
@@ -287,23 +332,36 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {privacyPolicies.map((p, index) => (
         <div
           key={index}
-          className="p-3 border rounded-lg flex justify-between mt-3 bg-gray-50 dark:bg-[#1a1a1a]"
+          className="
+      p-3 border rounded-lg mt-3 
+      bg-gray-50 dark:bg-[#1a1a1a]
+      flex flex-col gap-3
+      sm:flex-row sm:items-start sm:justify-between
+    "
         >
-          <div>
-            <h5 className="font-semibold">{p.title}</h5>
-            <p className="text-sm">{p.description}</p>
+          {/* TEXT CONTENT */}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold break-words">{p.title}</h5>
+
+            <p className="text-sm break-words whitespace-pre-wrap mt-1">
+              {p.description}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* ACTION BUTTONS */}
+          <div className="flex gap-3 flex-shrink-0 sm:mt-0 mt-2">
             <button
-              className="text-blue-500"
+              className="text-blue-500 hover:opacity-80"
               onClick={() => handleEditPrivacy(index)}
+              aria-label="Edit"
             >
               <Pencil size={18} />
             </button>
+
             <button
-              className="text-red-500"
+              className="text-red-500 hover:opacity-80"
               onClick={() => handleRemovePrivacy(index)}
+              aria-label="Delete"
             >
               <Trash2 size={18} />
             </button>
@@ -354,23 +412,36 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {faqs.map((f, index) => (
         <div
           key={index}
-          className="p-3 border rounded-lg flex justify-between mt-3 bg-gray-50 dark:bg-[#1a1a1a]"
+          className="
+      p-3 border rounded-lg mt-3
+      bg-gray-50 dark:bg-[#1a1a1a]
+      flex flex-col gap-3
+      sm:flex-row sm:items-start sm:justify-between
+    "
         >
-          <div>
-            <h5 className="font-semibold">Q: {f.question}</h5>
-            <p className="text-sm">A: {f.answer}</p>
+          {/* TEXT CONTENT */}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold break-words">Q: {f.question}</h5>
+
+            <p className="text-sm break-words whitespace-pre-wrap mt-1">
+              A: {f.answer}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* ACTION BUTTONS */}
+          <div className="flex gap-3 flex-shrink-0 sm:mt-0 mt-2">
             <button
-              className="text-blue-500"
+              className="text-blue-500 hover:opacity-80"
               onClick={() => handleEditFaq(index)}
+              aria-label="Edit FAQ"
             >
               <Pencil size={18} />
             </button>
+
             <button
-              className="text-red-500"
+              className="text-red-500 hover:opacity-80"
               onClick={() => handleRemoveFaq(index)}
+              aria-label="Delete FAQ"
             >
               <Trash2 size={18} />
             </button>
@@ -422,23 +493,36 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
       {terms.map((t, index) => (
         <div
           key={index}
-          className="p-3 border rounded-lg flex justify-between mt-3 bg-gray-50 dark:bg-[#1a1a1a]"
+          className="
+      p-3 border rounded-lg mt-3
+      bg-gray-50 dark:bg-[#1a1a1a]
+      flex flex-col gap-3
+      sm:flex-row sm:items-start sm:justify-between
+    "
         >
-          <div>
-            <h5 className="font-semibold">{t.title}</h5>
-            <p className="text-sm">{t.description}</p>
+          {/* TEXT CONTENT */}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-semibold break-words">{t.title}</h5>
+
+            <p className="text-sm break-words whitespace-pre-wrap mt-1">
+              {t.description}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* ACTION BUTTONS */}
+          <div className="flex gap-3 flex-shrink-0 sm:mt-0 mt-2">
             <button
-              className="text-blue-500"
+              className="text-blue-500 hover:opacity-80"
               onClick={() => handleEditTerms(index)}
+              aria-label="Edit term"
             >
               <Pencil size={18} />
             </button>
+
             <button
-              className="text-red-500"
+              className="text-red-500 hover:opacity-80"
               onClick={() => handleRemoveTerms(index)}
+              aria-label="Delete term"
             >
               <Trash2 size={18} />
             </button>

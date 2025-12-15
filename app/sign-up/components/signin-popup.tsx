@@ -202,7 +202,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
           </span>
         </button>
 
-        <button
+        {/* <button
           onClick={appleLogin}
           className="w-full h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center justify-center gap-3 transition-colors"
         >
@@ -215,7 +215,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
           <span className="text-black dark:text-white font-medium text-sm sm:text-base">
             Sign In with Apple
           </span>
-        </button>
+        </button> */}
       </div>
 
       {/* Divider */}

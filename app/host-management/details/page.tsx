@@ -8,11 +8,15 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import LogoutModal from "@/components/modals/LogoutModal";
 import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 export default function TenantDetailsPage() {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   const router = useRouter();
+
+  const params = useParams();
+  const tenantId = params.tenantId as string;
 
   const profileRef = useRef<HTMLDivElement>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -131,7 +135,10 @@ export default function TenantDetailsPage() {
         {/* Content */}
         <div className="p-4 sm:p-6 md:p-8">
           {/* Events Table */}
-          <TenantEventsTable onRowClick={(event) => setSelectedEvent(event)} />
+          <TenantEventsTable
+            tenantId={tenantId}
+            onRowClick={(event) => setSelectedEvent(event)}
+          />
         </div>
 
         {/* Revenue Modal */}

@@ -57,9 +57,9 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       href: "/ticket-check-host",
     },
     {
-      label: "Payment",
+      label: "Refund Requests",
       icon: "/icons/sidebar/7.png",
-      href: "/host-payment",
+      href: "/refund-requests",
     },
     {
       label: "Completed Events",

@@ -281,7 +281,7 @@ export function HostManagementTable({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/host-management/details`);
+                        router.push(`/host-management/${host.id}`);
                       }}
                       className="
         px-4 py-1.5 
@@ -293,14 +293,16 @@ export function HostManagementTable({
         transition
       "
                     >
-                      Details
+                      Events
                     </button>
 
                     {/* Edit Button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/host-management/edit`);
+                        router.push(
+                          `/host-management/edit?tenantId=${host.id}`
+                        );
                       }}
                       className="
         px-4 py-1.5 
