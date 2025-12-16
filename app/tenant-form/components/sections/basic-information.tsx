@@ -88,22 +88,12 @@ const BasicInformationSection = forwardRef((props, ref) => {
     const { name, checked } = e.target;
 
     setFormData((prev) => {
-      // Payment plans OFF → reset expiry
+      // ✅ Payment Plans OFF → reset credit rules
       if (name === "paymentPlans" && !checked) {
         return {
           ...prev,
           paymentPlans: false,
-          creditExpiryEnabled: false,
-          creditExpiryValue: "",
-          creditExpiryUnit: "months",
-        };
-      }
 
-      // Credit system OFF → reset credit rules
-      if (name === "creditAdjust" && !checked) {
-        return {
-          ...prev,
-          creditAdjust: false,
           minOrderEligibilityEnabled: false,
           minOrderValue: "",
           maxInstallmentsEnabled: false,
@@ -111,16 +101,23 @@ const BasicInformationSection = forwardRef((props, ref) => {
         };
       }
 
-      // ⛔ Turn OFF transfer → reset months
-      if (name === "allowTransfers" && !checked) {
+      // ✅ Credit system → toggle ONLY (no extra options)
+      if (name === "creditAdjust") {
         return {
           ...prev,
-          allowTransfers: false,
-          transferExpiryEnabled: false,
-          transferExpiryMonths: "",
+          creditAdjust: checked,
         };
       }
 
+      // ✅ Ticket transfers → toggle ONLY
+      if (name === "allowTransfers") {
+        return {
+          ...prev,
+          allowTransfers: checked,
+        };
+      }
+
+      // Default toggle behavior
       return { ...prev, [name]: checked };
     });
   };
@@ -516,40 +513,6 @@ const BasicInformationSection = forwardRef((props, ref) => {
               Allow ticket transfers
             </span>
           </label>
-
-          {formData.allowTransfers && (
-            <div className="ml-7 mt-3 space-y-3 max-w-xs">
-              <label className="text-sm text-gray-700 dark:text-gray-300">
-                Maximum transfer validity (months)
-              </label>
-
-              <input
-                type="number"
-                min={1}
-                max={24}
-                placeholder="e.g. 3"
-                value={formData.transferExpiryMonths}
-                onChange={(e) => {
-                  const value = Number(e.target.value);
-                  if (value >= 1 && value <= 24) {
-                    setFormData((p) => ({
-                      ...p,
-                      transferExpiryEnabled: true,
-                      transferExpiryMonths: e.target.value,
-                    }));
-                  }
-                }}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-[#D19537]
-        bg-white dark:bg-[#101010]
-        border-gray-300 dark:border-gray-700"
-              />
-
-              <p className="text-xs text-gray-500">
-                Users can transfer tickets only within this time window
-              </p>
-            </div>
-          )}
-
           <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
@@ -565,8 +528,87 @@ const BasicInformationSection = forwardRef((props, ref) => {
             </span>
           </label>
 
+          <label className="flex gap-3 items-center cursor-pointer group">
+            <input
+              type="checkbox"
+              name="paymentPlans"
+              checked={formData.paymentPlans}
+              onChange={handleCheckbox}
+              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
+        checked:bg-[#D19537] checked:border-[#D19537] 
+        accent-[#D19537] transition-all"
+            />
+            <span className="group-hover:text-[#D19537] transition">
+              Allow Payment Plan Options for Tickets
+            </span>
+          </label>
+
+          {/* 🔽 Payment Plan Settings */}
+          {/* {formData.paymentPlans && (
+            <div className="ml-7 mt-3 space-y-4"> */}
+          {/* Credit Expiry Toggle */}
+          {/* <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.creditExpiryEnabled}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      creditExpiryEnabled: e.target.checked,
+                      creditExpiryValue: e.target.checked
+                        ? p.creditExpiryValue
+                        : "",
+                    }))
+                  }
+                  className="accent-[#D19537]"
+                />
+                <span>Enable credit expiry</span>
+              </label> */}
+
+          {/* Expiry Fields */}
+          {/* {formData.creditExpiryEnabled && (
+                <div className="flex flex-col sm:flex-row gap-4 max-w-md"> */}
+          {/* Duration */}
+          {/* <input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 90"
+                    value={formData.creditExpiryValue}
+                    onChange={(e) =>
+                      setFormData((p) => ({
+                        ...p,
+                        creditExpiryValue: e.target.value,
+                      }))
+                    }
+                    className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:ring-[#D19537]
+          bg-white dark:bg-[#101010]
+          border-gray-300 dark:border-gray-700"
+                  /> */}
+
+          {/* Unit */}
+          {/* <select
+                    value={formData.creditExpiryUnit}
+                    onChange={(e) =>
+                      setFormData((p) => ({
+                        ...p,
+                        creditExpiryUnit: e.target.value,
+                      }))
+                    }
+                    className="w-full sm:w-1/2 px-4 py-2 border rounded-lg
+          bg-white dark:bg-[#101010]
+          border-gray-300 dark:border-gray-700"
+                  > */}
+          {/* <option value="days">Days</option> */}
+          {/* <option value="months">Months</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          )} */}
+
           {/* 🔽 Credit System Rules */}
-          {formData.creditAdjust && (
+          {/* 🔽 Payment Plan Rules */}
+          {formData.paymentPlans && (
             <div className="ml-7 mt-3 space-y-4">
               {/* Min Order Eligibility */}
               <label className="flex items-center gap-3 cursor-pointer">
@@ -648,84 +690,6 @@ const BasicInformationSection = forwardRef((props, ref) => {
                   <p className="text-xs text-gray-500">
                     Maximum number of installments are 4
                   </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <label className="flex gap-3 items-center cursor-pointer group">
-            <input
-              type="checkbox"
-              name="paymentPlans"
-              checked={formData.paymentPlans}
-              onChange={handleCheckbox}
-              className="h-4 w-5 rounded-md border border-gray-400 dark:border-gray-600 
-        checked:bg-[#D19537] checked:border-[#D19537] 
-        accent-[#D19537] transition-all"
-            />
-            <span className="group-hover:text-[#D19537] transition">
-              Allow Payment Plan Options for Tickets
-            </span>
-          </label>
-
-          {/* 🔽 Payment Plan Settings */}
-          {formData.paymentPlans && (
-            <div className="ml-7 mt-3 space-y-4">
-              {/* Credit Expiry Toggle */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.creditExpiryEnabled}
-                  onChange={(e) =>
-                    setFormData((p) => ({
-                      ...p,
-                      creditExpiryEnabled: e.target.checked,
-                      creditExpiryValue: e.target.checked
-                        ? p.creditExpiryValue
-                        : "",
-                    }))
-                  }
-                  className="accent-[#D19537]"
-                />
-                <span>Enable credit expiry</span>
-              </label>
-
-              {/* Expiry Fields */}
-              {formData.creditExpiryEnabled && (
-                <div className="flex flex-col sm:flex-row gap-4 max-w-md">
-                  {/* Duration */}
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="e.g. 90"
-                    value={formData.creditExpiryValue}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        creditExpiryValue: e.target.value,
-                      }))
-                    }
-                    className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:ring-[#D19537]
-          bg-white dark:bg-[#101010]
-          border-gray-300 dark:border-gray-700"
-                  />
-
-                  {/* Unit */}
-                  <select
-                    value={formData.creditExpiryUnit}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        creditExpiryUnit: e.target.value,
-                      }))
-                    }
-                    className="w-full sm:w-1/2 px-4 py-2 border rounded-lg
-          bg-white dark:bg-[#101010]
-          border-gray-300 dark:border-gray-700"
-                  >
-                    {/* <option value="days">Days</option> */}
-                    <option value="months">Months</option>
-                  </select>
                 </div>
               )}
             </div>

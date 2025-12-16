@@ -128,7 +128,7 @@ function StripePaymentForm({ clientSecret }: any) {
 
         setTimeout(() => {
           window.location.href = "/check-out/payment";
-        }, 1200);
+        }, 30000);
       } catch (err: any) {
         console.error("❌ Confirm API error:", err);
         toast.error("Payment confirmed but backend failed.");
@@ -170,10 +170,9 @@ export default function OrderSummary() {
   const price = selectedTicket ? selectedTicket.price : 0;
 
   const serviceFee = 3.75;
-  const processingFee = 1.61;
 
   const total = useMemo(
-    () => price * qty + serviceFee + processingFee,
+    () => price * qty + serviceFee,
     [price, qty]
   );
 
@@ -289,24 +288,25 @@ export default function OrderSummary() {
         {/* Event Details */}
         <div className="rounded-[12px] border bg-white dark:bg-[#1a1a1a] p-4">
           <div className="relative mb-3 overflow-hidden rounded-[12px]">
-            <Image
+            {/* <Image
               src={eventData?.bannerImage || "/images/event.jpg"}
               alt="Event Image"
               width={360}
               height={200}
               className="h-[120px] w-full object-cover"
-            />
+            /> */}
+            Event Detials
           </div>
 
           <p className="text-lg font-medium">
             {eventData?.title || "Loading..."}
           </p>
 
-          <p className="text-gray-500">
+          {/* <p className="text-gray-500">
             {selectedTicket
               ? formatter.format(selectedTicket.price)
               : formatter.format(0)}
-          </p>
+          </p> */}
 
           <p className="text-sm text-gray-400 mt-2">
             {eventData?.date?.fullDate}
@@ -368,8 +368,8 @@ export default function OrderSummary() {
         </div>
 
         {/* ─────────────────────────────────────────
-    CREDIT BALANCE CARD (DESIGN FROM IMAGE)
-────────────────────────────────────────── */}
+            CREDIT BALANCE CARD (DESIGN FROM IMAGE)
+        ────────────────────────────────────────── */}
         <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4 shadow-sm">
           <div className="rounded-lg border bg-gray-50 dark:bg-[#111] p-4 mb-3">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -406,11 +406,6 @@ export default function OrderSummary() {
           <p className="flex justify-between mt-1">
             <span>Service Fee:</span>
             <span>{formatter.format(serviceFee)}</span>
-          </p>
-
-          <p className="flex justify-between mt-1">
-            <span>Processing Fee:</span>
-            <span>{formatter.format(processingFee)}</span>
           </p>
 
           <hr className="my-2" />

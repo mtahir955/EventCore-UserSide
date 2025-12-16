@@ -23,7 +23,8 @@ export default function Page() {
     },
     title: "Demo Event Ticket",
     location: "Lahore, Pakistan",
-    type: "1 General Ticket",
+    type: "General", // 👈 ticket category ONLY
+    quantity: 1, // ✅ NEW
     price: "$49.99",
     highlight: true,
     ended: false,
@@ -179,10 +180,10 @@ export default function Page() {
                     <th className="px-4 py-3">Event Name</th>
                     <th className="px-4 py-3">Ticket ID</th>
                     <th className="px-4 py-3">Ticket Type</th>
-                   
+
                     <th className="px-4 py-3">Price</th>
                     <th className="px-4 py-3">Request Date</th>
-                     <th className="px-4 py-3">Payment Method</th>
+                    <th className="px-4 py-3">Payment Method</th>
                     <th className="px-4 py-3">Medium for Refund</th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
@@ -200,8 +201,6 @@ export default function Page() {
                           {r.ticketType}
                         </span>
                       </td>
-
-                      
 
                       <td className="px-4 py-3">{r.price}</td>
                       <td className="px-4 py-3">{r.requestDate}</td>
@@ -244,6 +243,7 @@ export default function Page() {
                   title={t.title}
                   location={t.location}
                   type={t.type}
+                  quantity={t.quantity} // ✅ REQUIRED
                   price={t.price}
                   highlight={t.highlight}
                   ended={t.ended}
