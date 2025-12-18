@@ -10,18 +10,123 @@ import Link from "next/link";
 import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import QRCode from "qrcode";
+
+type TicketQR = {
+  ticketId: string;
+  ticketNumber: number;
+  qrImage: string;
+};
 
 export default function PaymentSuccessPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
+  const [ticketQrs, setTicketQrs] = useState<TicketQR[]>([]);
 
-  // 🔥 UPDATED: store ALL ticket QRs
-  const [qrCodes, setQrCodes] = useState<
-    { ticketId: string; qrCode: string }[]
-  >([]);
+  const generateTicketImage = async (params: {
+    qrDataUrl: string;
+    eventName: string;
+    date: string;
+    time: string;
+    location: string;
+    ticketName: string;
+    ticketType: string;
+    ticketPrice: string;
+    ticketNumber: number;
+  }) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1000;
+    canvas.height = 450;
 
-  // Load confirmed purchase response from localStorage
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not supported");
+
+    // ======================
+    // BACKGROUND
+    // ======================
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // LEFT PANEL
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 650, canvas.height);
+
+    // ======================
+    // EVENT INFO
+    // ======================
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 36px Arial";
+    ctx.fillText(params.eventName, 40, 70);
+
+    ctx.font = "18px Arial";
+    ctx.fillText(`📍 Location: ${params.location}`, 40, 120);
+    ctx.fillText(`📅 Date: ${params.date}`, 40, 155);
+    ctx.fillText(`⏰ Time: ${params.time}`, 40, 190);
+
+    // Divider
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(40, 215);
+    ctx.lineTo(610, 215);
+    ctx.stroke();
+
+    // ======================
+    // TICKET INFO
+    // ======================
+    ctx.font = "bold 22px Arial";
+    ctx.fillText(`🎟 Ticket: ${params.ticketName}`, 40, 255);
+
+    ctx.font = "18px Arial";
+    ctx.fillText(`Type: ${params.ticketType}`, 40, 290);
+    ctx.fillText(`Price: $${params.ticketPrice}`, 40, 325);
+
+    ctx.font = "bold 20px Arial";
+    ctx.fillText(`Ticket No: #${params.ticketNumber}`, 40, 365);
+
+    // ======================
+    // RIGHT PANEL (QR)
+    // ======================
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.beginPath();
+    ctx.moveTo(650, 0);
+    ctx.lineTo(650, canvas.height);
+    ctx.stroke();
+
+    const qrImg = new window.Image();
+    qrImg.src = params.qrDataUrl;
+
+    await new Promise<void>((resolve) => {
+      qrImg.onload = () => resolve();
+      qrImg.onerror = () => resolve();
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(710, 120, 240, 240);
+    ctx.drawImage(qrImg, 730, 140, 200, 200);
+
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Scan at Entry", 780, 405);
+
+    return canvas.toDataURL("image/png");
+  };
+
+  const formatDate = (value: string) => {
+    try {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? "-" : d.toLocaleDateString();
+    } catch {
+      return "-";
+    }
+  };
+
+  // =========================
+  // LOAD PAYMENT DATA
+  // =========================
   useEffect(() => {
     const stored = localStorage.getItem("confirmedPurchase");
     if (stored) {
@@ -30,19 +135,23 @@ export default function PaymentSuccessPage() {
     }
   }, []);
 
+  // =========================
+  // AUTH TOKEN
+  // =========================
   const getToken = () => {
     if (typeof window === "undefined") return null;
 
-    const raw =
+    return (
       localStorage.getItem("buyerToken") ||
       localStorage.getItem("staffToken") ||
       localStorage.getItem("hostToken") ||
-      localStorage.getItem("token");
-
-    return raw || null;
+      localStorage.getItem("token")
+    );
   };
 
-  // 🔥 UPDATED: generate QR for EACH issued ticket
+  // =========================
+  // FETCH QR FOR EACH TICKET
+  // =========================
   useEffect(() => {
     if (!paymentData?.issuedTickets?.length) return;
 
@@ -51,11 +160,11 @@ export default function PaymentSuccessPage() {
 
     const fetchQrs = async () => {
       try {
-        const results: { ticketId: string; qrCode: string }[] = [];
+        const list: TicketQR[] = [];
 
         for (const issued of paymentData.issuedTickets) {
           const res = await axios.get(
-            `${API_BASE_URL}/tickets/${issued.id}/qr?includeImage=true`,
+            `${API_BASE_URL}/tickets/${issued.id}/qr`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -64,23 +173,114 @@ export default function PaymentSuccessPage() {
             }
           );
 
-          results.push({
+          list.push({
             ticketId: issued.id,
-            qrCode: res.data?.data?.qrCode,
+            ticketNumber: issued.ticketNumber,
+            qrImage: res.data?.data?.metadata?.qrImage,
           });
         }
 
-        setQrCodes(results);
-      } catch (err) {
-        console.error("QR Code fetch failed:", err);
+        setTicketQrs(list);
+      } catch (error) {
+        console.error("QR fetch failed", error);
       }
     };
 
     fetchQrs();
   }, [paymentData]);
 
-  // 🔥 Keep existing UI behavior: use FIRST ticket QR
-  const primaryQr = qrCodes.length > 0 ? qrCodes[0].qrCode : null;
+  // =========================
+  // DOWNLOAD PDF
+  // =========================
+  const downloadTicketsZip = async () => {
+    try {
+      if (!paymentData?.issuedTickets?.length) {
+        alert("Tickets not ready yet");
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        alert("Not authenticated");
+        return;
+      }
+
+      const zip = new JSZip();
+      const folder = zip.folder("tickets");
+      let addedCount = 0;
+
+      // ✅ IMPORTANT: Use Promise.all to ensure ALL QR PNGs are generated BEFORE zipping
+      await Promise.all(
+        paymentData.issuedTickets.map(async (issued: any) => {
+          const res = await axios.get(
+            `${API_BASE_URL}/tickets/${issued.id}/qr`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "X-Tenant-ID": HOST_Tenant_ID,
+              },
+            }
+          );
+
+          const qrCodeUrl = res.data?.data?.qrCode; // ✅ correct path (from your JSON)
+          if (!qrCodeUrl) {
+            console.warn("Missing qrCodeUrl for:", issued.id, res.data);
+            return;
+          }
+
+          const qrPng = await QRCode.toDataURL(qrCodeUrl, {
+            width: 300,
+            margin: 1,
+          });
+
+          // const ticketImage = await generateTicketImage({
+          //   qrDataUrl: qrPng,
+          //   eventName: paymentData.event.name,
+          //   date: formatDate(paymentData.event.date),
+          //   time: paymentData.event.time,
+          //   location: paymentData.event.location,
+          //   ticketName: paymentData.ticket.name,
+          //   ticketType: paymentData.ticket.type,
+          //   ticketPrice: paymentData.ticket.price,
+          //   ticketNumber: issued.ticketNumber,
+          // });
+
+          const meta = res.data.data.metadata;
+
+          const ticketImage = await generateTicketImage({
+            qrDataUrl: qrPng,
+            eventName: meta.eventName,
+            date: formatDate(meta.date),
+            time: meta.time,
+            location: meta.location,
+            ticketName: meta.ticketName,
+            ticketType: meta.ticketType,
+            ticketPrice: meta.price,
+            ticketNumber: issued.ticketNumber,
+          });
+
+          const base64 = ticketImage.replace(/^data:image\/png;base64,/, "");
+
+          folder?.file(`ticket-${issued.ticketNumber}.png`, base64, {
+            base64: true,
+          });
+
+          addedCount += 1;
+        })
+      );
+
+      if (addedCount === 0) {
+        alert("No ticket images were generated. Check qrCode in API response.");
+        return;
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(zipBlob, `tickets-${paymentData.confirmationNumber}.zip`);
+    } catch (error) {
+      console.error("ZIP download failed:", error);
+      alert("Failed to download tickets");
+    }
+  };
 
   return (
     <main className="bg-white text-black dark:bg-[#101010] dark:text-gray-100 transition-colors duration-300">
@@ -161,7 +361,6 @@ export default function PaymentSuccessPage() {
           {/* RIGHT COLUMN */}
           <aside className="flex justify-center lg:justify-end">
             <div className="w-full max-w-[380px]">
-              {/* Ticket Card */}
               <div className="rounded-[18px] bg-[#0077F7] p-5 sm:p-6 text-white shadow-lg">
                 <h4 className="text-[16px] sm:text-[18px] font-semibold mb-1">
                   Download Your Tickets!
@@ -170,7 +369,6 @@ export default function PaymentSuccessPage() {
                   Event Name
                 </p>
 
-                {/* QR */}
                 <div className="flex flex-col items-center mb-3 sm:mb-4">
                   <Image
                     src="/images/qr.png"
@@ -184,7 +382,6 @@ export default function PaymentSuccessPage() {
                   </p>
                 </div>
 
-                {/* Ticket Info */}
                 <div className="text-[12px] sm:text-[14px] space-y-2 sm:space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">1 Tickets</span>
@@ -204,31 +401,69 @@ export default function PaymentSuccessPage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-row sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
-                <button className="h-9 sm:h-10 w-full flex-1 rounded-[10px] bg-[#0077F7] sm:text-[12px] text-[10px] font-medium text-white hover:bg-[#0066D6] transition">
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={downloadTicketsZip}
+                  className="h-9 sm:h-10 w-full flex-1 rounded-[10px] bg-[#0077F7] sm:text-[12px] text-[10px] font-medium text-white hover:bg-[#0066D6] transition"
+                >
                   Download Ticket's
                 </button>
+
                 <Link href="/tickets">
                   <button className="h-9 sm:h-10 w-[90px] sm:w-[190px] flex-1 rounded-[10px] bg-black dark:bg-gray-200 sm:text-[12px] text-[10px] font-medium text-white dark:text-black hover:bg-black/90 dark:hover:bg-gray-300 transition">
                     My Tickets
                   </button>
                 </Link>
               </div>
-              <div className="mt-4 rounded-[12px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 px-4 py-3">
-                <p className="text-[12px] sm:text-[13px] text-red-700 dark:text-red-300 leading-relaxed">
-                  <span className="font-semibold">Important:</span> If you
-                  request a ticket refund, the service fee and processing fee
-                  will be deducted from the total payable amount. From the
-                  remaining ticket value, a portion will be credited to your
-                  account, and the remaining amount will be transferred to your
-                  provided payment method.
-                </p>
-              </div>
             </div>
           </aside>
         </div>
       </section>
+
+      {/* HIDDEN TICKET TEMPLATES */}
+      <div style={{ position: "fixed", top: "-9999px" }}>
+        {ticketQrs.map((qr) => (
+          <div
+            id={`ticket-${qr.ticketId}`}
+            key={qr.ticketId}
+            style={{
+              width: "600px",
+              height: "300px",
+              display: "flex",
+              background: "#0f172a",
+              color: "#fff",
+              borderRadius: "16px",
+              overflow: "hidden",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <div style={{ flex: 1, padding: 20 }}>
+              <h2>{paymentData?.event?.name}</h2>
+              <p>{paymentData?.event?.location}</p>
+              <p>
+                {formatDate(paymentData.event.date)}
+                {paymentData?.event?.time}
+              </p>
+              <hr />
+              <p>Ticket: {paymentData?.ticket?.name}</p>
+              <p>Ticket No: #{qr.ticketNumber}</p>
+              <p>Buyer: {paymentData?.buyer?.name}</p>
+            </div>
+
+            <div
+              style={{
+                width: 200,
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <img src={qr.qrImage} width={140} />
+            </div>
+          </div>
+        ))}
+      </div>
 
       <Footer />
 
@@ -257,6 +492,266 @@ function Line({ label, value }: { label: string; value: string }) {
     </p>
   );
 }
+
+// "use client";
+
+// import { useState, useEffect } from "react";
+// import Image from "next/image";
+// import { Header } from "../../../components/header";
+// import { Footer } from "../../../components/footer";
+// import { CalendarModal } from "../components/calendar-modal";
+// import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+// import Link from "next/link";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+
+// export default function PaymentSuccessPage() {
+//   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+//   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+//   const [paymentData, setPaymentData] = useState<any>(null);
+
+//   // 🔥 UPDATED: store ALL ticket QRs
+//   const [qrCodes, setQrCodes] = useState<
+//     { ticketId: string; qrCode: string }[]
+//   >([]);
+
+//   // Load confirmed purchase response from localStorage
+//   useEffect(() => {
+//     const stored = localStorage.getItem("confirmedPurchase");
+//     if (stored) {
+//       const parsed = JSON.parse(stored);
+//       setPaymentData(parsed?.data);
+//     }
+//   }, []);
+
+//   const getToken = () => {
+//     if (typeof window === "undefined") return null;
+
+//     const raw =
+//       localStorage.getItem("buyerToken") ||
+//       localStorage.getItem("staffToken") ||
+//       localStorage.getItem("hostToken") ||
+//       localStorage.getItem("token");
+
+//     return raw || null;
+//   };
+
+//   // 🔥 UPDATED: generate QR for EACH issued ticket
+//   useEffect(() => {
+//     if (!paymentData?.issuedTickets?.length) return;
+
+//     const token = getToken();
+//     if (!token) return;
+
+//     const fetchQrs = async () => {
+//       try {
+//         const results: { ticketId: string; qrCode: string }[] = [];
+
+//         for (const issued of paymentData.issuedTickets) {
+//           const res = await axios.get(
+//             `${API_BASE_URL}/tickets/${issued.id}/qr?includeImage=true`,
+//             {
+//               headers: {
+//                 Authorization: `Bearer ${token}`,
+//                 "X-Tenant-ID": HOST_Tenant_ID,
+//               },
+//             }
+//           );
+
+//           results.push({
+//             ticketId: issued.id,
+//             qrCode: res.data?.data?.qrCode,
+//           });
+//         }
+
+//         setQrCodes(results);
+//       } catch (err) {
+//         console.error("QR Code fetch failed:", err);
+//       }
+//     };
+
+//     fetchQrs();
+//   }, [paymentData]);
+
+//   // 🔥 Keep existing UI behavior: use FIRST ticket QR
+//   const primaryQr = qrCodes.length > 0 ? qrCodes[0].qrCode : null;
+
+//   return (
+//     <main className="bg-white text-black dark:bg-[#101010] dark:text-gray-100 transition-colors duration-300">
+//       <Header />
+
+//       <section className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 md:px-8 py-10 md:py-20">
+//         <div className="text-center mb-10 sm:mb-14">
+//           <h1 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold text-[#89FC00] italic">
+//             Payment Successful!
+//           </h1>
+//           <p className="mt-2 text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-300">
+//             {paymentData?.event?.name
+//               ? `You got your ticket for ${paymentData.event.name}. Download it here.`
+//               : "You got your ticket. Download it here."}
+//           </p>
+//         </div>
+
+//         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10">
+//           {/* LEFT COLUMN */}
+//           <div className="px-2 sm:px-4 lg:pl-8 lg:pr-4">
+//             <h2 className="text-[18px] sm:text-[22px] font-bold mb-2">
+//               Congratulations!
+//             </h2>
+
+//             <p className="text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-300 leading-relaxed mb-6 sm:mb-8">
+//               You’ve successfully purchased the ticket for:
+//               <br />
+//               <span className="font-medium text-gray-900 dark:text-gray-100">
+//                 {paymentData?.event?.name || "Event Name"}
+//               </span>
+//             </p>
+
+//             <div className="h-[1px] w-full bg-gray-300 dark:bg-gray-700 mb-6" />
+
+//             <div className="mb-10">
+//               <h3 className="text-[16px] sm:text-[18px] font-semibold mb-4">
+//                 Item Details
+//               </h3>
+
+//               <div className="space-y-2 text-[14px] sm:text-[15px]">
+//                 <Line label="Item" value={paymentData?.event?.name || "N/A"} />
+//                 <Line
+//                   label="Ticket"
+//                   value={paymentData?.ticket?.name || "N/A"}
+//                 />
+//                 <Line
+//                   label="Quantity"
+//                   value={`${paymentData?.ticket?.quantity || 1} Ticket(s)`}
+//                 />
+//                 <Line
+//                   label="Amount"
+//                   value={`$${paymentData?.payment?.totalAmount || "0.00"}`}
+//                 />
+//               </div>
+//             </div>
+
+//             <div className="h-[1px] w-full bg-gray-300 dark:bg-gray-700 mb-6" />
+
+//             <div className="mb-12">
+//               <h3 className="text-[16px] sm:text-[18px] font-semibold mb-4">
+//                 Customer details
+//               </h3>
+
+//               <div className="space-y-2 text-[14px] sm:text-[15px]">
+//                 <Line label="Name" value={paymentData?.buyer?.name || "N/A"} />
+//                 <Line
+//                   label="Email"
+//                   value={paymentData?.buyer?.email || "N/A"}
+//                 />
+//               </div>
+//             </div>
+
+//             <p className="text-[16px] sm:text-[20px]">
+//               Thank you for choosing us
+//             </p>
+//           </div>
+
+//           {/* RIGHT COLUMN */}
+//           <aside className="flex justify-center lg:justify-end">
+//             <div className="w-full max-w-[380px]">
+//               {/* Ticket Card */}
+//               <div className="rounded-[18px] bg-[#0077F7] p-5 sm:p-6 text-white shadow-lg">
+//                 <h4 className="text-[16px] sm:text-[18px] font-semibold mb-1">
+//                   Download Your Tickets!
+//                 </h4>
+//                 <p className="text-xs sm:text-sm text-white/90 mb-3 sm:mb-4">
+//                   Event Name
+//                 </p>
+
+//                 {/* QR */}
+//                 <div className="flex flex-col items-center mb-3 sm:mb-4">
+//                   <Image
+//                     src="/images/qr.png"
+//                     alt="QR code"
+//                     width={180}
+//                     height={180}
+//                     className="h-[150px] sm:h-[200px] w-[150px] sm:w-[200px] object-contain"
+//                   />
+//                   <p className="mt-2 sm:mt-3 text-center text-[10px] sm:text-[12px] tracking-wider text-white/80">
+//                     TCK-482917-AB56
+//                   </p>
+//                 </div>
+
+//                 {/* Ticket Info */}
+//                 <div className="text-[12px] sm:text-[14px] space-y-2 sm:space-y-3">
+//                   <div className="flex items-center justify-between">
+//                     <span className="font-semibold">1 Tickets</span>
+//                     <span className="font-semibold">$205.35</span>
+//                   </div>
+//                   <p className="font-semibold">
+//                     Location: <span className="font-normal">California</span>
+//                   </p>
+//                   <div className="flex items-center justify-between">
+//                     <p className="font-semibold">
+//                       Date: <span className="font-normal">4 June</span>
+//                     </p>
+//                     <p className="font-semibold">
+//                       Time: <span className="font-normal">8 pm</span>
+//                     </p>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Action Buttons */}
+//               <div className="flex flex-row sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+//                 <button className="h-9 sm:h-10 w-full flex-1 rounded-[10px] bg-[#0077F7] sm:text-[12px] text-[10px] font-medium text-white hover:bg-[#0066D6] transition">
+//                   Download Ticket's
+//                 </button>
+//                 <Link href="/tickets">
+//                   <button className="h-9 sm:h-10 w-[90px] sm:w-[190px] flex-1 rounded-[10px] bg-black dark:bg-gray-200 sm:text-[12px] text-[10px] font-medium text-white dark:text-black hover:bg-black/90 dark:hover:bg-gray-300 transition">
+//                     My Tickets
+//                   </button>
+//                 </Link>
+//               </div>
+//               <div className="mt-4 rounded-[12px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 px-4 py-3">
+//                 <p className="text-[12px] sm:text-[13px] text-red-700 dark:text-red-300 leading-relaxed">
+//                   <span className="font-semibold">Important:</span> If you
+//                   request a ticket refund, the service fee and processing fee
+//                   will be deducted from the total payable amount. From the
+//                   remaining ticket value, a portion will be credited to your
+//                   account, and the remaining amount will be transferred to your
+//                   provided payment method.
+//                 </p>
+//               </div>
+//             </div>
+//           </aside>
+//         </div>
+//       </section>
+
+//       <Footer />
+
+//       <CalendarModal
+//         isOpen={isCalendarOpen}
+//         onClose={() => setIsCalendarOpen(false)}
+//         eventTitle={paymentData?.event?.name || "Event"}
+//         eventDescription="Enjoy your event!"
+//         eventImage="/images/hero-image.png"
+//         initialDate={new Date()}
+//       />
+
+//       <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+//         <DialogContent aria-describedby={undefined}>
+//           <DialogTitle>Share</DialogTitle>
+//         </DialogContent>
+//       </Dialog>
+//     </main>
+//   );
+// }
+
+// function Line({ label, value }: { label: string; value: string }) {
+//   return (
+//     <p className="text-gray-700 dark:text-gray-300">
+//       <span className="font-normal">{label}:</span> {value}
+//     </p>
+//   );
+// }
 
 // "use client";
 
@@ -638,8 +1133,6 @@ function Line({ label, value }: { label: string; value: string }) {
 //     </p>
 //   );
 // }
-
-
 
 // "use client";
 
