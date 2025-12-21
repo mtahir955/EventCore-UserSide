@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-// import { VisuallyHidden } from "@radix-ui/react-visually-hidden"; // ✅ import this
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"; // ✅ import this
 
 type TransferSuccessModalProps = {
   open: boolean;
@@ -17,9 +17,9 @@ export function TransferSuccessModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] sm:w-[420px] max-w-[450px] h-auto sm:h-[360px] p-6 sm:p-8 border-0 rounded-[20px] shadow-lg text-center">
         {/* ✅ Hidden title for accessibility (prevents Radix error) */}
-        {/* <VisuallyHidden>
+        <VisuallyHidden>
           <DialogTitle>Ticket Transfer Success</DialogTitle>
-        </VisuallyHidden> */}
+        </VisuallyHidden>
 
         {/* Close button */}
         {/* <button

@@ -128,7 +128,7 @@ function StripePaymentForm({ clientSecret }: any) {
 
         setTimeout(() => {
           window.location.href = "/check-out/payment";
-        }, 30000);
+        }, 20000);
       } catch (err: any) {
         console.error("❌ Confirm API error:", err);
         toast.error("Payment confirmed but backend failed.");

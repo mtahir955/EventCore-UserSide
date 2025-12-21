@@ -15,7 +15,7 @@ export function Footer() {
               height={50}
               className="h-20 w-[240px] mb-4 mr-2"
             />
-            <p className="text-gray-400 text-sm leading-relaxed mb-2 max-w-[260px]">
+            {/* <p className="text-gray-400 text-sm leading-relaxed mb-2 max-w-[260px]">
               Vivamus tristique odio sit amet velit semper,
             </p>
             <p className="text-gray-400 text-sm leading-relaxed mb-2 max-w-[260px]">
@@ -23,7 +23,7 @@ export function Footer() {
             </p>
             <p className="text-gray-400 text-sm leading-relaxed max-w-[260px]">
               Cras egestas purus
-            </p>
+            </p> */}
           </div>
 
           {/* Company Info */}
