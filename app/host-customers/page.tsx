@@ -8,6 +8,10 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import AddCreditModal from "../host-dashboard/components/AddCreditModal";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 /* ─────────────────────────────────────────
    TYPES
@@ -15,82 +19,76 @@ import AddCreditModal from "../host-dashboard/components/AddCreditModal";
 type Buyer = {
   id: string;
   name: string;
-  avatar: string;
   email: string;
   phone: string;
   city: string;
   gender: string;
 
-  // Credit system
   creditBalance?: number;
+  earliestCreditExpiry?: string; // ✅ ADD THIS
+  creditReason?: string; // ✅ ADD THIS
 };
 
 /* ─────────────────────────────────────────
    MOCK BUYERS (TENANT USERS)
    Replace later with GET /host/buyers
 ───────────────────────────────────────── */
-const mockBuyers: Buyer[] = [
-  {
-    id: "u1",
-    name: "Daniel Carter",
-    avatar: "/images/avatars/daniel-carter-large.png",
-    email: "daniel@gmail.com",
-    phone: "+1 555 892 111",
-    city: "Los Angeles",
-    gender: "Male",
-    creditBalance: 120,
-  },
-  {
-    id: "u2",
-    name: "Sarah Mitchell",
-    avatar: "/placeholder.svg",
-    email: "sarah@gmail.com",
-    phone: "+1 555 892 222",
-    city: "San Diego",
-    gender: "Female",
-    creditBalance: 0,
-  },
-  {
-    id: "u3",
-    name: "Emily Carter",
-    avatar: "/placeholder.svg",
-    email: "emily@gmail.com",
-    phone: "+1 555 892 333",
-    city: "New York",
-    gender: "Female",
-    creditBalance: 50,
-  },
-  {
-    id: "u4",
-    name: "Nathan Blake",
-    avatar: "/placeholder.svg",
-    email: "nathan@gmail.com",
-    phone: "+1 555 892 444",
-    city: "Chicago",
-    gender: "Male",
-    creditBalance: 0,
-  },
-  {
-    id: "u5",
-    name: "Nathan Blake",
-    avatar: "/placeholder.svg",
-    email: "nathan@gmail.com",
-    phone: "+1 555 892 444",
-    city: "Chicago",
-    gender: "Male",
-    creditBalance: 0,
-  },
-  {
-    id: "u6",
-    name: "Nathan Blake",
-    avatar: "/placeholder.svg",
-    email: "nathan@gmail.com",
-    phone: "+1 555 892 444",
-    city: "Chicago",
-    gender: "Male",
-    creditBalance: 0,
-  },
-];
+// const mockBuyers: Buyer[] = [
+//   {
+//     id: "u1",
+//     name: "Daniel Carter",
+//     email: "daniel@gmail.com",
+//     phone: "+1 555 892 111",
+//     city: "Los Angeles",
+//     gender: "Male",
+//     creditBalance: 120,
+//   },
+//   {
+//     id: "u2",
+//     name: "Sarah Mitchell",
+//     email: "sarah@gmail.com",
+//     phone: "+1 555 892 222",
+//     city: "San Diego",
+//     gender: "Female",
+//     creditBalance: 0,
+//   },
+//   {
+//     id: "u3",
+//     name: "Emily Carter",
+//     email: "emily@gmail.com",
+//     phone: "+1 555 892 333",
+//     city: "New York",
+//     gender: "Female",
+//     creditBalance: 50,
+//   },
+//   {
+//     id: "u4",
+//     name: "Nathan Blake",
+//     email: "nathan@gmail.com",
+//     phone: "+1 555 892 444",
+//     city: "Chicago",
+//     gender: "Male",
+//     creditBalance: 0,
+//   },
+//   {
+//     id: "u5",
+//     name: "Nathan Blake",
+//     email: "nathan@gmail.com",
+//     phone: "+1 555 892 444",
+//     city: "Chicago",
+//     gender: "Male",
+//     creditBalance: 0,
+//   },
+//   {
+//     id: "u6",
+//     name: "Nathan Blake",
+//     email: "nathan@gmail.com",
+//     phone: "+1 555 892 444",
+//     city: "Chicago",
+//     gender: "Male",
+//     creditBalance: 0,
+//   },
+// ];
 
 export default function BuyersPage() {
   const { theme } = useTheme();
@@ -112,6 +110,14 @@ export default function BuyersPage() {
 
   const [hostName, setHostName] = useState("Host");
 
+  const [buyers, setBuyers] = useState<Buyer[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [totalPages, setTotalPages] = useState(1);
+  const entriesPerPage = 5;
+
+  const [creditMode, setCreditMode] = useState<"add" | "update">("add");
+
   /* ─────────────────────────────────────────
      AUTH CHECK
   ───────────────────────────────────────── */
@@ -127,33 +133,12 @@ export default function BuyersPage() {
   }, []);
 
   /* ─────────────────────────────────────────
-     SEARCH FILTER
-  ───────────────────────────────────────── */
-  const filteredBuyers = searchQuery
-    ? mockBuyers.filter((b) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          b.name.toLowerCase().includes(q) ||
-          b.email.toLowerCase().includes(q) ||
-          b.phone.toLowerCase().includes(q)
-        );
-      })
-    : mockBuyers;
-
-  /* ─────────────────────────────────────────
      PAGINATION
   ───────────────────────────────────────── */
   const [currentPage, setCurrentPage] = useState(1);
-  const entriesPerPage = 5;
-
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
-
-  const indexOfLast = currentPage * entriesPerPage;
-  const indexOfFirst = indexOfLast - entriesPerPage;
-  const currentEntries = filteredBuyers.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredBuyers.length / entriesPerPage);
 
   // Dummy notifications
   const notifications = [
@@ -162,23 +147,214 @@ export default function BuyersPage() {
     { id: 3, message: "New user message received." },
   ];
 
+  const getToken = () => {
+    if (typeof window === "undefined") return null;
+
+    const raw =
+      localStorage.getItem("hostToken") || localStorage.getItem("token");
+
+    try {
+      const parsed = JSON.parse(raw || "{}");
+      return parsed?.token || parsed;
+    } catch {
+      return raw;
+    }
+  };
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        setLoading(true);
+
+        const res = await axios.get(`${API_BASE_URL}/users/customers`, {
+          params: {
+            page: currentPage,
+            limit: entriesPerPage,
+            search: searchQuery || undefined,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        });
+
+        setBuyers(res.data.data.customers);
+        setTotalPages(res.data.data.pagination.totalPages);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || "Failed to load customers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, [currentPage, searchQuery]);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+
   /* ─────────────────────────────────────────
      CLICK OUTSIDE HANDLER
   ───────────────────────────────────────── */
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenuId(null);
-        setShowNotifications(false);
-        setShowProfileDropdown(false);
-      }
+    const handleClickOutside = (e: PointerEvent) => {
+      // ⛔ If modal open, do nothing
+      if (showAddCreditModal) return;
+
+      // ✅ If click is INSIDE dropdown → do nothing
+      if (menuRef.current?.contains(e.target as Node)) return;
+
+      setOpenMenuId(null);
+      setShowNotifications(false);
+      setShowProfileDropdown(false);
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () =>
+      document.removeEventListener("pointerdown", handleClickOutside);
+  }, [showAddCreditModal]);
 
-  const menuRef = useRef<HTMLDivElement>(null);
+  const handleAddCredit = async (data: {
+    amount: number;
+    reason: string;
+    expiresAt: string;
+    customerId: string;
+  }) => {
+    // ✅ EXPIRY DATE VALIDATION (ADD HERE)
+    if (new Date(data.expiresAt) <= new Date()) {
+      toast.error("Expiry date must be in the future");
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      toast.error("Unauthorized");
+      return;
+    }
+
+    try {
+      toast.loading("Adding credit...", { id: "add-credit" });
+
+      const res = await axios.post(
+        `${API_BASE_URL}/users/customers/credits`,
+        {
+          customerId: data.customerId,
+          amount: data.amount,
+          reason: data.reason,
+          expiresAt: data.expiresAt,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Credit added successfully", { id: "add-credit" });
+
+      // ✅ Update customer credit in UI instantly
+      setBuyers((prev) =>
+        prev.map((b) =>
+          b.id === data.customerId
+            ? {
+                ...b,
+                creditBalance: res.data.data.creditBalance,
+                earliestCreditExpiry: res.data.data.expiresAt,
+                creditReason: res.data.data.reason,
+              }
+            : b
+        )
+      );
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to add credit", {
+        id: "add-credit",
+      });
+    }
+  };
+
+  const handleUpdateCredit = async (data: {
+    amount: number;
+    reason: string;
+    expiresAt: string;
+    customerId: string;
+  }) => {
+    const token = getToken();
+    if (!token) return toast.error("Unauthorized");
+
+    try {
+      toast.loading("Updating credit...", { id: "update-credit" });
+
+      const res = await axios.put(
+        `${API_BASE_URL}/users/customers/credits`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
+
+      toast.success("Credit updated", { id: "update-credit" });
+
+      setBuyers((prev) =>
+        prev.map((b) =>
+          b.id === data.customerId
+            ? {
+                ...b,
+                creditBalance: res.data.data.creditBalance,
+                earliestCreditExpiry: res.data.data.expiresAt,
+                creditReason: res.data.data.reason,
+              }
+            : b
+        )
+      );
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update credit", {
+        id: "update-credit",
+      });
+    }
+  };
+
+  const handleRemoveCredit = async (customerId: string) => {
+    const token = getToken();
+    if (!token) return toast.error("Unauthorized");
+
+    try {
+      toast.loading("Removing credit...", { id: "remove-credit" });
+
+      await axios.delete(`${API_BASE_URL}/users/customers/credits`, {
+        data: { customerId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Tenant-ID": HOST_Tenant_ID,
+        },
+      });
+
+      toast.success("Credit removed", { id: "remove-credit" });
+
+      setBuyers((prev) =>
+        prev.map((b) =>
+          b.id === customerId
+            ? {
+                ...b,
+                creditBalance: 0,
+                earliestCreditExpiry: undefined,
+                creditReason: undefined,
+              }
+            : b
+        )
+      );
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to remove credit", {
+        id: "remove-credit",
+      });
+    }
+  };
 
   /* ─────────────────────────────────────────
      RENDER
@@ -193,7 +369,7 @@ export default function BuyersPage() {
       />
 
       {/* Main */}
-      <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
+      <main className="flex-1 lg:ml-[250px] dark:bg-[#101010]">
         {/* Header */}
         <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
           <h1 className="text-[32px] font-semibold tracking-[-0.02em]">
@@ -371,6 +547,12 @@ export default function BuyersPage() {
           </button>
         </div>
 
+        {loading && (
+          <div className="p-6 text-center text-sm text-gray-500">
+            Loading customers...
+          </div>
+        )}
+
         {/* Table */}
         <div className="mx-4 sm:mx-8 bg-white dark:bg-[#101010] rounded-xl shadow-sm overflow-hidden">
           {/* DESKTOP HEADER */}
@@ -391,36 +573,25 @@ export default function BuyersPage() {
           </div>
 
           {/* ROWS */}
-          {currentEntries.map((b) => {
+          {buyers.map((b) => {
             const hasCredits = (b.creditBalance ?? 0) > 0;
 
             return (
               <div
                 key={b.id}
                 className="
-          border-b
-          p-4 space-y-3
-          md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
-          md:px-6 md:py-4 md:space-y-0
-          hover:bg-gray-50 dark:hover:bg-gray-900
-        "
+        border-b
+        p-4 space-y-3
+        md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
+        md:px-6 md:py-4 md:space-y-0
+        hover:bg-gray-50 dark:hover:bg-gray-900
+      "
               >
                 {/* NAME + MENU */}
                 <div className="flex items-center justify-between md:justify-start md:gap-3">
-                  <div className="flex items-center gap-3">
-                    <Image
-                      src={b.avatar}
-                      alt={b.name}
-                      width={36}
-                      height={36}
-                      className="rounded-full"
-                    />
-                    <div>
-                      <p className="font-medium">{b.name}</p>
-                      <p className="text-xs text-gray-500 md:hidden">
-                        {b.email}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="font-medium">{b.name}</p>
+                    <p className="text-xs text-gray-500 md:hidden">{b.email}</p>
                   </div>
 
                   {/* MOBILE MENU */}
@@ -435,14 +606,21 @@ export default function BuyersPage() {
                     </button>
 
                     {openMenuId === b.id && (
-                      <div className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50">
-                        {/* NO credits */}
+                      <div
+                        ref={menuRef}
+                        className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50"
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        {/* ADD CREDIT */}
                         {!hasCredits && (
                           <button
                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            onClick={(e) => {
+                            onPointerUp={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
+
                               setSelectedBuyer(b);
+                              setCreditMode("add");
                               setShowAddCreditModal(true);
                               setOpenMenuId(null);
                             }}
@@ -451,14 +629,17 @@ export default function BuyersPage() {
                           </button>
                         )}
 
-                        {/* HAS credits */}
+                        {/* UPDATE / REMOVE */}
                         {hasCredits && (
                           <>
                             <button
                               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                              onClick={(e) => {
+                              onPointerUp={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
+
                                 setSelectedBuyer(b);
+                                setCreditMode("update");
                                 setShowAddCreditModal(true);
                                 setOpenMenuId(null);
                               }}
@@ -468,9 +649,11 @@ export default function BuyersPage() {
 
                             <button
                               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                              onClick={(e) => {
+                              onPointerUp={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
-                                console.log("REMOVE CREDIT:", b.id);
+
+                                handleRemoveCredit(b.id);
                                 setOpenMenuId(null);
                               }}
                             >
@@ -520,6 +703,7 @@ export default function BuyersPage() {
                     <div
                       ref={menuRef}
                       className="absolute right-0 top-8 w-44 bg-white border rounded-lg shadow-lg z-50"
+                      onPointerDown={(e) => e.stopPropagation()}
                     >
                       {!hasCredits && (
                         <button
@@ -527,6 +711,7 @@ export default function BuyersPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedBuyer(b);
+                            setCreditMode("add");
                             setShowAddCreditModal(true);
                             setOpenMenuId(null);
                           }}
@@ -541,8 +726,12 @@ export default function BuyersPage() {
                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                             onClick={(e) => {
                               e.stopPropagation();
+
+                              // ✅ REQUIRED LINES
                               setSelectedBuyer(b);
+                              setCreditMode("update");
                               setShowAddCreditModal(true);
+
                               setOpenMenuId(null);
                             }}
                           >
@@ -553,7 +742,10 @@ export default function BuyersPage() {
                             className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log("REMOVE CREDIT:", b.id);
+
+                              // ✅ REQUIRED LINE
+                              handleRemoveCredit(b.id);
+
                               setOpenMenuId(null);
                             }}
                           >
@@ -632,12 +824,36 @@ export default function BuyersPage() {
         }}
       />
 
-      <AddCreditModal
+      {/* <AddCreditModal
         isOpen={showAddCreditModal}
         onClose={() => setShowAddCreditModal(false)}
         customer={selectedBuyer}
         onSave={(data) => {
-          console.log("ADD CREDIT:", data);
+          handleAddCredit(data);
+          setShowAddCreditModal(false);
+        }}
+      /> */}
+      <AddCreditModal
+        isOpen={showAddCreditModal}
+        onClose={() => setShowAddCreditModal(false)}
+        customer={selectedBuyer}
+        mode={creditMode}
+        initialCredit={
+          creditMode === "update" &&
+          selectedBuyer?.creditBalance &&
+          selectedBuyer?.earliestCreditExpiry
+            ? {
+                amount: selectedBuyer.creditBalance,
+                reason: selectedBuyer.creditReason || "", // ✅ REAL DATA
+                expiresAt: selectedBuyer.earliestCreditExpiry,
+              }
+            : null
+        }
+        onSave={(data) => {
+          creditMode === "update"
+            ? handleUpdateCredit(data)
+            : handleAddCredit(data);
+
           setShowAddCreditModal(false);
         }}
       />

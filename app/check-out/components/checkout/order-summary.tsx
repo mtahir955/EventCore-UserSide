@@ -61,12 +61,16 @@ function StripePaymentForm({ clientSecret }: any) {
     const card = elements.getElement(CardElement);
     if (!card) return;
 
+    toast.loading("Processing payment securely...", { id: "stripe-pay" });
+
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: { card },
     });
 
     if (result.error) {
-      toast.error(result.error.message || "Payment failed");
+      toast.error(result.error.message || "Payment failed", {
+        id: "stripe-pay",
+      });
       setLoading(false);
       return;
     }
@@ -152,6 +156,8 @@ function StripePaymentForm({ clientSecret }: any) {
     </div>
   );
 }
+
+const MAX_TICKETS_PER_ORDER = 10;
 
 /* ─────────────────────────────────────────
    MAIN ORDER SUMMARY PAGE
@@ -292,12 +298,18 @@ export default function OrderSummary() {
       return;
     }
 
+    if (qty > MAX_TICKETS_PER_ORDER) {
+      toast.error(
+        `Maximum ${MAX_TICKETS_PER_ORDER} tickets are allowed per purchase`
+      );
+      return;
+    }
+
     const token = getToken();
     if (!token) {
       toast.error("You must be logged in");
       return;
     }
-
     try {
       setInitiatingPayment(true); // 🔄 START LOADER
 
@@ -330,7 +342,9 @@ export default function OrderSummary() {
 
       toast.success("Payment session created");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Payment failed");
+      toast.error(err?.response?.data?.message || "Payment initiation failed", {
+        id: "init-payment",
+      });
     } finally {
       setInitiatingPayment(false); // 🔄 STOP LOADER
     }
@@ -409,7 +423,17 @@ export default function OrderSummary() {
                 />
               </button>
               <span>{qty}</span>
-              <button onClick={() => setQty(qty + 1)}>
+              <button
+                onClick={() => {
+                  if (qty >= MAX_TICKETS_PER_ORDER) {
+                    toast.error(
+                      `You can purchase a maximum of ${MAX_TICKETS_PER_ORDER} tickets at once`
+                    );
+                    return;
+                  }
+                  setQty(qty + 1);
+                }}
+              >
                 <Image
                   src="/images/icon-plus.png"
                   alt="+"

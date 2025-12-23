@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "../host-dashboard/components/sidebar";
-import { MyEventsCard } from "../host-dashboard/components/my-events-card";
+import { MyCompEventsCard } from "../host-dashboard/components/my-comp-events-card";
 import { Menu, X, LogOut, Moon, Sun } from "lucide-react"; // for hamburger icon
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -426,7 +426,7 @@ export default function CompletedEventsPage() {
         <div className="px-4 sm:px-6 md:px-8 mt-6 pb-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
           {currentEvents.length > 0 ? (
             currentEvents.map((event, index) => (
-              <MyEventsCard
+              <MyCompEventsCard
                 key={index}
                 imageSrc={event.imageSrc}
                 price={event.price}
