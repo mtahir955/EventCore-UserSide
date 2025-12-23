@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { RefundRequest } from "./payment-withdrawal-table";
 import { AddCreditModal } from "./add-credit-modal";
 import { UploadReceiptModal } from "./upload-receipt-modal";
@@ -29,7 +29,9 @@ interface PaymentWithdrawalModalProps {
     refundRequestId: string;
     buyerEmail: string;
     message: string;
+    amount: number; // ✅ ADD
     receiptFileName?: string;
+    receiptFile?: File; // ✅ REQUIRED for multipart
   }) => void;
 }
 
@@ -44,16 +46,29 @@ export function PaymentWithdrawalModal({
   const [isAddCreditOpen, setIsAddCreditOpen] = useState(false);
   const [isUploadReceiptOpen, setIsUploadReceiptOpen] = useState(false);
 
+  const [remainingRefundAmount, setRemainingRefundAmount] = useState<number>(
+    request?.amount || 0
+  );
+
   const title = useMemo(() => {
     if (!request) return "Refund Request";
-    return `Refund Request • ${request.id}`;
+    return `Refund Request • ${request.refundRequestId}`;
   }, [request]);
+
+   useEffect(() => {
+    if (request?.amount != null) {
+      setRemainingRefundAmount(request.amount);
+    }
+  }, [request]);  
 
   if (!isOpen) return null;
 
   const handleDecline = () => {
     if (!request) return;
-    onDecision({ refundRequestId: request.id, decision: "DECLINE" });
+    onDecision({
+      refundRequestId: request.refundRequestId,
+      decision: "DECLINE",
+    });
     onClose();
   };
 
@@ -120,7 +135,7 @@ export function PaymentWithdrawalModal({
                   <InfoRow label="Event Date" value={request.eventDate} />
                   <InfoRow
                     label="Refund Amount"
-                    value={`$${request.amount.toFixed(2)}`}
+                    value={`$${remainingRefundAmount.toFixed(2)}`}
                     strong
                   />
                 </div>
@@ -205,10 +220,15 @@ export function PaymentWithdrawalModal({
         isOpen={isAddCreditOpen}
         onClose={() => setIsAddCreditOpen(false)}
         buyerEmail={request?.buyerEmail || ""}
-        refundRequestId={request?.id || ""}
-        totalTicketAmount={request?.ticketPrice || 0} // 👈 HERE
-        onSubmit={(payload) => {
-          onAddCredit(payload);
+        refundRequestId={request?.refundRequestId || ""}
+        totalTicketAmount={request?.amount || 0} // 👈 HERE
+        onSubmit={async (payload) => {
+          const remaining = await onAddCredit(payload);
+
+          if (remaining !== null) {
+            setRemainingRefundAmount(remaining); // ✅ UI UPDATES
+          }
+
           setIsAddCreditOpen(false);
         }}
       />
@@ -218,12 +238,20 @@ export function PaymentWithdrawalModal({
         isOpen={isUploadReceiptOpen}
         onClose={() => setIsUploadReceiptOpen(false)}
         buyerEmail={request?.buyerEmail || ""}
-        refundRequestId={request?.id || ""}
+        refundRequestId={request?.refundRequestId || ""}
         onDone={(payload) => {
-          onSendReceipt(payload);
+          onSendReceipt({
+            ...payload,
+            amount: remainingRefundAmount,
+          });
+
           if (request) {
-            onDecision({ refundRequestId: request.id, decision: "ACCEPT" });
+            onDecision({
+              refundRequestId: request.refundRequestId,
+              decision: "ACCEPT",
+            });
           }
+
           setIsUploadReceiptOpen(false);
           onClose();
         }}

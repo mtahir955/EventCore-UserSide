@@ -2,9 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { PaymentWithdrawalModal } from "./Payment-withdrawal-modal";
+import axios from "axios";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
+
+interface PaymentWithdrawalTableProps {
+  status: "PENDING" | "DECLINED";
+  data?: RefundRequest[];
+  loading?: boolean;
+}
 
 export interface RefundRequest {
-  id: string;
+  refundRequestId: string;
 
   buyerName: string;
   buyerEmail: string;
@@ -27,7 +36,7 @@ export interface RefundRequest {
 
 const refundRequests: RefundRequest[] = [
   {
-    id: "RF-001",
+    refundRequestId: "RF-001",
     buyerName: "Daniel Carter",
     buyerEmail: "danielc@gmail.com",
     buyerPhone: "+44 7412 558492",
@@ -47,7 +56,7 @@ const refundRequests: RefundRequest[] = [
   },
 
   {
-    id: "RF-002",
+    refundRequestId: "RF-002",
     buyerName: "Sarah Mitchell",
     buyerEmail: "sarahm@gmail.com",
     buyerPhone: "+1 305 555 0142",
@@ -65,7 +74,7 @@ const refundRequests: RefundRequest[] = [
     status: "PENDING",
   },
   {
-    id: "RF-003",
+    refundRequestId: "RF-003",
     buyerName: "Emily Carter",
     buyerEmail: "emilyc@gmail.com",
     buyerPhone: "+92 300 1234567",
@@ -84,7 +93,11 @@ const refundRequests: RefundRequest[] = [
   },
 ];
 
-export function PaymentWithdrawalTable() {
+export function PaymentWithdrawalTable({
+  status,
+  data,
+  loading,
+}: PaymentWithdrawalTableProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selected, setSelected] = useState<RefundRequest | null>(null);
 
@@ -92,13 +105,104 @@ export function PaymentWithdrawalTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
 
-  const totalPages = Math.ceil(refundRequests.length / entriesPerPage);
+  const sourceData = data && data.length > 0 ? data : refundRequests;
+
+  const filteredRequests = sourceData.filter((req) => req.status === status);
+
+  const totalPages = Math.ceil(filteredRequests.length / entriesPerPage);
 
   const currentRows = useMemo(() => {
     const indexOfLast = currentPage * entriesPerPage;
     const indexOfFirst = indexOfLast - entriesPerPage;
-    return refundRequests.slice(indexOfFirst, indexOfLast);
-  }, [currentPage]);
+    return filteredRequests.slice(indexOfFirst, indexOfLast);
+  }, [currentPage, filteredRequests]);
+
+  const handleAddCredit = async (payload: {
+    refundRequestId: string;
+    buyerEmail: string;
+    amount: number;
+    reason: string;
+    expiresAt: string;
+  }) => {
+    try {
+      const token = localStorage.getItem("hostToken");
+
+      if (!token) {
+        console.error("❌ No auth token found");
+        return null;
+      }
+
+      const res = await axios.post(
+        `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/credit`,
+        {
+          refundRequestId: payload.refundRequestId,
+          amount: payload.amount,
+          reason: payload.reason,
+          expiryDate: payload.expiresAt,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-tenant-id": HOST_Tenant_ID,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // ✅ RETURN BACKEND VALUE
+      return res.data.data.remainingAmount;
+    } catch (error: any) {
+      console.error(
+        "❌ Add credit failed",
+        error?.response?.data || error.message
+      );
+      return null;
+    }
+  };
+
+  const handleRefund = async (payload: {
+    refundRequestId: string;
+    buyerEmail: string;
+    message: string;
+    receiptFileName?: string;
+    receiptFile?: File;
+    amount: number;
+  }) => {
+    try {
+      const token = localStorage.getItem("hostToken"); // 🔴 confirm key name
+
+      if (!token) {
+        console.error("❌ No auth token found");
+        return;
+      }
+
+      const formData = new FormData();
+
+      formData.append("refundRequestId", payload.refundRequestId);
+      formData.append("amount", payload.amount.toString());
+      formData.append("message", payload.message);
+
+      if (payload.receiptFile) {
+        formData.append("receipt", payload.receiptFile);
+      }
+
+      await axios.post(
+        `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/refund`,
+        formData,
+        {
+          headers: {
+            "x-tenant-id": HOST_Tenant_ID,
+            Authorization: `Bearer ${token}`, // ✅ REQUIRED
+            // ❌ DO NOT manually set Content-Type for FormData
+          },
+        }
+      );
+
+      console.log("✅ Refund processed");
+    } catch (error: any) {
+      console.error("❌ Refund failed", error?.response?.data || error.message);
+    }
+  };
 
   return (
     <div className="flex flex-col w-full gap-10">
@@ -135,64 +239,87 @@ export function PaymentWithdrawalTable() {
             </thead>
 
             <tbody>
-              {currentRows.map((req) => (
-                <tr
-                  key={req.id}
-                  onClick={() => {
-                    setSelected(req);
-                    setIsModalOpen(true);
-                  }}
-                  className="border-b border-border last:border-b-0 hover:bg-secondary/50 cursor-pointer transition-colors"
-                >
-                  {/* BUYER */}
-                  <td className="px-6 py-4">
-                    <div className="leading-tight">
-                      <p className="text-sm font-medium text-foreground">
-                        {req.buyerName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{req.id}</p>
-                    </div>
-                  </td>
-
-                  {/* EMAIL */}
-                  <td className="px-6 py-4 text-sm">{req.buyerEmail}</td>
-
-                  {/* PHONE */}
-                  <td className="px-6 py-4 text-sm">{req.buyerPhone}</td>
-
-                  {/* EVENT */}
-                  <td className="px-6 py-4 text-sm">{req.eventName}</td>
-
-                  {/* DATE */}
-                  <td className="px-6 py-4 text-sm">{req.eventDate}</td>
-
-                  {/* AMOUNT */}
-                  <td className="px-6 py-4 text-sm text-right font-medium">
-                    ${req.amount.toFixed(2)}
-                  </td>
-
-                  <td className="px-6 py-4 text-center">
-                    <span
-                      className={`
-      inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
-      ${
-        req.status === "PENDING"
-          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-          : req.status === "APPROVED"
-          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-      }
-    `}
-                    >
-                      {req.status === "PENDING"
-                        ? "Pending"
-                        : req.status === "APPROVED"
-                        ? "Approved"
-                        : "Declined"}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="text-center py-10 text-sm text-muted-foreground"
+                  >
+                    Loading refund requests...
                   </td>
                 </tr>
-              ))}
+              ) : currentRows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="text-center py-10 text-sm text-muted-foreground"
+                  >
+                    No refund requests found.
+                  </td>
+                </tr>
+              ) : (
+                currentRows.map((req) => (
+                  <tr
+                    key={req.refundRequestId}
+                    onClick={() => {
+                      setSelected(req);
+                      setIsModalOpen(true);
+                    }}
+                    className="border-b border-border last:border-b-0 hover:bg-secondary/50 cursor-pointer transition-colors"
+                  >
+                    {/* BUYER */}
+                    <td className="px-6 py-4">
+                      <div className="leading-tight">
+                        <p className="text-sm font-medium text-foreground">
+                          {req.buyerName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {req.refundRequestId}
+                        </p>
+                      </div>
+                    </td>
+
+                    {/* EMAIL */}
+                    <td className="px-6 py-4 text-sm">{req.buyerEmail}</td>
+
+                    {/* PHONE */}
+                    <td className="px-6 py-4 text-sm">{req.buyerPhone}</td>
+
+                    {/* EVENT */}
+                    <td className="px-6 py-4 text-sm">{req.eventName}</td>
+
+                    {/* DATE */}
+                    <td className="px-6 py-4 text-sm">{req.eventDate}</td>
+
+                    {/* AMOUNT */}
+                    <td className="px-6 py-4 text-sm text-right font-medium">
+                      ${req.amount.toFixed(2)}
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`
+              inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+              ${
+                req.status === "PENDING"
+                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                  : req.status === "APPROVED"
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                  : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+              }
+            `}
+                      >
+                        {req.status === "PENDING"
+                          ? "Pending"
+                          : req.status === "APPROVED"
+                          ? "Approved"
+                          : "Declined"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
 
@@ -237,8 +364,10 @@ export function PaymentWithdrawalTable() {
             onClose={() => setIsModalOpen(false)}
             request={selected}
             onDecision={(payload) => console.log("DECISION:", payload)}
-            onSendReceipt={(payload) => console.log("RECEIPT:", payload)}
-            onAddCredit={(payload) => console.log("ADD CREDIT:", payload)}
+            // onSendReceipt={(payload) => console.log("RECEIPT:", payload)}
+            onSendReceipt={handleRefund}
+            // onAddCredit={(payload) => console.log("ADD CREDIT:", payload)}
+            onAddCredit={handleAddCredit}
           />
         </div>
       </div>

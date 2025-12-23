@@ -166,15 +166,19 @@ export default function BuyersPage() {
      CLICK OUTSIDE HANDLER
   ───────────────────────────────────────── */
   useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenMenuId(null);
-      setShowNotifications(false);
-      setShowProfileDropdown(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+        setShowNotifications(false);
+        setShowProfileDropdown(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const menuRef = useRef<HTMLDivElement>(null);
 
   /* ─────────────────────────────────────────
      RENDER
@@ -387,39 +391,122 @@ export default function BuyersPage() {
           </div>
 
           {/* ROWS */}
-          {currentEntries.map((b) => (
-            <div
-              key={b.id}
-              className="
-        border-b
+          {currentEntries.map((b) => {
+            const hasCredits = (b.creditBalance ?? 0) > 0;
 
-        /* MOBILE */
-        p-4 space-y-3
+            return (
+              <div
+                key={b.id}
+                className="
+          border-b
+          p-4 space-y-3
+          md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
+          md:px-6 md:py-4 md:space-y-0
+          hover:bg-gray-50 dark:hover:bg-gray-900
+        "
+              >
+                {/* NAME + MENU */}
+                <div className="flex items-center justify-between md:justify-start md:gap-3">
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={b.avatar}
+                      alt={b.name}
+                      width={36}
+                      height={36}
+                      className="rounded-full"
+                    />
+                    <div>
+                      <p className="font-medium">{b.name}</p>
+                      <p className="text-xs text-gray-500 md:hidden">
+                        {b.email}
+                      </p>
+                    </div>
+                  </div>
 
-        /* DESKTOP */
-        md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
-        md:px-6 md:py-4 md:space-y-0
-        hover:bg-gray-50 dark:hover:bg-gray-900
-      "
-            >
-              {/* NAME + MENU */}
-              <div className="flex items-center justify-between md:justify-start md:gap-3">
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={b.avatar}
-                    alt={b.name}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium">{b.name}</p>
-                    <p className="text-xs text-gray-500 md:hidden">{b.email}</p>
+                  {/* MOBILE MENU */}
+                  <div className="relative md:hidden">
+                    <button
+                      className="p-2 rounded-full hover:bg-gray-200"
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === b.id ? null : b.id)
+                      }
+                    >
+                      ⋯
+                    </button>
+
+                    {openMenuId === b.id && (
+                      <div className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50">
+                        {/* NO credits */}
+                        {!hasCredits && (
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedBuyer(b);
+                              setShowAddCreditModal(true);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Add Credit
+                          </button>
+                        )}
+
+                        {/* HAS credits */}
+                        {hasCredits && (
+                          <>
+                            <button
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedBuyer(b);
+                                setShowAddCreditModal(true);
+                                setOpenMenuId(null);
+                              }}
+                            >
+                              Update Credit
+                            </button>
+
+                            <button
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("REMOVE CREDIT:", b.id);
+                                setOpenMenuId(null);
+                              }}
+                            >
+                              Remove Credit
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* MOBILE MENU */}
-                <div className="relative md:hidden">
+                {/* MOBILE INFO */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm md:hidden">
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <p>{b.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">City</p>
+                    <p>{b.city}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Gender</p>
+                    <p>{b.gender}</p>
+                  </div>
+                </div>
+
+                {/* DESKTOP COLUMNS */}
+                <div className="hidden md:block">{b.email}</div>
+                <div className="hidden md:block">{b.phone}</div>
+                <div className="hidden md:block">{b.city}</div>
+                <div className="hidden md:block">{b.gender}</div>
+
+                {/* DESKTOP MENU */}
+                <div className="hidden md:flex justify-center relative">
                   <button
                     className="p-2 rounded-full hover:bg-gray-200"
                     onClick={() =>
@@ -430,86 +517,56 @@ export default function BuyersPage() {
                   </button>
 
                   {openMenuId === b.id && (
-                    <div className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50">
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                        onClick={() => {
-                          setSelectedBuyer(b);
-                          setShowAddCreditModal(true);
-                          setOpenMenuId(null);
-                        }}
-                      >
-                        Add Credit
-                      </button>
-
-                      {b.creditBalance && b.creditBalance > 0 && (
-                        <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                          Remove Credit
+                    <div
+                      ref={menuRef}
+                      className="absolute right-0 top-8 w-44 bg-white border rounded-lg shadow-lg z-50"
+                    >
+                      {!hasCredits && (
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBuyer(b);
+                            setShowAddCreditModal(true);
+                            setOpenMenuId(null);
+                          }}
+                        >
+                          Add Credit
                         </button>
+                      )}
+
+                      {hasCredits && (
+                        <>
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedBuyer(b);
+                              setShowAddCreditModal(true);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Update Credit
+                          </button>
+
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log("REMOVE CREDIT:", b.id);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Remove Credit
+                          </button>
+                        </>
                       )}
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* MOBILE INFO GRID */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm md:hidden">
-                <div>
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <p>{b.phone}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500">City</p>
-                  <p>{b.city}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500">Gender</p>
-                  <p>{b.gender}</p>
-                </div>
-              </div>
-
-              {/* DESKTOP COLUMNS */}
-              <div className="hidden md:block">{b.email}</div>
-              <div className="hidden md:block">{b.phone}</div>
-              <div className="hidden md:block">{b.city}</div>
-              <div className="hidden md:block">{b.gender}</div>
-
-              {/* DESKTOP MENU */}
-              <div className="hidden md:flex justify-center relative">
-                <button
-                  className="p-2 rounded-full hover:bg-gray-200"
-                  onClick={() =>
-                    setOpenMenuId(openMenuId === b.id ? null : b.id)
-                  }
-                >
-                  ⋯
-                </button>
-
-                {openMenuId === b.id && (
-                  <div className="absolute right-0 top-8 w-44 bg-white border rounded-lg shadow-lg z-50">
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                      onClick={() => {
-                        setSelectedBuyer(b);
-                        setShowAddCreditModal(true);
-                        setOpenMenuId(null);
-                      }}
-                    >
-                      Add Credit
-                    </button>
-
-                    {b.creditBalance && b.creditBalance > 0 && (
-                      <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                        Remove Credit
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Pagination */}

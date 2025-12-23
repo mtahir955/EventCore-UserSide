@@ -5,6 +5,7 @@ import type { RefundRequest } from "./payment-withdrawal-table";
 
 interface PaymentSuccessTableProps {
   data?: RefundRequest[];
+  loading?: boolean;
 }
 
 /* ---------------- DUMMY APPROVED DATA ---------------- */

@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { PaymentSuccessTable } from "../admin/components/payment-success-table";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import axios from "axios";
+import type { RefundRequest } from "../admin/components/payment-withdrawal-table";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 interface WithdrawalRequest {
   id: string;
@@ -69,10 +73,19 @@ const withdrawalRequests: WithdrawalRequest[] = [
   },
 ];
 
+type RefundTab = "PENDING" | "APPROVED" | "DECLINED";
+
 export default function PaymentWithdrawalPage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const [activeTab, setActiveTab] = useState<RefundTab>("PENDING");
 
   // Click outside handler
   useEffect(() => {
@@ -141,6 +154,46 @@ export default function PaymentWithdrawalPage() {
       window.location.href = "/sign-in-host";
     }
   }, []);
+
+  const fetchRefundRequests = async (status?: RefundTab) => {
+    try {
+      setLoading(true);
+
+      const token = localStorage.getItem("hostToken");
+      if (!token) {
+        console.error("Host token missing");
+        return;
+      }
+
+      const response = await axios.get(
+        `${API_BASE_URL}/tickets/admin/refund-requests`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+          params: {
+            page,
+            limit,
+            status,
+          },
+        }
+      );
+
+      setRefundRequests(response.data?.data?.items || []);
+    } catch (error: any) {
+      console.error(
+        "Failed to fetch refund requests",
+        error?.response?.data || error
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRefundRequests(activeTab);
+  }, [activeTab, page]);
 
   return (
     <div className="flex min-h-screen bg-secondary">
@@ -327,25 +380,62 @@ export default function PaymentWithdrawalPage() {
         {/* ===== Page Content ===== */}
         <div className="p-4 sm:p-6 md:p-8">
           {/* ===== Payment Withdrawal Table ===== */}
-          <div className="mt-1 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="px-6 pt-6 pb-4 border-b dark:border-gray-800">
+            <h1 className="text-2xl font-semibold text-foreground">
               Refund Requests
-            </h3>
+            </h1>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentWithdrawalTable />
+            {/* ===== TABS ===== */}
+            <div className="flex gap-3 mt-6">
+              {[
+                { key: "PENDING", label: "Pending" },
+                { key: "APPROVED", label: "Successful" },
+                { key: "DECLINED", label: "Declined" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as RefundTab)}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition
+                  ${
+                    activeTab === tab.key
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-[#1f1f1f] dark:text-gray-300"
+                  }
+                `}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* ===== Payment Withdrawal Table ===== */}
-          <div className="mt-8 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Successful Refunds History
-            </h3>
+          {/* ===== TAB CONTENT ===== */}
+          <div className="p-6">
+            {activeTab === "PENDING" && (
+              <div className="rounded-xl border bg-white dark:bg-[#1a1a1a]">
+                <PaymentWithdrawalTable
+                  status="PENDING"
+                  data={refundRequests}
+                  loading={loading}
+                />
+              </div>
+            )}
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-sm">
-              <PaymentSuccessTable />
-            </div>
+            {activeTab === "APPROVED" && (
+              <div className="rounded-xl border bg-white dark:bg-[#1a1a1a]">
+                <PaymentSuccessTable data={refundRequests} loading={loading} />
+              </div>
+            )}
+
+            {activeTab === "DECLINED" && (
+              <div className="rounded-xl border bg-white dark:bg-[#1a1a1a]">
+                <PaymentWithdrawalTable
+                  status="DECLINED"
+                  data={refundRequests}
+                  loading={loading}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>

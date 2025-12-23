@@ -20,6 +20,9 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
     password: "",
   });
 
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+
   const [errors, setErrors] = useState({
     email: false,
     password: false,

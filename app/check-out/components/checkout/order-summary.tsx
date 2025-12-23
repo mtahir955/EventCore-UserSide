@@ -128,7 +128,7 @@ function StripePaymentForm({ clientSecret }: any) {
 
         setTimeout(() => {
           window.location.href = "/check-out/payment";
-        }, 20000);
+        }, 1200);
       } catch (err: any) {
         console.error("❌ Confirm API error:", err);
         toast.error("Payment confirmed but backend failed.");
@@ -166,15 +166,14 @@ export default function OrderSummary() {
   const [type, setType] = useState<string>("");
   const [qty, setQty] = useState(1);
 
+  const [initiatingPayment, setInitiatingPayment] = useState(false);
+
   const selectedTicket = tickets.find((t) => t.id === type);
   const price = selectedTicket ? selectedTicket.price : 0;
 
   const serviceFee = 3.75;
 
-  const total = useMemo(
-    () => price * qty + serviceFee,
-    [price, qty]
-  );
+  const total = useMemo(() => price * qty + serviceFee, [price, qty]);
 
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState("");
@@ -232,6 +231,56 @@ export default function OrderSummary() {
   }, [eventId]);
 
   /* ─────────────── INITIATE PAYMENT ───────────────*/
+  // const handlePaymentInitiate = async () => {
+  //   if (!type) {
+  //     toast.error("Please select a ticket");
+  //     return;
+  //   }
+
+  //   if (qty < 1) {
+  //     toast.error("Quantity must be at least 1");
+  //     return;
+  //   }
+
+  //   const token = getToken();
+  //   if (!token) {
+  //     toast.error("You must be logged in");
+  //     return;
+  //   }
+
+  //   try {
+  //     // 1️⃣ get publishable key
+  //     const pubRes = await axios.get(
+  //       `${API_BASE_URL}/payments/config/publishable-key`
+  //     );
+  //     const publishableKey = pubRes.data.data.publishableKey;
+
+  //     if (!publishableKey) {
+  //       toast.error("Stripe key missing");
+  //       return;
+  //     }
+
+  //     setStripePromise(loadStripe(publishableKey));
+
+  //     // 2️⃣ initiate payment
+  //     const body = { ticketId: type, quantity: qty };
+
+  //     const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "X-Tenant-ID": HOST_Tenant_ID,
+  //       },
+  //     });
+
+  //     const secret = res.data.data.clientSecret;
+  //     setClientSecret(secret);
+
+  //     toast.success("Payment session created");
+  //   } catch (err: any) {
+  //     toast.error(err?.response?.data?.message || "Payment failed");
+  //   }
+  // };
+
   const handlePaymentInitiate = async () => {
     if (!type) {
       toast.error("Please select a ticket");
@@ -250,6 +299,8 @@ export default function OrderSummary() {
     }
 
     try {
+      setInitiatingPayment(true); // 🔄 START LOADER
+
       // 1️⃣ get publishable key
       const pubRes = await axios.get(
         `${API_BASE_URL}/payments/config/publishable-key`
@@ -258,6 +309,7 @@ export default function OrderSummary() {
 
       if (!publishableKey) {
         toast.error("Stripe key missing");
+        setInitiatingPayment(false);
         return;
       }
 
@@ -279,6 +331,8 @@ export default function OrderSummary() {
       toast.success("Payment session created");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Payment failed");
+    } finally {
+      setInitiatingPayment(false); // 🔄 STOP LOADER
     }
   };
 
@@ -417,12 +471,47 @@ export default function OrderSummary() {
         </div>
 
         {/* INITIATE PAYMENT */}
-        {!clientSecret && (
+        {/* {!clientSecret && (
           <Button
             className="w-full h-11 bg-blue-600 text-white rounded-lg"
             onClick={handlePaymentInitiate}
           >
             Continue to Payment
+          </Button>
+        )} */}
+
+        {!clientSecret && (
+          <Button
+            className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2"
+            onClick={handlePaymentInitiate}
+            disabled={initiatingPayment}
+          >
+            {initiatingPayment ? (
+              <>
+                <svg
+                  className="h-4 w-4 animate-spin text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                Initializing payment…
+              </>
+            ) : (
+              "Continue to Payment"
+            )}
           </Button>
         )}
 
