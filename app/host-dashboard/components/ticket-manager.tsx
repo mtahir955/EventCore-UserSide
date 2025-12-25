@@ -62,9 +62,6 @@ export default function TicketManager() {
   const [isEarlyBird, setIsEarlyBird] = useState(false);
   const [minOrder, setMinOrder] = useState(1);
   const [maxOrder, setMaxOrder] = useState(5);
-  const [enableDiscount, setEnableDiscount] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
-  const [discountPercent, setDiscountPercent] = useState("");
 
   const handleEditTicket = (id: string) => {
     setEditingTicket(id);
@@ -79,10 +76,6 @@ export default function TicketManager() {
       setIsRefundable(t.isRefundable);
       setIsEarlyBird(t.earlyBirdOption);
       setEarlyBirdQuantity(t.earlyBirdQuantity ?? null);
-
-      setEnableDiscount(!!t.discount);
-      setDiscountPercent(t.discount?.toString() || "");
-      setCouponCode(t.couponCode || "");
     }
   };
 
@@ -135,8 +128,6 @@ export default function TicketManager() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [existingCoupons, setExistingCoupons] = useState<any[]>([]);
-
   const [showToast, setShowToast] = useState(false);
 
   const handleSaveChanges = async () => {
@@ -159,8 +150,6 @@ export default function TicketManager() {
       isRefundable: isRefundable,
       earlyBirdOption: isEarlyBird,
       earlyBirdQuantity: isEarlyBird ? earlyBirdQuantity : null,
-      couponCode: enableDiscount ? couponCode : null,
-      discount: enableDiscount ? discountPercent : null,
       minOrder,
       maxOrder,
     };
@@ -267,20 +256,6 @@ export default function TicketManager() {
 
       setTickets(apiTickets);
 
-      // ⭐ NEW: extract all coupons from tickets
-      const couponSet = new Map();
-
-      apiTickets.forEach((t) => {
-        if (t.couponCode && t.discount) {
-          couponSet.set(t.couponCode, {
-            code: t.couponCode,
-            discount: t.discount,
-          });
-        }
-      });
-
-      // convert map -> array
-      setExistingCoupons(Array.from(couponSet.values()));
     } catch (error) {
       console.error("Ticket Fetch Error:", error);
       toast.error("Failed to load tickets!");
@@ -779,78 +754,6 @@ export default function TicketManager() {
                 enabled={isRefundable}
                 onToggle={() => setIsRefundable(!isRefundable)}
               />
-
-              {/* Enable Discount */}
-              <div className="col-span-1 sm:col-span-2">
-                <ToggleRow
-                  label="Enable Discount & Coupon"
-                  enabled={enableDiscount}
-                  onToggle={() => setEnableDiscount(!enableDiscount)}
-                />
-
-                {enableDiscount && (
-                  <div className="mt-4 space-y-4">
-                    {/* Dropdown for existing coupons */}
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Select Existing Coupon (optional)
-                      </label>
-                      <select
-                        onChange={(e) => {
-                          const selected = existingCoupons.find(
-                            (c) => c.code === e.target.value
-                          );
-                          if (selected) {
-                            setCouponCode(selected.code);
-                            setDiscountPercent(selected.discount.toString());
-                          } else {
-                            setCouponCode("");
-                            setDiscountPercent("");
-                          }
-                        }}
-                        value={couponCode || ""}
-                        className="w-full h-10 px-3 rounded-lg border"
-                      >
-                        <option value="">-- Select Coupon --</option>
-                        {existingCoupons.map((coupon) => (
-                          <option key={coupon.code} value={coupon.code}>
-                            {coupon.code} - {coupon.discount}% Off
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Manual entry for coupon & discount */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Coupon Code
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter Coupon Code"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value)}
-                          className="h-10 w-full px-4 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Discount (%)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Enter Discount %"
-                          value={discountPercent}
-                          onChange={(e) => setDiscountPercent(e.target.value)}
-                          className="h-10 w-full px-4 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#101010] text-sm outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Save Button */}

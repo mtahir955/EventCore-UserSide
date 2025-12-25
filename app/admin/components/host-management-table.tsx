@@ -281,7 +281,8 @@ export function HostManagementTable({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/host-management/${host.id}`);
+                        localStorage.setItem("selectedTenantId", host.id); // ✅ SAVE TENANT
+                        router.push(`/host-management/details/${host.id}`);
                       }}
                       className="
         px-4 py-1.5 

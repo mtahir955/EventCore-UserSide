@@ -10,8 +10,22 @@ interface EventItem {
   name: string;
   date: string;
   location: string;
-  ticketPrice: number;
-  status: "Upcoming" | "Previous";
+  status: "UPCOMING" | "ONGOING" | "PREVIOUS";
+}
+
+function getEventStatus(startDate?: string, endDate?: string) {
+  const now = new Date();
+
+  if (!startDate) return "Previous";
+
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : null;
+
+  if (start > now) return "Upcoming";
+
+  if (start <= now && (!end || end >= now)) return "Ongoing";
+
+  return "Previous";
 }
 
 export function TenantEventsTable({
@@ -55,11 +69,11 @@ export function TenantEventsTable({
 
         const mapped = rawEvents.map((e: any) => ({
           id: e.id,
-          name: e.name || e.title,
-          date: e.startDate || e.date,
-          location: e.location?.city || e.location || "-",
-          ticketPrice: e.minTicketPrice || 0,
-          status: new Date(e.startDate) > new Date() ? "Upcoming" : "Previous",
+          name: e.name,
+          date: e.eventDate,
+          location: e.location,
+          ticketPrice: e.ticketPrice ?? 0,
+          status: e.status, // 🔥 TRUST BACKEND
         }));
 
         setEvents(mapped);
@@ -85,7 +99,6 @@ export function TenantEventsTable({
             <th className="px-6 py-4 text-sm font-semibold">Event Name</th>
             <th className="px-6 py-4 text-sm font-semibold">Date</th>
             <th className="px-6 py-4 text-sm font-semibold">Location</th>
-            <th className="px-6 py-4 text-sm font-semibold">Ticket Price</th>
             <th className="px-6 py-4 text-sm font-semibold">Status</th>
           </tr>
         </thead>
@@ -126,17 +139,20 @@ export function TenantEventsTable({
                 <td className="px-6 py-4 font-medium">{event.name}</td>
                 <td className="px-6 py-4">{event.date}</td>
                 <td className="px-6 py-4">{event.location}</td>
-                <td className="px-6 py-4">${event.ticketPrice}</td>
                 <td className="px-6 py-4">
                   <span
                     className={cn(
                       "px-3 py-1.5 rounded-full text-xs font-medium",
-                      event.status === "Upcoming"
-                        ? "bg-[#e8f5e9] text-[#1b5e20]"
-                        : "bg-[#eeeeee] text-[#424242]"
+                      event.status === "UPCOMING" &&
+                        "bg-[#e8f5e9] text-[#1b5e20]",
+                      event.status === "ONGOING" &&
+                        "bg-[#e3f2fd] text-[#0d47a1]",
+                      event.status === "PREVIOUS" &&
+                        "bg-[#eeeeee] text-[#424242]"
                     )}
                   >
-                    {event.status}
+                    {event.status.charAt(0) +
+                      event.status.slice(1).toLowerCase()}
                   </span>
                 </td>
               </tr>

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "../../host-dashboard/components/sidebar";
-import { CircularProgress } from "../../host-dashboard/components/circular-progress";
 import { StaffInfoModal } from "../../host-dashboard/components/staff-info-modal";
 import { Menu } from "lucide-react";
 import Link from "next/link";
@@ -36,6 +35,59 @@ export default function EditEventPage() {
     { id: 3, message: "New user message received." },
   ];
 
+  const US_STATES = [
+    "Alabama",
+    "Alaska",
+    "Arizona",
+    "Arkansas",
+    "California",
+    "Colorado",
+    "Connecticut",
+    "Delaware",
+    "Florida",
+    "Georgia",
+    "Hawaii",
+    "Idaho",
+    "Illinois",
+    "Indiana",
+    "Iowa",
+    "Kansas",
+    "Kentucky",
+    "Louisiana",
+    "Maine",
+    "Maryland",
+    "Massachusetts",
+    "Michigan",
+    "Minnesota",
+    "Mississippi",
+    "Missouri",
+    "Montana",
+    "Nebraska",
+    "Nevada",
+    "New Hampshire",
+    "New Jersey",
+    "New Mexico",
+    "New York",
+    "North Carolina",
+    "North Dakota",
+    "Ohio",
+    "Oklahoma",
+    "Oregon",
+    "Pennsylvania",
+    "Rhode Island",
+    "South Carolina",
+    "South Dakota",
+    "Tennessee",
+    "Texas",
+    "Utah",
+    "Vermont",
+    "Virginia",
+    "Washington",
+    "West Virginia",
+    "Wisconsin",
+    "Wyoming",
+  ];
+
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -58,65 +110,20 @@ export default function EditEventPage() {
 
   const { resolvedTheme, theme, setTheme } = useTheme();
 
-  const staffMembers = [
-    {
-      fullName: "Daniel Carter",
-      email: "info@gmail.com",
-      phoneNumber: "+44 7412 558492",
-      role: "Check Tickets",
-    },
-    {
-      fullName: "Daniel Carter",
-      email: "info@gmail.com",
-      phoneNumber: "+44 7412 558492",
-      role: "Check Tickets",
-    },
-  ];
+  type EventCustomer = {
+    id: string; // unique row id
+    customerId: string; // real customer id
+    name: string;
+    email: string;
+    ticketId: string;
+    quantity: number;
+  };
 
-  const attendees = [
-    {
-      name: "Daniel Carter",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 2,
-      avatar: "/images/avatars/daniel-carter.png",
-    },
-    {
-      name: "Sarah Mitchell",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 4,
-      avatar: "/images/avatars/sarah-mitchell.png",
-    },
-    {
-      name: "Emily Carter",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 1,
-      avatar: "/images/avatars/emily-carter.png",
-    },
-    {
-      name: "Nathan Blake",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 2,
-      avatar: "/images/avatars/nathan-blake.png",
-    },
-    {
-      name: "Taylor Morgan",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 1,
-      avatar: "/images/avatars/taylor-morgan.png",
-    },
-    {
-      name: "Taylor Morgan",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 1,
-      avatar: "/images/avatars/taylor-morgan.png",
-    },
-  ];
+  const [customers, setCustomers] = useState<EventCustomer[]>([]);
+  const [customersPage, setCustomersPage] = useState(1);
+  const [customersTotalPages, setCustomersTotalPages] = useState(1);
+  const customersLimit = 5;
+  const [customersLoading, setCustomersLoading] = useState(false);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -146,19 +153,6 @@ export default function EditEventPage() {
       window.location.href = "/sign-in-host";
     }
   }, []);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const attendeesPerPage = 5;
-
-  // Calculate slice indexes
-  const indexOfLast = currentPage * attendeesPerPage;
-  const indexOfFirst = indexOfLast - attendeesPerPage;
-
-  // Current page attendees
-  const currentAttendees = attendees.slice(indexOfFirst, indexOfLast);
-
-  // Total pages
-  const totalPages = Math.ceil(attendees.length / attendeesPerPage);
 
   const searchParams = useSearchParams();
   const eventId = searchParams.get("id");
@@ -274,6 +268,53 @@ export default function EditEventPage() {
       toast.error("Failed to update event. Try again.");
     }
   };
+
+  const fetchEventCustomers = async () => {
+    if (!eventId) return;
+
+    try {
+      setCustomersLoading(true);
+
+      const token = getToken();
+
+      const res = await axios.get(
+        `${API_BASE_URL}/events/${eventId}/customers`,
+        {
+          params: {
+            page: customersPage,
+            limit: customersLimit,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
+
+      const normalizedCustomers = res.data.data.customers.map((c: any) => ({
+        id: `${c.customerId}-${c.ticketId}`, // ✅ UNIQUE KEY
+        customerId: c.customerId,
+        name: c.fullName,
+        email: c.email,
+        ticketId: c.ticketId,
+        quantity: c.quantity,
+      }));
+
+      setCustomers(normalizedCustomers);
+      setCustomersTotalPages(res.data.pagination.totalPages);
+      setCustomersTotalPages(res.data.data.pagination.totalPages);
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to load event customers"
+      );
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEventCustomers();
+  }, [eventId, customersPage]);
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFB] relative">
@@ -519,7 +560,7 @@ export default function EditEventPage() {
               onClick={() => fileInputRef.current?.click()}
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white grid place-items-center shadow-lg hover:scale-105 transition-transform"
             >
-              <PencilLine color="#D19537" className="h-6 w-6"/>
+              <PencilLine color="#D19537" className="h-6 w-6" />
             </button>
 
             {/* Hidden File Input */}
@@ -562,13 +603,22 @@ export default function EditEventPage() {
                 <label className="block text-sm font-medium mb-2">
                   Location
                 </label>
-                <input
-                  type="text"
+
+                <select
                   value={eventLocation}
                   onChange={(e) => setEventLocation(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
-                />
+                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] 
+      bg-white dark:bg-[#101010] text-sm"
+                >
+                  <option value="">Select State</option>
+                  {US_STATES.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2">Date</label>
                 <div className="relative">
@@ -616,21 +666,6 @@ export default function EditEventPage() {
             </div>
           </div>
 
-          {/* Ticket Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 mb-6">
-            {/* Total Tickets */}
-            <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
-              <div className="text-sm font-medium mb-4">Total Tickets</div>
-              <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress
-                  value={eventData?.tickets?.length || 0}
-                  max={eventData?.tickets?.length || 1}
-                  color="#D19537"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Attendees Table */}
           <div className="rounded-xl overflow-hidden border border-[#F5EDE5]">
             {/* Table Header */}
@@ -647,67 +682,75 @@ export default function EditEventPage() {
             </div>
 
             {/* ⭐ PAGINATED DATA */}
-            {currentAttendees.map((attendee, idx) => (
-              <div
-                key={idx}
-                className="grid grid-cols-4 gap-18 sm:grid-cols-4 px-4 sm:px-6 py-4 text-sm border-t border-[#F5EDE5] bg-white dark:bg-[#101010]"
-              >
-                <div className="flex items-center gap-3 mb-2 sm:mb-0">
-                  <img
-                    src={attendee.avatar}
-                    alt={attendee.name}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                  <span className="font-medium">{attendee.name}</span>
-                </div>
-
-                <div className="text-gray-700 dark:text-white mr-6 sm:ml-[-36px] sm:flex sm:items-center">
-                  {attendee.email}
-                </div>
-
-                <div className="text-gray-700 dark:text-white ml-6 sm:ml-[-36px] sm:flex sm:items-center">
-                  {attendee.ticketId}
-                </div>
-
-                <div className="text-gray-700 dark:text-white sm:flex sm:items-center">
-                  {attendee.quantity}
-                </div>
+            {customersLoading ? (
+              <div className="p-6 text-center text-sm text-gray-500">
+                Loading attendees...
               </div>
-            ))}
+            ) : customers.length === 0 ? (
+              <div className="p-6 text-center text-sm text-gray-500">
+                No attendees found
+              </div>
+            ) : (
+              customers.map((attendee) => (
+                <div
+                  key={attendee.id}
+                  className="grid grid-cols-4 px-4 sm:px-6 py-4 text-sm border-t border-[#F5EDE5] bg-white dark:bg-[#101010]"
+                >
+                  {/* Name */}
+                  <div className="font-medium">{attendee.name}</div>
+
+                  {/* Email */}
+                  <div className="text-gray-700 dark:text-white break-all">
+                    {attendee.email}
+                  </div>
+
+                  {/* Ticket ID */}
+                  <div className="text-gray-700 dark:text-white">
+                    {attendee.ticketId}
+                  </div>
+
+                  {/* Quantity */}
+                  <div className="text-gray-700 dark:text-white">
+                    {attendee.quantity}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {customersTotalPages > 1 && (
             <div className="flex justify-center gap-2 mt-4 mb-6">
-              {/* Prev Button */}
               <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+                disabled={customersPage === 1}
+                onClick={() => setCustomersPage((p) => p - 1)}
+                className="px-4 py-2 border rounded-md disabled:opacity-40"
               >
                 Prev
               </button>
 
-              {/* Page Numbers */}
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`px-4 py-2 border rounded-md ${
-                    currentPage === i + 1
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "dark:border-gray-700 dark:bg-[#181818]"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              {Array.from({ length: customersTotalPages }, (_, i) => {
+                const pageNumber = i + 1;
 
-              {/* Next Button */}
+                return (
+                  <button
+                    key={`page-${pageNumber}`}
+                    onClick={() => setCustomersPage(pageNumber)}
+                    className={`px-4 py-2 border rounded-md ${
+                      customersPage === pageNumber
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : ""
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+
               <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="px-4 py-2 border rounded-md disabled:opacity-40 dark:border-gray-700"
+                disabled={customersPage === customersTotalPages}
+                onClick={() => setCustomersPage((p) => p + 1)}
+                className="px-4 py-2 border rounded-md disabled:opacity-40"
               >
                 Next
               </button>

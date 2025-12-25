@@ -66,11 +66,11 @@ export function Sidebar({ active = "Dashboard" }: { active?: string }) {
       icon: "/images/icons/12.png",
       href: "/completed-events",
     },
-    {
-      label: "Transfer Requests",
-      icon: "/images/icons/14.png",
-      href: "/transfer-requests",
-    },
+    // {
+    //   label: "Transfer Requests",
+    //   icon: "/images/icons/14.png",
+    //   href: "/transfer-requests",
+    // },
     {
       label: "System Settings",
       icon: "/images/icons/16.png",

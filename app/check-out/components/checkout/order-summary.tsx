@@ -237,56 +237,6 @@ export default function OrderSummary() {
   }, [eventId]);
 
   /* ─────────────── INITIATE PAYMENT ───────────────*/
-  // const handlePaymentInitiate = async () => {
-  //   if (!type) {
-  //     toast.error("Please select a ticket");
-  //     return;
-  //   }
-
-  //   if (qty < 1) {
-  //     toast.error("Quantity must be at least 1");
-  //     return;
-  //   }
-
-  //   const token = getToken();
-  //   if (!token) {
-  //     toast.error("You must be logged in");
-  //     return;
-  //   }
-
-  //   try {
-  //     // 1️⃣ get publishable key
-  //     const pubRes = await axios.get(
-  //       `${API_BASE_URL}/payments/config/publishable-key`
-  //     );
-  //     const publishableKey = pubRes.data.data.publishableKey;
-
-  //     if (!publishableKey) {
-  //       toast.error("Stripe key missing");
-  //       return;
-  //     }
-
-  //     setStripePromise(loadStripe(publishableKey));
-
-  //     // 2️⃣ initiate payment
-  //     const body = { ticketId: type, quantity: qty };
-
-  //     const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         "X-Tenant-ID": HOST_Tenant_ID,
-  //       },
-  //     });
-
-  //     const secret = res.data.data.clientSecret;
-  //     setClientSecret(secret);
-
-  //     toast.success("Payment session created");
-  //   } catch (err: any) {
-  //     toast.error(err?.response?.data?.message || "Payment failed");
-  //   }
-  // };
-
   const handlePaymentInitiate = async () => {
     if (!type) {
       toast.error("Please select a ticket");

@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "@/app/admin/components/sidebar";
-import { TenantEventsTable } from "../../admin/components/TenantEventsTable";
-import { EventRevenueModal } from "../../admin/components/EventRevenueModal";
+import { TenantEventsTable } from "../../../admin/components/TenantEventsTable";
+import { EventRevenueModal } from "../../../admin/components/EventRevenueModal";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import LogoutModal from "@/components/modals/LogoutModal";

@@ -29,67 +29,6 @@ type Buyer = {
   creditReason?: string; // ✅ ADD THIS
 };
 
-/* ─────────────────────────────────────────
-   MOCK BUYERS (TENANT USERS)
-   Replace later with GET /host/buyers
-───────────────────────────────────────── */
-// const mockBuyers: Buyer[] = [
-//   {
-//     id: "u1",
-//     name: "Daniel Carter",
-//     email: "daniel@gmail.com",
-//     phone: "+1 555 892 111",
-//     city: "Los Angeles",
-//     gender: "Male",
-//     creditBalance: 120,
-//   },
-//   {
-//     id: "u2",
-//     name: "Sarah Mitchell",
-//     email: "sarah@gmail.com",
-//     phone: "+1 555 892 222",
-//     city: "San Diego",
-//     gender: "Female",
-//     creditBalance: 0,
-//   },
-//   {
-//     id: "u3",
-//     name: "Emily Carter",
-//     email: "emily@gmail.com",
-//     phone: "+1 555 892 333",
-//     city: "New York",
-//     gender: "Female",
-//     creditBalance: 50,
-//   },
-//   {
-//     id: "u4",
-//     name: "Nathan Blake",
-//     email: "nathan@gmail.com",
-//     phone: "+1 555 892 444",
-//     city: "Chicago",
-//     gender: "Male",
-//     creditBalance: 0,
-//   },
-//   {
-//     id: "u5",
-//     name: "Nathan Blake",
-//     email: "nathan@gmail.com",
-//     phone: "+1 555 892 444",
-//     city: "Chicago",
-//     gender: "Male",
-//     creditBalance: 0,
-//   },
-//   {
-//     id: "u6",
-//     name: "Nathan Blake",
-//     email: "nathan@gmail.com",
-//     phone: "+1 555 892 444",
-//     city: "Chicago",
-//     gender: "Male",
-//     creditBalance: 0,
-//   },
-// ];
-
 export default function BuyersPage() {
   const { theme } = useTheme();
 
@@ -378,39 +317,6 @@ export default function BuyersPage() {
           {/* Right section */}
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
-              {/* Light/Dark toggle */}
-              {/* <Button
-                  onClick={() =>
-                    setTheme(resolvedTheme === "light" ? "dark" : "light")
-                  }
-                  variant="ghost"
-                  size="sm"
-                  className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
-                >
-                  {theme === "light" ? (
-                    <>
-                      <Moon className="h-4 w-4" /> Dark Mode
-                    </>
-                  ) : (
-                    <>
-                      <Sun className="h-4 w-4" /> Light Mode
-                    </>
-                  )}
-                </Button> */}
-
-              {/* Mobile toggle */}
-              {/* <button
-                  onClick={() =>
-                    setTheme(resolvedTheme === "light" ? "dark" : "light")
-                  }
-                  className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
-                >
-                  {theme === "light" ? (
-                    <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
-                  ) : (
-                    <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
-                  )}
-                </button> */}
               {/* Notification icon */}
               <div ref={notificationsRef} className="relative">
                 <button
@@ -824,15 +730,6 @@ export default function BuyersPage() {
         }}
       />
 
-      {/* <AddCreditModal
-        isOpen={showAddCreditModal}
-        onClose={() => setShowAddCreditModal(false)}
-        customer={selectedBuyer}
-        onSave={(data) => {
-          handleAddCredit(data);
-          setShowAddCreditModal(false);
-        }}
-      /> */}
       <AddCreditModal
         isOpen={showAddCreditModal}
         onClose={() => setShowAddCreditModal(false)}
