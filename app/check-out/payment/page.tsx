@@ -36,6 +36,7 @@ export default function PaymentSuccessPage() {
     ticketType: string;
     ticketPrice: string;
     ticketNumber: number;
+    ticketCode: string; // ✅ ADD
   }) => {
     const canvas = document.createElement("canvas");
     canvas.width = 1000;
@@ -96,6 +97,13 @@ export default function PaymentSuccessPage() {
     ctx.lineTo(650, canvas.height);
     ctx.stroke();
 
+    // ======================
+    // TICKET CODE
+    // ======================
+    ctx.font = "bold 18px Arial";
+    ctx.fillStyle = "#0f172a";
+    ctx.fillText(`Ticket Code: ${params.ticketCode}`, 40, 400);
+
     const qrImg = new window.Image();
     qrImg.src = params.qrDataUrl;
 
@@ -111,6 +119,16 @@ export default function PaymentSuccessPage() {
     ctx.font = "14px Arial";
     ctx.fillStyle = "#ffffff";
     ctx.fillText("Scan at Entry", 780, 405);
+
+    ctx.font = "bold 14px Arial";
+    ctx.fillStyle = "#0f172a";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      params.ticketCode,
+      830, // centered under QR
+      370
+    );
+    ctx.textAlign = "left";
 
     return canvas.toDataURL("image/png");
   };
@@ -257,6 +275,7 @@ export default function PaymentSuccessPage() {
             ticketType: meta.ticketType,
             ticketPrice: meta.price,
             ticketNumber: issued.ticketNumber,
+            ticketCode: meta.ticketCode, // ✅ PASS IT
           });
 
           const base64 = ticketImage.replace(/^data:image\/png;base64,/, "");

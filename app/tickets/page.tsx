@@ -10,6 +10,8 @@ import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 type TicketCardUI = {
   userTicketId: string;
@@ -23,6 +25,9 @@ type TicketCardUI = {
   price: string;
   highlight: boolean;
   ended: boolean;
+  // 🔥 NEW
+  status: "ACTIVE" | "USED";
+  verifiedAt?: string;
   isReceived: boolean;
   canTransfer: boolean;
   badge?: {
@@ -141,10 +146,10 @@ export default function Page() {
         const token = localStorage.getItem("buyerToken");
 
         if (!token) {
-
           toast({
             title: "Guest mode",
-            description: "Showing demo tickets. Please log in to see your tickets.",
+            description:
+              "Showing demo tickets. Please log in to see your tickets.",
           });
 
           setTickets([DUMMY_TICKET] as any);
@@ -186,6 +191,24 @@ export default function Page() {
           const transferMeta = tk.transferMetadata || null;
           const from = transferMeta?.transferredFrom || null;
 
+          const fullTickets = tk.fullTicketNumbers || [];
+
+          const usedCount = fullTickets.filter(
+            (t: any) => t.used === true
+          ).length;
+
+          const totalCount = fullTickets.length;
+
+          // ✅ Decide ticket status
+          let status: "ACTIVE" | "USED" = "ACTIVE";
+
+          if (usedCount === totalCount && totalCount > 0) {
+            status = "USED";
+          }
+
+          const verifiedAt =
+            status === "USED" ? new Date().toISOString() : undefined;
+
           const badge =
             isReceived && from
               ? {
@@ -208,6 +231,11 @@ export default function Page() {
             price: tk.price,
             highlight: !ev.ended,
             ended: !!ev.ended,
+
+            // 🔥 CORRECT STATUS
+            status,
+            verifiedAt,
+
             isReceived,
             canTransfer,
             badge,
@@ -277,7 +305,6 @@ export default function Page() {
       try {
         const token = getToken();
         if (!token) {
-
           toast({
             title: "Guest mode",
             description:
@@ -318,11 +345,19 @@ export default function Page() {
   }, []);
 
   const listForTab: TicketCardUI[] = useMemo(() => {
-    if (activeTab === "Transferred") return transferredCards;
-    if (activeTab === "Ended") return (tickets as any[]).filter((t) => t.ended);
     if (activeTab === "Active")
-      return (tickets as any[]).filter((t) => !t.ended);
-    return tickets as any[]; // (not used for refunded tab)
+      return (tickets as any[]).filter(
+        (t) => t.status === "ACTIVE" && !t.ended
+      );
+
+    if (activeTab === "Used")
+      return (tickets as any[]).filter((t) => t.status === "USED");
+
+    if (activeTab === "Ended") return (tickets as any[]).filter((t) => t.ended);
+
+    if (activeTab === "Transferred") return transferredCards;
+
+    return [];
   }, [activeTab, tickets, transferredCards]);
 
   const totalPages = Math.ceil(listForTab.length / ticketsPerPage);
@@ -349,7 +384,7 @@ export default function Page() {
 
         {/* Tabs */}
         <div className="mt-6 flex flex-wrap justify-center sm:justify-start gap-2">
-          {["Active", "Ended", "Transferred", "Refunded Requests"].map(
+          {["Active", "Used", "Ended", "Transferred", "Refunded Requests"].map(
             (tab) => (
               <button
                 key={tab}
@@ -470,6 +505,9 @@ export default function Page() {
                   canTransfer={t.canTransfer}
                   badge={t.badge}
                   transferredOut={t.transferredOut}
+                  /* 🔥 NEW */
+                  status={t.status} // "ACTIVE" | "USED"
+                  verifiedAt={t.verifiedAt} // optional ISO string
                 />
               ))}
             </div>
@@ -517,7 +555,7 @@ export default function Page() {
             Explore More Events
           </h2>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {exploreEvents?.length ? (
               exploreEvents
                 .slice(0, 2)
@@ -546,7 +584,25 @@ export default function Page() {
                 />
               </>
             )}
-          </div>
+          </div> */}
+
+          <Link href="/events">
+            <Button
+              className="
+      rounded-full
+      px-7 py-3
+      text-sm font-semibold
+      bg-[#0077F7]
+      text-white
+      hover:bg-[#0077F7]/90
+      active:scale-95
+      transition-all
+      shadow-md
+    "
+            >
+              Explore Events
+            </Button>
+          </Link>
         </section>
       </div>
 

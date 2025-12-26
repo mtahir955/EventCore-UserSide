@@ -39,6 +39,10 @@ type TicketProps = {
     email?: string;
   };
 
+  /* 🔥 NEW */
+  status: "ACTIVE" | "USED";
+  verifiedAt?: string;
+
   issuedTickets?: { id: string; ticketNumber: number }[];
   confirmationNumber?: string;
 };
@@ -59,12 +63,20 @@ export function TicketCard({
   canTransfer = true,
   transferredOut = false,
   badge,
+
+  /* 🔥 ADD THESE */
+  status,
+  verifiedAt,
+
   issuedTickets = [],
   confirmationNumber = "",
 }: TicketProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
+
+  const isUsed = status === "USED";
+  const isLocked = isUsed || ended;
 
   const { toast } = useToast();
 
@@ -76,12 +88,12 @@ export function TicketCard({
 
   const canDownload = useMemo(() => {
     return (
-      !ended &&
+      !isLocked &&
       !transferredOut &&
       issuedTickets.length > 0 &&
       !!confirmationNumber
     );
-  }, [ended, transferredOut, issuedTickets.length, confirmationNumber]);
+  }, [isLocked, transferredOut, issuedTickets.length, confirmationNumber]);
 
   const handleDownloadTickets = () => {
     if (!canDownload) {
@@ -100,8 +112,8 @@ export function TicketCard({
     });
   };
 
-  const showTransferActions = !ended && !transferredOut && !isReceived;
-  const transferDisabled = !canTransfer || quantity <= 0;
+  const showTransferActions = !isLocked && !transferredOut && !isReceived;
+  const transferDisabled = isLocked || !canTransfer || quantity <= 0;
 
   const submitRefundRequest = async (data: {
     reason: string;
@@ -212,6 +224,30 @@ export function TicketCard({
               <h3 className="text-[16px] sm:text-[20px] font-semibold">
                 {title}
               </h3>
+
+              {/* ✅ USED & VERIFIED BADGE — ADD HERE */}
+              {isUsed && (
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="
+          inline-flex items-center gap-1
+          w-fit
+          px-3 py-1 rounded-full
+          text-[11px] font-semibold
+          bg-green-100 text-green-800
+          dark:bg-green-900/30 dark:text-green-300
+        "
+                  >
+                    ✅ Used & Verified
+                  </span>
+
+                  {verifiedAt && (
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                      Verified on {new Date(verifiedAt).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-1 text-[13px] sm:text-[14px]">
                 <div className="flex items-center gap-2">
@@ -332,8 +368,18 @@ export function TicketCard({
               <span className="h-8 px-4 rounded-full text-[12px] bg-purple-600 text-white">
                 Transferred
               </span>
+            ) : isUsed ? (
+              <span
+                className="h-8 px-4 rounded-full text-[12px]
+    bg-green-600 text-white"
+              >
+                Used Ticket
+              </span>
             ) : ended ? (
-              <span className="h-8 px-4 rounded-full text-[12px] bg-gray-300 dark:bg-[#333] text-gray-700">
+              <span
+                className="h-8 px-4 rounded-full text-[12px]
+    bg-gray-300 dark:bg-[#333] text-gray-700"
+              >
                 Event Ended
               </span>
             ) : (

@@ -132,18 +132,20 @@ export default function BuyersPage() {
     fetchCustomers();
   }, [currentPage, searchQuery]);
 
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   /* ─────────────────────────────────────────
      CLICK OUTSIDE HANDLER
   ───────────────────────────────────────── */
   useEffect(() => {
     const handleClickOutside = (e: PointerEvent) => {
-      // ⛔ If modal open, do nothing
+      if (!openMenuId) return;
       if (showAddCreditModal) return;
 
-      // ✅ If click is INSIDE dropdown → do nothing
-      if (menuRef.current?.contains(e.target as Node)) return;
+      const currentMenu = menuRefs.current[openMenuId];
+      if (currentMenu && currentMenu.contains(e.target as Node)) {
+        return; // ✅ clicked inside menu
+      }
 
       setOpenMenuId(null);
       setShowNotifications(false);
@@ -153,7 +155,7 @@ export default function BuyersPage() {
     document.addEventListener("pointerdown", handleClickOutside);
     return () =>
       document.removeEventListener("pointerdown", handleClickOutside);
-  }, [showAddCreditModal]);
+  }, [openMenuId, showAddCreditModal]);
 
   const handleAddCredit = async (data: {
     amount: number;
@@ -308,7 +310,7 @@ export default function BuyersPage() {
       />
 
       {/* Main */}
-      <main className="flex-1 lg:ml-[250px] dark:bg-[#101010]">
+      <main className="flex-1 lg:ml-[238px] dark:bg-[#101010]">
         {/* Header */}
         <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
           <h1 className="text-[32px] font-semibold tracking-[-0.02em]">
@@ -460,7 +462,7 @@ export default function BuyersPage() {
         )}
 
         {/* Table */}
-        <div className="mx-4 sm:mx-8 bg-white dark:bg-[#101010] rounded-xl shadow-sm overflow-hidden">
+        <div className="mx-4 sm:mx-8 bg-white dark:bg-[#101010] rounded-xl shadow-sm">
           {/* DESKTOP HEADER */}
           <div
             className="
@@ -486,12 +488,14 @@ export default function BuyersPage() {
               <div
                 key={b.id}
                 className="
-        border-b
-        p-4 space-y-3
-        md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
-        md:px-6 md:py-4 md:space-y-0
-        hover:bg-gray-50 dark:hover:bg-gray-900
-      "
+    relative
+    overflow-visible
+    border-b
+    p-4 space-y-3
+    md:grid md:grid-cols-[280px_250px_200px_180px_120px_60px]
+    md:px-6 md:py-4 md:space-y-0
+    hover:bg-gray-50 dark:hover:bg-gray-900
+  "
               >
                 {/* NAME + MENU */}
                 <div className="flex items-center justify-between md:justify-start md:gap-3">
@@ -513,15 +517,17 @@ export default function BuyersPage() {
 
                     {openMenuId === b.id && (
                       <div
-                        ref={menuRef}
-                        className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-50"
+                        ref={(el) => {
+                          if (el) menuRefs.current[b.id] = el;
+                        }}
+                        className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-[9999]"
                         onPointerDown={(e) => e.stopPropagation()}
                       >
                         {/* ADD CREDIT */}
                         {!hasCredits && (
                           <button
                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            onPointerUp={(e) => {
+                            onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
 
@@ -540,7 +546,7 @@ export default function BuyersPage() {
                           <>
                             <button
                               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                              onPointerUp={(e) => {
+                              onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
 
@@ -555,7 +561,7 @@ export default function BuyersPage() {
 
                             <button
                               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                              onPointerUp={(e) => {
+                              onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
 
@@ -607,7 +613,9 @@ export default function BuyersPage() {
 
                   {openMenuId === b.id && (
                     <div
-                      ref={menuRef}
+                      ref={(el) => {
+                        if (el) menuRefs.current[b.id] = el;
+                      }}
                       className="absolute right-0 top-8 w-44 bg-white border rounded-lg shadow-lg z-50"
                       onPointerDown={(e) => e.stopPropagation()}
                     >

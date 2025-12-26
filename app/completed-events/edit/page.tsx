@@ -10,10 +10,16 @@ import { X, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import { useSearchParams } from "next/navigation";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 export default function EditEventPage() {
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -68,66 +74,73 @@ export default function EditEventPage() {
     },
   ];
 
-  const attendees = [
-    {
-      name: "Daniel Carter",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 2,
-      avatar: "/images/avatars/daniel-carter.png",
-    },
-    {
-      name: "Sarah Mitchell",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 4,
-      avatar: "/images/avatars/sarah-mitchell.png",
-    },
-    {
-      name: "Emily Carter",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 1,
-      avatar: "/images/avatars/emily-carter.png",
-    },
-    {
-      name: "Nathan Blake",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 2,
-      avatar: "/images/avatars/nathan-blake.png",
-    },
-    {
-      name: "Taylor Morgan",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 1,
-      avatar: "/images/avatars/taylor-morgan.png",
-    },
-    {
-      name: "Taylor Morgan",
-      email: "Info@gmail.com",
-      ticketId: "TCK-992134",
-      quantity: 1,
-      avatar: "/images/avatars/taylor-morgan.png",
-    },
-  ];
-
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [hostName, setHostName] = useState("Host");
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("id");
+
+  useEffect(() => {
+    if (!eventId) return;
+
+    const fetchEventDetails = async () => {
+      try {
+        const token = localStorage.getItem("hostToken");
+
+        const res = await fetch(`${API_BASE_URL}/events/${eventId}/details`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const json = await res.json();
+
+        if (json?.success) {
+          setEvent(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to load event details", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventDetails();
+  }, [eventId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading event details...
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Event not found
+      </div>
+    );
+  }
+
+  /* ================= SAFE DATA ================= */
+
+  const attendees = Array.isArray(event.attendees) ? event.attendees : [];
+
+  /* ================= PAGINATION ================= */
+
   const attendeesPerPage = 5;
 
-  // Calculate slice indexes
   const indexOfLast = currentPage * attendeesPerPage;
   const indexOfFirst = indexOfLast - attendeesPerPage;
 
-  // Current page attendees
   const currentAttendees = attendees.slice(indexOfFirst, indexOfLast);
-
-  // Total pages
   const totalPages = Math.ceil(attendees.length / attendeesPerPage);
 
   return (
@@ -316,9 +329,11 @@ export default function EditEventPage() {
           <div className="relative rounded-2xl overflow-hidden mb-6 h-[180px] sm:h-[200px]">
             {/* Event Banner */}
             <img
-              src={previewImage || "/images/event-banner.png"}
+              src={
+                previewImage || event.bannerImage || "/images/event-banner.png"
+              }
               alt="Event banner"
-              className="h-full w-full object-cover transition-all duration-300"
+              className="h-full w-full object-cover"
             />
 
             {/* Edit Button
@@ -361,8 +376,8 @@ export default function EditEventPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Starry Nights Music Fest"
-                className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                value={event.title}
+                className="w-full px-4 py-3 rounded-lg border"
               />
             </div>
 
@@ -373,16 +388,16 @@ export default function EditEventPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="California"
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                  value={event.location}
+                  className="w-full px-4 py-3 rounded-lg border"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Date</label>
                 <input
                   type="text"
-                  defaultValue="13/06/2025"
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                  value={event.startDate}
+                  className="w-full px-4 py-3 rounded-lg border"
                 />
               </div>
             </div>
@@ -394,8 +409,8 @@ export default function EditEventPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="08:00 PM"
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                  value={event.startTime}
+                  className="w-full px-4 py-3 rounded-lg border"
                 />
               </div>
               <div>
@@ -411,40 +426,13 @@ export default function EditEventPage() {
             </div>
           </div>
 
-          {/* Ticket Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            {/* Total Tickets */}
-            <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
-              <div className="text-sm font-medium mb-4">Total Tickets</div>
-              <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress value={120} max={120} color="#D19537" />
-              </div>
-            </div>
-
-            {/* Booked Tickets */}
-            <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
-              <div className="text-sm font-medium mb-4">Booked Tickets</div>
-              <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress value={91} max={120} color="#D19537" />
-              </div>
-            </div>
-
-            {/* Remaining Tickets */}
-            <div className="rounded-xl p-6 bg-white dark:bg-[#101010] border border-[#F5EDE5] text-center flex flex-col items-center justify-center">
-              <div className="text-sm font-medium mb-4">Remaining Tickets</div>
-              <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex items-center justify-center">
-                <CircularProgress value={29} max={120} color="#D19537" />
-              </div>
-            </div>
-          </div>
-
           {/* Attendees Table */}
           <div className="rounded-xl overflow-hidden border border-[#F5EDE5]">
             {/* Table Header */}
             <div className="flex sm:grid sm:grid-cols-4 px-6 py-4 text-sm font-semibold bg-[#F5EDE5] text-black">
               <div className="flex-1">Name</div>
               <div className="flex-1">Email</div>
-              <div className="flex-1">Ticket ID</div>
+              <div className="flex-1">Address</div>
               <div className="flex-1 text-right sm:text-left">Quantity</div>
             </div>
 
@@ -460,11 +448,6 @@ export default function EditEventPage() {
                 className="grid grid-cols-4 gap-18 sm:grid-cols-4 px-4 sm:px-6 py-4 text-sm border-t border-[#F5EDE5] bg-white dark:bg-[#101010]"
               >
                 <div className="flex items-center gap-3 mb-2 sm:mb-0">
-                  <img
-                    src={attendee.avatar}
-                    alt={attendee.name}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
                   <span className="font-medium">{attendee.name}</span>
                 </div>
 
@@ -473,7 +456,7 @@ export default function EditEventPage() {
                 </div>
 
                 <div className="text-gray-700 dark:text-white ml-6 sm:ml-[-36px] sm:flex sm:items-center">
-                  {attendee.ticketId}
+                  {attendee.address || "N/A"}
                 </div>
 
                 <div className="text-gray-700 dark:text-white sm:flex sm:items-center">

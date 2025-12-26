@@ -9,119 +9,36 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
-const attendees = [
-  {
-    id: 1,
-    name: "Daniel Carter",
-    avatar:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Group%20427326245-oVTfNgNqoEaWlr3G9Um3EioZtlScTJ.png",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 2,
-    status: "Remaining",
-  },
-  {
-    id: 2,
-    name: "Sarah Mitchell",
-    avatar: "/placeholder.svg?height=40&width=40",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 4,
-    status: "Checked In",
-  },
-  {
-    id: 3,
-    name: "Emily Carter",
-    avatar: "/placeholder.svg?height=40&width=40",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 1,
-    status: "Checked In",
-  },
-  {
-    id: 4,
-    name: "Nathan Blake",
-    avatar: "/placeholder.svg?height=40&width=40",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 2,
-    status: "Remaining",
-  },
-  {
-    id: 5,
-    name: "Taylor Morgan",
-    avatar: "/placeholder.svg?height=40&width=40",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 1,
-    status: "Remaining",
-  },
-  {
-    id: 6,
-    name: "Taylor Morgan",
-    avatar: "/placeholder.svg?height=40&width=40",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 2,
-    status: "Checked In",
-  },
-  {
-    id: 7,
-    name: "Daniel Carter",
-    avatar:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Group%20427326245-oVTfNgNqoEaWlr3G9Um3EioZtlScTJ.png",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 2,
-    status: "Remaining",
-  },
-  {
-    id: 8,
-    name: "Daniel Carter",
-    avatar:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Group%20427326245-oVTfNgNqoEaWlr3G9Um3EioZtlScTJ.png",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 4,
-    status: "Checked In",
-  },
-  {
-    id: 9,
-    name: "Sarah Mitchell",
-    avatar: "/placeholder.svg?height=40&width=40",
-    email: "Info@gmail.com",
-    ticketId: "TCK-992134",
-    address: "Washington DC, USA",
-    quantity: 1,
-    status: "Checked In",
-  },
-];
+// const attendees = [
+//   {
+//     id: 1,
+//     name: "Daniel Carter",
+//     email: "Info@gmail.com",
+//     ticketId: "TCK-992134",
+//     address: "Washington DC, USA",
+//     quantity: 2,
+//     checkedInCount: 1,
+//     remainingCount: 1,
+//   },
+//   {
+//     id: 2,
+//     name: "Sarah Mitchell",
+//     email: "Info@gmail.com",
+//     ticketId: "TCK-992135",
+//     address: "Washington DC, USA",
+//     quantity: 4,
+//     checkedInCount: 4,
+//     remainingCount: 0,
+//   },
+// ];
 
 export default function TicketCheck() {
-  const [selectedEvent, setSelectedEvent] = useState(
-    "Starry Nights Music Fest"
-  );
   const [ticketId, setTicketId] = useState("");
   const [showResult, setShowResult] = useState(true);
   const [showChecklist, setShowChecklist] = useState(false);
-
-  const totalTickets = attendees.reduce(
-    (sum, attendee) => sum + attendee.quantity,
-    0
-  );
-  const checkedIn = attendees
-    .filter((a) => a.status === "Checked In")
-    .reduce((sum, a) => sum + a.quantity, 0);
-  const remaining = totalTickets - checkedIn;
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -138,6 +55,23 @@ export default function TicketCheck() {
     { id: 2, message: "You sold 3 tickets for 'Lahore Music Fest'." },
     { id: 3, message: "New user message received." },
   ];
+
+  const [events, setEvents] = useState<any[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [showEventDropdown, setShowEventDropdown] = useState(false);
+  const eventDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState("");
+
+  const [summary, setSummary] = useState({
+    totalTickets: 0,
+    checkedIn: 0,
+    remaining: 0,
+  });
+
+  const [attendees, setAttendees] = useState<any[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   // Click outside handler
   useEffect(() => {
@@ -196,6 +130,126 @@ export default function TicketCheck() {
   const [resultType, setResultType] = useState<"success" | "invalid" | null>(
     null
   );
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const token = localStorage.getItem("hostToken");
+
+        const res = await fetch(`${API_BASE_URL}/events/ongoing-upcoming`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const json = await res.json();
+
+        if (json?.success) {
+          setEvents(json.data || []);
+          setSelectedEvent(json.data?.[0] || null); // auto-select first
+        }
+      } catch (error) {
+        console.error("Failed to load events", error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        eventDropdownRef.current &&
+        !eventDropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowEventDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const verifyTicket = async () => {
+    if (!ticketId.trim()) return;
+
+    try {
+      setIsVerifying(true);
+      setShowResult(false);
+
+      const token = localStorage.getItem("hostToken");
+
+      const res = await fetch(`${API_BASE_URL}/tickets/admin/mark-used`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Tenant-ID": HOST_Tenant_ID,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventId: selectedEvent?.id,
+          fullTicketNumber: ticketId.trim(),
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.ok && json?.success) {
+        setResultType("success");
+        setVerificationMessage(
+          json?.message || "Ticket verified & checked in successfully"
+        );
+      } else {
+        setResultType("invalid");
+        setVerificationMessage(
+          json?.message || "Invalid or already used ticket"
+        );
+      }
+
+      setShowResult(true);
+    } catch (error) {
+      console.error("Ticket verification failed", error);
+      setResultType("invalid");
+      setVerificationMessage("Verification failed. Try again.");
+      setShowResult(true);
+    } finally {
+      setIsVerifying(false);
+      setIsScanning(false);
+    }
+  };
+
+  const fetchEventSummary = async (eventId: string) => {
+    try {
+      setSummaryLoading(true);
+
+      const token = localStorage.getItem("hostToken");
+
+      const res = await fetch(
+        `${API_BASE_URL}/tickets/admin/event/${eventId}/summary`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const json = await res.json();
+
+      if (json?.success) {
+        setSummary(json.data.summary);
+        setAttendees(json.data.attendees || []);
+        setCurrentPage(1); // reset pagination
+      }
+    } catch (err) {
+      console.error("Failed to load event summary", err);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans">
@@ -363,7 +417,7 @@ export default function TicketCheck() {
           </header>
 
           {/* Bottom Divider Line */}
-        <div className="border-b border-gray-200 dark:border-gray-800"></div>
+          <div className="border-b border-gray-200 dark:border-gray-800"></div>
         </div>
 
         {/* ✅ Optional mobile navbar */}
@@ -388,9 +442,14 @@ export default function TicketCheck() {
             </div>
             <button
               className="view-checklist-btn"
-              onClick={() => setShowChecklist(!showChecklist)}
+              onClick={() => {
+                if (!showChecklist && selectedEvent?.id) {
+                  fetchEventSummary(selectedEvent.id); // 🔥 API CALL
+                }
+                setShowChecklist(!showChecklist);
+              }}
             >
-              {showChecklist ? "Back to Scanner" : "View Check List"}
+              {showChecklist ? "Back to Scanner" : "View Summary"}
             </button>
           </div>
 
@@ -443,7 +502,7 @@ export default function TicketCheck() {
 
                 {/* Event Selection and Manual Entry */}
                 <div className="verification-controls">
-                  <div className="event-dropdown">
+                  {/* <div className="event-dropdown">
                     <span className="event-dropdown-text">{selectedEvent}</span>
                     <Image
                       src="/images/chevron-down.png"
@@ -452,6 +511,50 @@ export default function TicketCheck() {
                       height={16}
                       className="chevron-icon"
                     />
+                  </div> */}
+
+                  <div
+                    ref={eventDropdownRef}
+                    className="relative w-full sm:w-[260px]"
+                  >
+                    <button
+                      onClick={() => setShowEventDropdown((p) => !p)}
+                      className="w-full flex justify-between items-center border rounded-xl px-4 py-3"
+                    >
+                      <span className="font-medium">
+                        {selectedEvent?.name || "Select Event"}
+                      </span>
+                      <span
+                        className={`transition-transform ${
+                          showEventDropdown ? "rotate-180" : ""
+                        }`}
+                      >
+                        ▲
+                      </span>
+                    </button>
+
+                    {showEventDropdown && (
+                      <div className="absolute z-50 mt-2 w-full bg-white dark:bg-[#101010] border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {events.length === 0 ? (
+                          <p className="p-3 text-sm text-gray-500">
+                            No events found
+                          </p>
+                        ) : (
+                          events.map((event) => (
+                            <button
+                              key={event.id}
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setShowEventDropdown(false);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#1f1f1f]"
+                            >
+                              {event.name}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="manual-entry">
@@ -472,21 +575,7 @@ export default function TicketCheck() {
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          const found = attendees.find(
-                            (a) =>
-                              a.ticketId.toLowerCase() ===
-                              ticketId.toLowerCase()
-                          );
-
-                          setIsScanning(false); // stop animation after checking
-
-                          if (found) {
-                            setResultType("success");
-                          } else {
-                            setResultType("invalid");
-                          }
-
-                          setShowResult(true);
+                          verifyTicket(); // 🔥 REAL BACKEND CHECK
                         }
                       }}
                       className="ticket-id-input"
@@ -567,8 +656,8 @@ export default function TicketCheck() {
                             >
                               Valid Ticket
                             </h3>
-                            <p className="result-details">
-                              {ticketId}, Valid Ticket
+                            <p className="text-[#3b3b3b] text-xl">
+                              {verificationMessage}
                             </p>
                           </>
                         )}
@@ -592,7 +681,13 @@ export default function TicketCheck() {
 
                     {/* Show check-in only if success */}
                     {resultType === "success" && (
-                      <button className="checkin-btn">Check-In</button>
+                      <button
+                        className="checkin-btn"
+                        onClick={verifyTicket}
+                        disabled={isVerifying}
+                      >
+                        {isVerifying ? "Verifying..." : "Check-In"}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -621,7 +716,7 @@ export default function TicketCheck() {
                       />
                     </div>
                     <div className="summary-info">
-                      <h3 className="summary-number">{totalTickets}</h3>
+                      <h3 className="summary-number">{summary.totalTickets}</h3>{" "}
                       <p className="summary-label">Total Tickets</p>
                     </div>
                   </div>
@@ -639,7 +734,7 @@ export default function TicketCheck() {
                       />
                     </div>
                     <div className="summary-info">
-                      <h3 className="summary-number">{checkedIn}</h3>
+                      <h3 className="summary-number">{summary.checkedIn}</h3>{" "}
                       <p className="summary-label">Checked-In</p>
                     </div>
                   </div>
@@ -657,7 +752,7 @@ export default function TicketCheck() {
                       />
                     </div>
                     <div className="summary-info">
-                      <h3 className="summary-number">{remaining}</h3>
+                      <h3 className="summary-number">{summary.remaining}</h3>
                       <p className="summary-label">Remaining</p>
                     </div>
                   </div>
@@ -671,7 +766,6 @@ export default function TicketCheck() {
                     <tr>
                       <th>Name</th>
                       <th>Email</th>
-                      <th>Ticket ID</th>
                       <th>Address</th>
                       <th>Quantity</th>
                       <th>Status</th>
@@ -683,32 +777,24 @@ export default function TicketCheck() {
                       <tr key={attendee.id}>
                         <td>
                           <div className="attendee-name-cell">
-                            <Image
-                              src={attendee.avatar || "/placeholder.svg"}
-                              alt={attendee.name}
-                              width={40}
-                              height={40}
-                              className="attendee-avatar"
-                            />
                             <span>{attendee.name}</span>
                           </div>
                         </td>
 
                         <td>{attendee.email}</td>
-                        <td>{attendee.ticketId}</td>
                         <td>{attendee.address}</td>
                         <td>{attendee.quantity}</td>
 
                         <td>
-                          <span
-                            className={`status-badge ${
-                              attendee.status === "Checked In"
-                                ? "status-checked"
-                                : "status-remaining"
-                            }`}
-                          >
-                            {attendee.status}
-                          </span>
+                          {attendee.remainingCount > 0 ? (
+                            <span className="status-badge status-remaining">
+                              Remaining ({attendee.remainingCount})
+                            </span>
+                          ) : (
+                            <span className="status-badge status-checked">
+                              Checked In
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
