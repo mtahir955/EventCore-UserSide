@@ -109,25 +109,6 @@ const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
         Change Password
       </button>
 
-      {/* 🔥 CREDIT APPLICATION WITH ENABLE/DISABLE BUTTON */}
-      <div className="space-y-2">
-        <h4 className="text-lg font-semibold">Credit Application</h4>
-
-        <div className="border rounded-xl bg-white dark:bg-[#181818] px-4 py-5 text-gray-900 dark:text-gray-100 leading-relaxed">
-          Credit application is currently{" "}
-          <span className="font-semibold">
-            {isCreditEnabled ? "enabled" : "disabled"}
-          </span>
-        </div>
-
-        <button
-          onClick={() => setIsCreditEnabled(!isCreditEnabled)}
-          className="px-4 py-2 border rounded-lg bg-[#D19537] text-white hover:bg-[#e2a64c] transition"
-        >
-          {isCreditEnabled ? "Disable" : "Enable"}
-        </button>
-      </div>
-
       {/* THEME SELECTOR */}
       <div className="space-y-2">
         <label>Theme</label>

@@ -57,6 +57,8 @@ export default function BuyersPage() {
 
   const [creditMode, setCreditMode] = useState<"add" | "update">("add");
 
+  const [isCreditSystemEnabled, setIsCreditSystemEnabled] = useState(false);
+
   /* ─────────────────────────────────────────
      AUTH CHECK
   ───────────────────────────────────────── */
@@ -69,6 +71,33 @@ export default function BuyersPage() {
 
     const user = JSON.parse(savedUser);
     setHostName(user.userName || user.fullName || "Host");
+  }, []);
+
+  useEffect(() => {
+    const fetchTenantFeatures = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        });
+
+        const creditEnabled =
+          res?.data?.data?.features?.creditSystem?.enabled === true;
+
+        setIsCreditSystemEnabled(creditEnabled);
+      } catch (err) {
+        console.error("Failed to load tenant features", err);
+        // ❗ Fail-safe: hide credit actions if feature fetch fails
+        setIsCreditSystemEnabled(false);
+      }
+    };
+
+    fetchTenantFeatures();
   }, []);
 
   /* ─────────────────────────────────────────
@@ -297,6 +326,12 @@ export default function BuyersPage() {
     }
   };
 
+  useEffect(() => {
+    if (!isCreditSystemEnabled) {
+      setOpenMenuId(null);
+    }
+  }, [isCreditSystemEnabled]);
+
   /* ─────────────────────────────────────────
      RENDER
   ───────────────────────────────────────── */
@@ -506,14 +541,16 @@ export default function BuyersPage() {
 
                   {/* MOBILE MENU */}
                   <div className="relative md:hidden">
-                    <button
-                      className="p-2 rounded-full hover:bg-gray-200"
-                      onClick={() =>
-                        setOpenMenuId(openMenuId === b.id ? null : b.id)
-                      }
-                    >
-                      ⋯
-                    </button>
+                    {isCreditSystemEnabled && (
+                      <button
+                        className="p-2 rounded-full hover:bg-gray-200"
+                        onClick={() =>
+                          setOpenMenuId(openMenuId === b.id ? null : b.id)
+                        }
+                      >
+                        ⋯
+                      </button>
+                    )}
 
                     {openMenuId === b.id && (
                       <div
@@ -602,14 +639,16 @@ export default function BuyersPage() {
 
                 {/* DESKTOP MENU */}
                 <div className="hidden md:flex justify-center relative">
-                  <button
-                    className="p-2 rounded-full hover:bg-gray-200"
-                    onClick={() =>
-                      setOpenMenuId(openMenuId === b.id ? null : b.id)
-                    }
-                  >
-                    ⋯
-                  </button>
+                  {isCreditSystemEnabled && (
+                    <button
+                      className="p-2 rounded-full hover:bg-gray-200"
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === b.id ? null : b.id)
+                      }
+                    >
+                      ⋯
+                    </button>
+                  )}
 
                   {openMenuId === b.id && (
                     <div

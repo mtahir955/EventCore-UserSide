@@ -96,10 +96,10 @@ export function TenantEventsTable({
             className="border-b border-border"
             style={{ background: "rgba(245, 237, 229, 1)" }}
           >
-            <th className="px-6 py-4 text-sm font-semibold">Event Name</th>
-            <th className="px-6 py-4 text-sm font-semibold">Date</th>
-            <th className="px-6 py-4 text-sm font-semibold">Location</th>
-            <th className="px-6 py-4 text-sm font-semibold">Status</th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Event Name</th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Date</th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Location</th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Status</th>
           </tr>
         </thead>
 

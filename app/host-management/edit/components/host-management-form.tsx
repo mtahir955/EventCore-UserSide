@@ -133,9 +133,10 @@ export default function HostManagementForm() {
         serviceFee: {
           enabled: basic.serviceFee,
           type: basic.serviceFeeType,
-          value: basic.serviceFeeValue,
+          value: Number(basic.serviceFeeValue),
           defaultHandling: basic.defaultFeeHandling,
         },
+
         allowTransfers: {
           enabled: basic.allowTransfers,
           maxMonths: basic.allowTransfers
@@ -143,25 +144,22 @@ export default function HostManagementForm() {
             : null,
         },
 
+        // ✅ CREDIT SYSTEM (ONLY TOGGLE)
         creditSystem: {
-          enabled: basic.creditAdjust,
-          minOrderEligibility: {
-            enabled: basic.minOrderEligibilityEnabled,
-            value: Number(basic.minOrderValue),
-          },
-          maxInstallments: {
-            enabled: basic.maxInstallmentsEnabled,
-            value: Number(basic.maxInstallments),
-          },
+          enabled: basic.creditAdjust ?? false,
         },
+
+        // ✅ PAYMENT PLANS (WITH MAX INSTALLMENTS)
         paymentPlans: {
-          enabled: basic.paymentPlans,
-          creditExpiry: {
-            enabled: basic.creditExpiryEnabled,
-            duration: Number(basic.creditExpiryValue),
-            unit: basic.creditExpiryUnit,
+          enabled: basic.paymentPlans ?? false,
+          maxInstallments: {
+            enabled: basic.maxInstallmentsEnabled ?? false,
+            value: basic.maxInstallmentsEnabled
+              ? Number(basic.maxInstallments)
+              : null,
           },
         },
+
         showLoginHelp: basic.showLoginHelp,
       },
 

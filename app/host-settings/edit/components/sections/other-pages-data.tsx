@@ -94,10 +94,13 @@ const OtherPagesDataSection = forwardRef(({ tenant }: any, ref) => {
         answer: f.answer.trim(),
       })),
 
-      termsAndConditions: terms.map((t) => ({
-        title: t.title.trim(),
-        description: t.description.trim(),
-      })),
+      // ✅ FIX: BACKEND EXPECTS STRING
+      termsAndConditions: JSON.stringify(
+        terms.map((t) => ({
+          title: t.title.trim(),
+          description: t.description.trim(),
+        }))
+      ),
     }),
   }));
 

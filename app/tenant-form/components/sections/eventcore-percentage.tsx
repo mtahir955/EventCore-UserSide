@@ -27,8 +27,13 @@ const EventcorePercentageSection = forwardRef<SectionRef>((_, ref) => {
   };
 
   // 📤 Expose data to parent
+  // const getData = () => ({
+  //   eventcorePercentage: percentage === "" ? null : Number(percentage),
+  // });
+
   const getData = () => ({
-    eventcorePercentage: percentage === "" ? null : Number(percentage),
+    eventcorePercentage:
+      percentage === "" ? null : Number(parseFloat(percentage).toFixed(2)),
   });
 
   useImperativeHandle(ref, () => ({
@@ -73,14 +78,26 @@ const EventcorePercentageSection = forwardRef<SectionRef>((_, ref) => {
 
         <div className="relative">
           <input
-            type="number"
-            min={0}
-            max={100}
-            step={0.1}
+            // type="number"
+            // min={0}
+            // max={100}
+            // step={1}
+            // value={percentage}
+            // onChange={(e) => {
+            //   setPercentage(e.target.value);
+            //   setError(false);
+            // }}
+            type="text" // ✅ IMPORTANT
+            inputMode="decimal"
             value={percentage}
             onChange={(e) => {
-              setPercentage(e.target.value);
-              setError(false);
+              const val = e.target.value;
+
+              // allow only numbers + 1 decimal
+              if (/^\d{0,3}(\.\d{0,2})?$/.test(val)) {
+                setPercentage(val);
+                setError(false);
+              }
             }}
             placeholder="e.g. 10"
             className="

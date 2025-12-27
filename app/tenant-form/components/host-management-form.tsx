@@ -147,29 +147,20 @@ export default function HostManagementForm() {
           : null,
       },
 
-      // Credit System
+      // Credit System (ONLY enable / disable)
       creditSystem: {
-        enabled: basic.creditAdjust,
-
-        minOrderEligibility: {
-          enabled: basic.minOrderEligibilityEnabled,
-          value: basic.minOrderValue || null,
-        },
-
-        maxInstallments: {
-          enabled: basic.maxInstallmentsEnabled,
-          value: basic.maxInstallments || null,
-        },
+        enabled: basic.creditAdjust ?? false,
       },
 
-      // Payment Plans
+      // Payment Plans (WITH max installments)
       paymentPlans: {
-        enabled: basic.paymentPlans,
+        enabled: basic.paymentPlans ?? false,
 
-        creditExpiry: {
-          enabled: basic.creditExpiryEnabled,
-          duration: basic.creditExpiryValue || null,
-          unit: basic.creditExpiryUnit || null,
+        maxInstallments: {
+          enabled: basic.maxInstallmentsEnabled ?? false,
+          value: basic.maxInstallmentsEnabled
+            ? String(basic.maxInstallments)
+            : null,
         },
       },
 

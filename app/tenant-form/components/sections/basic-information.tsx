@@ -543,109 +543,9 @@ const BasicInformationSection = forwardRef((props, ref) => {
             </span>
           </label>
 
-          {/* 🔽 Payment Plan Settings */}
-          {/* {formData.paymentPlans && (
-            <div className="ml-7 mt-3 space-y-4"> */}
-          {/* Credit Expiry Toggle */}
-          {/* <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.creditExpiryEnabled}
-                  onChange={(e) =>
-                    setFormData((p) => ({
-                      ...p,
-                      creditExpiryEnabled: e.target.checked,
-                      creditExpiryValue: e.target.checked
-                        ? p.creditExpiryValue
-                        : "",
-                    }))
-                  }
-                  className="accent-[#D19537]"
-                />
-                <span>Enable credit expiry</span>
-              </label> */}
-
-          {/* Expiry Fields */}
-          {/* {formData.creditExpiryEnabled && (
-                <div className="flex flex-col sm:flex-row gap-4 max-w-md"> */}
-          {/* Duration */}
-          {/* <input
-                    type="number"
-                    min={1}
-                    placeholder="e.g. 90"
-                    value={formData.creditExpiryValue}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        creditExpiryValue: e.target.value,
-                      }))
-                    }
-                    className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:ring-[#D19537]
-          bg-white dark:bg-[#101010]
-          border-gray-300 dark:border-gray-700"
-                  /> */}
-
-          {/* Unit */}
-          {/* <select
-                    value={formData.creditExpiryUnit}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        creditExpiryUnit: e.target.value,
-                      }))
-                    }
-                    className="w-full sm:w-1/2 px-4 py-2 border rounded-lg
-          bg-white dark:bg-[#101010]
-          border-gray-300 dark:border-gray-700"
-                  > */}
-          {/* <option value="days">Days</option> */}
-          {/* <option value="months">Months</option>
-                  </select>
-                </div>
-              )}
-            </div>
-          )} */}
-
-          {/* 🔽 Credit System Rules */}
           {/* 🔽 Payment Plan Rules */}
           {formData.paymentPlans && (
             <div className="ml-7 mt-3 space-y-4">
-              {/* Min Order Eligibility */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.minOrderEligibilityEnabled}
-                  onChange={(e) =>
-                    setFormData((p) => ({
-                      ...p,
-                      minOrderEligibilityEnabled: e.target.checked,
-                      minOrderValue: e.target.checked ? p.minOrderValue : "",
-                    }))
-                  }
-                  className="accent-[#D19537]"
-                />
-                <span>Min order value for eligibility</span>
-              </label>
-
-              {formData.minOrderEligibilityEnabled && (
-                <div className="max-w-xs">
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="Enter minimum order amount"
-                    value={formData.minOrderValue}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        minOrderValue: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-[#D19537]
-          bg-white dark:bg-[#101010]
-          border-gray-300 dark:border-gray-700"
-                  />
-                </div>
-              )}
 
               {/* Max Installments */}
               <label className="flex items-center gap-3 cursor-pointer">
@@ -688,7 +588,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
           border-gray-300 dark:border-gray-700"
                   />
                   <p className="text-xs text-gray-500">
-                    Maximum number of installments are 4
+                    Maximum number of installments are 3
                   </p>
                 </div>
               )}
