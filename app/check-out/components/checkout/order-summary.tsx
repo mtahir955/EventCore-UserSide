@@ -167,38 +167,76 @@ function StripeUnifiedPaymentForm({ clientSecret }: { clientSecret: string }) {
 
     setLoading(true);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/check-out/payment`,
-      },
-    });
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/check-out/payment`,
+        },
+      });
 
-    if (error) {
-      toast.error(error.message || "Payment failed");
-      setLoading(false);
-      return;
-    }
+      if (error) {
+        toast.error(error.message || "Payment failed");
+        setLoading(false);
+        return;
+      }
 
-    // For CARD → succeeds instantly
-    if (paymentIntent?.status === "succeeded") {
-      const token = getAuthToken();
-      await axios.post(
-        `${API_BASE_URL}/payments/confirm`,
-        { paymentIntentId: paymentIntent.id },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
+      // For CARD → succeeds instantly
+      if (paymentIntent?.status === "succeeded") {
+        const token = getAuthToken();
+        if (!token) {
+          toast.error("Authentication required. Please log in again.");
+          setLoading(false);
+          return;
         }
-      );
 
-      toast.success("Payment successful!");
-      window.location.href = "/check-out/payment";
+        try {
+          const confirmResponse = await axios.post(
+            `${API_BASE_URL}/payments/confirm`,
+            { paymentIntentId: paymentIntent.id },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "X-Tenant-ID": HOST_Tenant_ID,
+              },
+            }
+          );
+
+          // Store confirmed purchase for success page
+          localStorage.setItem(
+            "confirmedPurchase",
+            JSON.stringify(confirmResponse.data)
+          );
+
+          toast.success("Payment successful!");
+          window.location.href = "/check-out/payment";
+        } catch (error: any) {
+          console.error("Payment confirmation error:", error);
+          const errorMessage =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Payment succeeded but confirmation failed. Please contact support with payment ID: " +
+              paymentIntent.id;
+          toast.error(errorMessage);
+          // Don't redirect - let user retry or contact support
+          setLoading(false);
+          return;
+        }
+      } else if (!paymentIntent && !error) {
+        // Redirect is happening (PayPal, BNPL) - Stripe will handle redirect
+        toast.loading("Redirecting to payment provider...", { id: "redirect-payment" });
+        // Don't set loading to false - let redirect happen
+        return;
+      } else {
+        // Other status (processing, requires_action, etc.)
+        // These are handled by Stripe redirects automatically
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Payment error:", err);
+      toast.error(err?.message || "An unexpected error occurred during payment");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
