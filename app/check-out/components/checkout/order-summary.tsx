@@ -14,6 +14,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   CardElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -44,166 +45,275 @@ const getAuthToken = () => {
   return null;
 };
 
-type PaymentMode = "direct" | "installment";
-
 /* ─────────────────────────────────────────
-   STRIPE CARD PAYMENT COMPONENT
+   STRIPE CARD PAYMENT COMPONENT (DIRECT)
+   (Kept as-is for your working full payment)
 ──────────────────────────────────────────*/
 
-function StripePaymentForm({
-  clientSecret,
-  mode,
-  installmentPurchaseId,
-  setupIntentClientSecret,
-  enableAutoPay,
-}: {
-  clientSecret: string;
-  mode: PaymentMode;
-  installmentPurchaseId?: string;
-  setupIntentClientSecret?: string;
-  enableAutoPay?: boolean;
-}) {
+/* ─────────────────────────────────────────
+   STRIPE BNPL PAYMENT COMPONENT (PaymentElement)
+──────────────────────────────────────────*/
+// function StripeBNPLPaymentForm({ clientSecret }: any) {
+//   const stripe = useStripe();
+//   const elements = useElements();
+//   const [loading, setLoading] = useState(false);
+
+//   const handlePay = async () => {
+//     if (!stripe || !elements) return;
+
+//     setLoading(true);
+//     toast.loading("Redirecting to payment provider...", { id: "bnpl-pay" });
+
+//     try {
+//       const returnUrl = `${window.location.origin}/check-out/payment?bnpl_return=1`;
+
+//       const { error, paymentIntent } = await stripe.confirmPayment({
+//         elements,
+//         confirmParams: { return_url: returnUrl },
+//         redirect: "if_required",
+//       });
+
+//       if (error) {
+//         toast.error(error.message || "Payment failed", { id: "bnpl-pay" });
+//         setLoading(false);
+//         return;
+//       }
+
+//       // Some methods may confirm without redirect
+//       if (paymentIntent && paymentIntent.status === "succeeded") {
+//         toast.success("Payment Successful! 🎉", { id: "bnpl-pay" });
+
+//         // save paymentIntent
+//         localStorage.setItem(
+//           "lastPaymentResponse",
+//           JSON.stringify(paymentIntent)
+//         );
+
+//         // confirm with backend (same as card)
+//         try {
+//           const token = getAuthToken();
+//           if (!token) {
+//             toast.error("Auth token missing");
+//             setLoading(false);
+//             return;
+//           }
+
+//           const confirmRes = await axios.post(
+//             `${API_BASE_URL}/payments/confirm`,
+//             {
+//               paymentIntentId: paymentIntent.id,
+//               paymentResponse: paymentIntent,
+//             },
+//             {
+//               headers: {
+//                 Authorization: `Bearer ${token}`,
+//                 "X-Tenant-ID": HOST_Tenant_ID,
+//                 "Content-Type": "application/json",
+//               },
+//             }
+//           );
+
+//           localStorage.setItem(
+//             "confirmedPurchase",
+//             JSON.stringify(confirmRes.data)
+//           );
+//           toast.success("Payment confirmed!");
+
+//           setTimeout(() => {
+//             window.location.href = "/check-out/payment";
+//           }, 1200);
+//         } catch (err: any) {
+//           console.error("❌ BNPL confirm API error:", err);
+//           toast.error("Payment confirmed but backend failed.");
+//         }
+//       } else {
+//         // BNPL often redirects; user returns to return_url after approval.
+//         toast.success("Continue payment in provider window.", {
+//           id: "bnpl-pay",
+//         });
+//       }
+//     } catch (e: any) {
+//       toast.error(e?.message || "BNPL payment failed", { id: "bnpl-pay" });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="mt-4 space-y-4">
+//       <div className="border rounded-md p-3 bg-white text-black">
+//         <PaymentElement />
+//       </div>
+
+//       <Button
+//         onClick={handlePay}
+//         disabled={loading}
+//         className="w-full h-11 bg-blue-600 text-white rounded-lg"
+//       >
+//         {loading ? "Processing..." : "Pay Now"}
+//       </Button>
+//     </div>
+//   );
+// }
+
+function StripeUnifiedPaymentForm({ clientSecret }: { clientSecret: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
 
-  const handlePayment = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!stripe || !elements) return;
 
-    const card = elements.getElement(CardElement);
-    if (!card) return;
+    setLoading(true);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/check-out/payment`,
+      },
+    });
+
+    if (error) {
+      toast.error(error.message || "Payment failed");
+      setLoading(false);
+      return;
+    }
+
+    // For CARD → succeeds instantly
+    if (paymentIntent?.status === "succeeded") {
+      const token = getAuthToken();
+      await axios.post(
+        `${API_BASE_URL}/payments/confirm`,
+        { paymentIntentId: paymentIntent.id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
+
+      toast.success("Payment successful!");
+      window.location.href = "/check-out/payment";
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+      <PaymentElement />
+      <Button
+        type="submit"
+        disabled={!stripe || loading}
+        className="w-full h-11 bg-blue-600 text-white"
+      >
+        {loading ? "Processing..." : "Pay Now"}
+      </Button>
+    </form>
+  );
+}
+
+/* ─────────────────────────────────────────
+   INSTALLMENT PAYMENT COMPONENT (1st payment + confirm)
+──────────────────────────────────────────*/
+function StripeInstallmentPaymentForm({
+  clientSecret,
+  installmentPurchaseId,
+  setupIntentClientSecret,
+  enableAutoPay,
+}: any) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+
+  const handleInstallmentPay = async () => {
+    if (!stripe || !elements) return;
 
     setLoading(true);
-    toast.loading("Processing payment securely...", { id: "stripe-pay" });
+    toast.loading("Processing first installment...", { id: "inst-pay" });
 
     try {
-      // 1) Confirm payment (Direct or first installment payment)
-      const result = await stripe.confirmCardPayment(clientSecret, {
+      const card = elements.getElement(CardElement);
+      if (!card) {
+        toast.error("Card input missing", { id: "inst-pay" });
+        setLoading(false);
+        return;
+      }
+
+      // 1) Pay first installment via PaymentIntent clientSecret
+      const payRes = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card },
       });
 
-      if (result.error) {
-        toast.error(result.error.message || "Payment failed", {
-          id: "stripe-pay",
+      if (payRes.error) {
+        toast.error(payRes.error.message || "Installment payment failed", {
+          id: "inst-pay",
         });
         setLoading(false);
         return;
       }
 
-      if (result.paymentIntent?.status !== "succeeded") {
-        toast.error("Payment not completed. Please try again.", {
-          id: "stripe-pay",
-        });
+      const paymentIntent = payRes.paymentIntent;
+      if (!paymentIntent || paymentIntent.status !== "succeeded") {
+        toast.error("Installment payment not completed", { id: "inst-pay" });
         setLoading(false);
         return;
       }
 
-      toast.success("Payment Successful! 🎉", { id: "stripe-pay" });
-
-      const paymentIntent = result.paymentIntent;
-
-      // Save last stripe response (optional)
-      localStorage.setItem(
-        "lastPaymentResponse",
-        JSON.stringify(paymentIntent)
-      );
-
+      // 2) Confirm with backend installment confirm endpoint
       const token = getAuthToken();
       if (!token) {
-        toast.error("Auth token missing");
+        toast.error("Auth token missing", { id: "inst-pay" });
         setLoading(false);
         return;
       }
 
-      // 2) Confirm on backend based on mode
-      if (mode === "direct") {
-        // ✅ Direct confirm
-        const confirmRes = await axios.post(
-          `${API_BASE_URL}/payments/confirm`,
-          {
-            paymentIntentId: paymentIntent.id,
-            paymentResponse: paymentIntent,
+      await axios.post(
+        `${API_BASE_URL}/payments/installments/purchase/${installmentPurchaseId}/confirm`,
+        { stripePaymentIntentId: paymentIntent.id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
           },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        localStorage.setItem(
-          "confirmedPurchase",
-          JSON.stringify(confirmRes.data)
-        );
-        toast.success("Payment confirmed!");
-
-        setTimeout(() => {
-          window.location.href = "/check-out/payment";
-        }, 1200);
-      } else {
-        // ✅ Installment confirm (first installment)
-        if (!installmentPurchaseId) {
-          toast.error("Installment purchase id missing");
-          setLoading(false);
-          return;
         }
+      );
 
-        await axios.post(
-          `${API_BASE_URL}/payments/installments/purchase/${installmentPurchaseId}/confirm`,
+      // 3) Save card for auto-pay (optional) using SetupIntent
+      if (enableAutoPay && setupIntentClientSecret) {
+        const setupRes = await stripe.confirmCardSetup(
+          setupIntentClientSecret,
           {
-            stripePaymentIntentId: paymentIntent.id,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-              "Content-Type": "application/json",
-            },
+            payment_method: { card },
           }
         );
 
-        // 3) Optional: Save card for Auto-Pay using SetupIntent
-        if (enableAutoPay && setupIntentClientSecret) {
-          try {
-            const setupRes = await stripe.confirmCardSetup(
-              setupIntentClientSecret,
-              {
-                payment_method: {
-                  card,
-                },
-              }
-            );
-
-            if (setupRes.error) {
-              toast.error(
-                setupRes.error.message || "Card saving failed (Auto-Pay)",
-                { id: "auto-pay-setup" }
-              );
-            } else if (setupRes.setupIntent?.status === "succeeded") {
-              toast.success("Auto-Pay enabled (card saved) ✅", {
-                id: "auto-pay-setup",
-              });
-            }
-          } catch (e: any) {
-            toast.error("Auto-Pay setup failed", { id: "auto-pay-setup" });
-          }
+        if (setupRes.error) {
+          // We won't fail checkout if saving card fails; just inform.
+          toast.error(setupRes.error.message || "Card saving failed", {
+            id: "inst-pay",
+          });
         }
-
-        toast.success("Installment confirmed! Tickets will be issued.", {
-          id: "installment-confirm",
-        });
-
-        setTimeout(() => {
-          window.location.href = "/check-out/payment";
-        }, 1200);
       }
-    } catch (err: any) {
-      console.error("❌ Payment flow error:", err);
-      toast.error(err?.response?.data?.message || "Payment failed", {
-        id: "stripe-pay",
+
+      toast.success("First installment paid! Tickets issued 🎉", {
+        id: "inst-pay",
       });
+
+      setTimeout(() => {
+        window.location.href = "/check-out/payment";
+      }, 1200);
+    } catch (err: any) {
+      console.error("❌ Installment payment error:", err);
+      toast.error(
+        err?.response?.data?.message || "Installment payment failed",
+        {
+          id: "inst-pay",
+        }
+      );
     } finally {
       setLoading(false);
     }
@@ -214,21 +324,29 @@ function StripePaymentForm({
       <CardElement className="border rounded-md p-3 bg-white text-black" />
 
       <Button
-        onClick={handlePayment}
+        onClick={handleInstallmentPay}
         disabled={loading}
         className="w-full h-11 bg-blue-600 text-white rounded-lg"
       >
-        {loading
-          ? "Processing..."
-          : mode === "direct"
-          ? "Pay Now"
-          : "Pay First Installment"}
+        {loading ? "Processing..." : "Pay First Installment"}
       </Button>
     </div>
   );
 }
 
 const MAX_TICKETS_PER_ORDER = 10;
+
+type PaymentMode = "stripe" | "installment";
+
+// type PaymentMode = "card" | "bnpl" | "installment";
+// type BNPLProvider = "klarna" | "afterpay_clearpay" | "affirm";
+
+// type FullPaymentProvider =
+//   | "card"
+//   | "google_pay"
+//   | "apple_pay"
+//   | "paypal"
+//   | "link";
 
 /* ─────────────────────────────────────────
    MAIN ORDER SUMMARY PAGE
@@ -245,31 +363,33 @@ export default function OrderSummary() {
 
   const [initiatingPayment, setInitiatingPayment] = useState(false);
 
-  // Payment mode
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("direct");
-
-  // Installment plans
-  const [plans, setPlans] = useState<any[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
-
-  // Installment data returned from backend
-  const [installmentPurchaseId, setInstallmentPurchaseId] =
-    useState<string>("");
-  const [setupIntentClientSecret, setSetupIntentClientSecret] =
-    useState<string>("");
-  const [installmentSchedule, setInstallmentSchedule] = useState<any[]>([]);
-  const [enableAutoPay, setEnableAutoPay] = useState(true);
-
   const selectedTicket = tickets.find((t) => t.id === type);
   const price = selectedTicket ? selectedTicket.price : 0;
 
   const serviceFee = 3.75;
-
   const total = useMemo(() => price * qty + serviceFee, [price, qty]);
 
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState("");
+
+  // NEW: payment method support
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("stripe");
+
+  // const [availableMethods, setAvailableMethods] = useState<any[]>([]);
+  // const [bnplProvider, setBnplProvider] = useState<BNPLProvider>("klarna");
+
+  // const [fullPaymentProvider, setFullPaymentProvider] =
+  //   useState<FullPaymentProvider>("card");
+
+  const [installmentPlans, setInstallmentPlans] = useState<any[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  // Installment purchase details returned by backend
+  const [installmentPurchaseId, setInstallmentPurchaseId] =
+    useState<string>("");
+  const [setupIntentClientSecret, setSetupIntentClientSecret] =
+    useState<string>("");
+  const [enableAutoPay, setEnableAutoPay] = useState(true);
 
   const getToken = () => {
     if (typeof window === "undefined") return null;
@@ -323,51 +443,87 @@ export default function OrderSummary() {
       .catch(() => toast.error("Failed to load tickets"));
   }, [eventId]);
 
+  /* ─────────────── FETCH AVAILABLE PAYMENT METHODS ───────────────*/
+  // useEffect(() => {
+  //   if (!total) return;
+
+  //   axios
+  //     .get(`${API_BASE_URL}/payments/available-methods?amount=${total}`, {
+  //       headers: {
+  //         "X-Tenant-ID": HOST_Tenant_ID,
+  //       },
+  //     })
+  //     .then((res) => {
+  //       const methods = res.data?.data?.paymentMethods || [];
+  //       setAvailableMethods(methods);
+  //     })
+  //     .catch(() => {});
+  // }, [total]);
+
+  // const fullPaymentMethods = useMemo(
+  //   () => availableMethods.filter((m) => m.available && !m.minAmount),
+  //   [availableMethods]
+  // );
+
+  // const bnplPaymentMethods = useMemo(
+  //   () => availableMethods.filter((m) => m.available && m.minAmount),
+  //   [availableMethods]
+  // );
+
+  // const bnplAvailable = useMemo(() => {
+  //   return availableMethods?.some(
+  //     (m: any) =>
+  //       m.available &&
+  //       (m.type === "klarna" ||
+  //         m.type === "afterpay_clearpay" ||
+  //         m.type === "affirm")
+  //   );
+  // }, [availableMethods]);
+
+  // const allowedBnplProviders = useMemo(() => {
+  //   const allowed: BNPLProvider[] = [];
+  //   for (const m of availableMethods || []) {
+  //     if (!m?.available) continue;
+  //     if (m.type === "klarna") allowed.push("klarna");
+  //     if (m.type === "afterpay_clearpay") allowed.push("afterpay_clearpay");
+  //     if (m.type === "affirm") allowed.push("affirm");
+  //   }
+  //   return allowed;
+  // }, [availableMethods]);
+
+  // useEffect(() => {
+  //   // Keep a safe provider selected if availability changes
+  //   if (!allowedBnplProviders.includes(bnplProvider)) {
+  //     if (allowedBnplProviders.length > 0)
+  //       setBnplProvider(allowedBnplProviders[0]);
+  //   }
+  // }, [allowedBnplProviders, bnplProvider]);
+
   /* ─────────────── FETCH INSTALLMENT PLANS ───────────────*/
   useEffect(() => {
-    // Fetch plans once (public endpoint, requires tenant header)
-    const fetchPlans = async () => {
-      try {
-        setLoadingPlans(true);
-        const res = await axios.get(
-          `${API_BASE_URL}/payments/installments/plans`,
-          {
-            headers: {
-              "X-Tenant-ID": HOST_Tenant_ID,
-            },
-          }
-        );
+    axios
+      .get(`${API_BASE_URL}/payments/installments/plans`, {
+        headers: { "X-Tenant-ID": HOST_Tenant_ID },
+      })
+      .then((res) => {
+        const plans = res.data?.data || [];
+        setInstallmentPlans(plans);
 
-        const list = res.data?.data || [];
-        setPlans(Array.isArray(list) ? list : []);
-      } catch (e: any) {
-        // keep silent; installments just won't show
-        setPlans([]);
-      } finally {
-        setLoadingPlans(false);
-      }
-    };
-
-    fetchPlans();
+        // If plan defaults exist, pick default
+        const defaultPlan = plans.find((p: any) => p.isDefault);
+        if (defaultPlan?.id) setSelectedPlanId(defaultPlan.id);
+      })
+      .catch(() => {});
   }, []);
 
-  // If no plans available, force direct
-  useEffect(() => {
-    if (paymentMode === "installment" && plans.length === 0 && !loadingPlans) {
-      setPaymentMode("direct");
-      setSelectedPlanId("");
-    }
-  }, [paymentMode, plans, loadingPlans]);
-
-  // Reset Stripe session if user changes mode/plan
+  // Reset payment state when user switches mode / ticket / qty
   useEffect(() => {
     setClientSecret("");
     setInstallmentPurchaseId("");
     setSetupIntentClientSecret("");
-    setInstallmentSchedule([]);
-  }, [paymentMode, selectedPlanId]);
+  }, [paymentMode, type, qty]);
 
-  /* ─────────────── INITIATE PAYMENT ───────────────*/
+  /* ─────────────── INITIATE DIRECT / BNPL PAYMENT ───────────────*/
   const handlePaymentInitiate = async () => {
     if (!type) {
       toast.error("Please select a ticket");
@@ -386,7 +542,96 @@ export default function OrderSummary() {
       return;
     }
 
-    if (paymentMode === "installment" && !selectedPlanId) {
+    const token = getToken();
+    if (!token) {
+      toast.error("You must be logged in");
+      return;
+    }
+
+    if (paymentMode === "installment") {
+      toast.error("Please use installment button below");
+      return;
+    }
+
+    try {
+      setInitiatingPayment(true);
+
+      // 1) Get Stripe publishable key
+      const pubRes = await axios.get(
+        `${API_BASE_URL}/payments/config/publishable-key`,
+        {
+          headers: { "X-Tenant-ID": HOST_Tenant_ID },
+        }
+      );
+
+      const publishableKey = pubRes.data?.data?.publishableKey;
+
+      if (!publishableKey) {
+        toast.error("Stripe key missing");
+        return;
+      }
+
+      setStripePromise(loadStripe(publishableKey));
+
+      // 2) Initiate payment (ONLY required fields)
+      const body: any = {
+        ticketId: type,
+        quantity: qty,
+      };
+
+      // if (paymentMode === "card") {
+      //   body.paymentMethodType = fullPaymentProvider;
+      // }
+
+      // if (paymentMode === "bnpl") {
+      //   body.paymentMethodType = bnplProvider;
+      // }
+
+      const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Tenant-ID": HOST_Tenant_ID,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const secret = res.data?.data?.clientSecret;
+      if (!secret) {
+        toast.error("Client secret missing");
+        return;
+      }
+
+      setClientSecret(secret);
+      toast.success("Payment session created");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Payment initiation failed", {
+        id: "init-payment",
+      });
+    } finally {
+      setInitiatingPayment(false);
+    }
+  };
+
+  /* ─────────────── INITIATE INSTALLMENT PURCHASE ───────────────*/
+  const handleInstallmentInitiate = async () => {
+    if (!type) {
+      toast.error("Please select a ticket");
+      return;
+    }
+
+    if (qty < 1) {
+      toast.error("Quantity must be at least 1");
+      return;
+    }
+
+    if (qty > MAX_TICKETS_PER_ORDER) {
+      toast.error(
+        `Maximum ${MAX_TICKETS_PER_ORDER} tickets are allowed per purchase`
+      );
+      return;
+    }
+
+    if (!selectedPlanId) {
       toast.error("Please select an installment plan");
       return;
     }
@@ -402,8 +647,12 @@ export default function OrderSummary() {
 
       // 1) get publishable key
       const pubRes = await axios.get(
-        `${API_BASE_URL}/payments/config/publishable-key`
+        `${API_BASE_URL}/payments/config/publishable-key`,
+        {
+          headers: { "X-Tenant-ID": HOST_Tenant_ID },
+        }
       );
+
       const publishableKey = pubRes.data?.data?.publishableKey;
 
       if (!publishableKey) {
@@ -414,79 +663,53 @@ export default function OrderSummary() {
 
       setStripePromise(loadStripe(publishableKey));
 
-      // 2) initiate based on mode
-      if (paymentMode === "direct") {
-        const body = { ticketId: type, quantity: qty };
-
-        const res = await axios.post(
-          `${API_BASE_URL}/payments/initiate`,
-          body,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-            },
-          }
-        );
-
-        const secret = res.data?.data?.clientSecret;
-        if (!secret) {
-          toast.error("Client secret missing");
-          return;
-        }
-
-        setClientSecret(secret);
-        toast.success("Payment session created");
-      } else {
-        // Installment initiation
-        const body = {
+      // 2) initiate installment purchase
+      const res = await axios.post(
+        `${API_BASE_URL}/payments/installments/purchase`,
+        {
           ticketId: type,
           paymentPlanId: selectedPlanId,
           quantity: qty,
-          enableAutoPay,
-          // couponCode: "SAVE20", // optional
-        };
-
-        const res = await axios.post(
-          `${API_BASE_URL}/payments/installments/purchase`,
-          body,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const data = res.data?.data;
-        const secret = data?.clientSecret;
-        const ipId = data?.installmentPurchaseId;
-
-        if (!secret || !ipId) {
-          toast.error("Installment initiation failed (missing data)");
-          return;
+          enableAutoPay: enableAutoPay,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+            "Content-Type": "application/json",
+          },
         }
+      );
 
-        setInstallmentPurchaseId(ipId);
-        setClientSecret(secret);
-        setSetupIntentClientSecret(data?.setupIntentClientSecret || "");
-        setInstallmentSchedule(
-          Array.isArray(data?.schedule) ? data.schedule : []
-        );
+      const data = res.data?.data;
+      const secret = data?.clientSecret;
+      const ipId = data?.installmentPurchaseId;
+      const setiSecret = data?.setupIntentClientSecret;
 
-        toast.success("Installment plan initiated");
+      if (!secret || !ipId) {
+        toast.error("Installment initiation failed (missing response data)");
+        return;
       }
+
+      setClientSecret(secret);
+      setInstallmentPurchaseId(ipId);
+      setSetupIntentClientSecret(setiSecret || "");
+
+      // store info for future pages if needed
+      localStorage.setItem("lastInstallmentInit", JSON.stringify(data));
+
+      toast.success("Installment session created");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Payment initiation failed", {
-        id: "init-payment",
-      });
+      toast.error(
+        err?.response?.data?.message || "Installment initiation failed",
+        {
+          id: "init-installment",
+        }
+      );
     } finally {
       setInitiatingPayment(false);
     }
   };
-
-  const selectedPlan = plans.find((p) => p.id === selectedPlanId);
 
   return (
     <div className="min-h-screen bg-[#0077F71A] dark:bg-[#101010] rounded-2xl flex justify-center py-8 px-4">
@@ -498,7 +721,7 @@ export default function OrderSummary() {
           </div>
 
           <p className="text-lg font-medium">
-            {eventData?.title || (loadingEvent ? "Loading..." : "Event")}
+            {eventData?.title || "Loading..."}
           </p>
 
           <p className="text-sm text-gray-400 mt-2">
@@ -570,125 +793,6 @@ export default function OrderSummary() {
           </div>
         </div>
 
-        {/* PAYMENT MODE (Direct vs Installments) */}
-        <div className="rounded-[12px] border bg-white dark:bg-[#1a1a1a] p-4 space-y-3">
-          <p className="text-base font-semibold">Payment Method</p>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="radio"
-                name="paymentMode"
-                checked={paymentMode === "direct"}
-                onChange={() => setPaymentMode("direct")}
-              />
-              <span>Pay in Full</span>
-            </label>
-
-            <label
-              className={`flex items-center gap-3 cursor-pointer ${
-                plans.length === 0 ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="paymentMode"
-                checked={paymentMode === "installment"}
-                onChange={() => {
-                  if (plans.length === 0) return;
-                  setPaymentMode("installment");
-                }}
-                disabled={plans.length === 0}
-              />
-              <span>
-                Pay in Installments{" "}
-                {loadingPlans
-                  ? "(Loading plans...)"
-                  : plans.length === 0
-                  ? "(Not available)"
-                  : ""}
-              </span>
-            </label>
-          </div>
-
-          {/* Installment plan selection */}
-          {paymentMode === "installment" && plans.length > 0 && (
-            <div className="pt-2 space-y-3">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                Select Payment Plan
-              </p>
-
-              <div className="space-y-2">
-                {plans.map((plan: any) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => setSelectedPlanId(plan.id)}
-                    className={`w-full text-left rounded-lg border px-3 py-3 transition
-                      ${
-                        selectedPlanId === plan.id
-                          ? "border-blue-600 bg-blue-50 dark:bg-[#111827]"
-                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111]"
-                      }
-                    `}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {plan.name}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                          {plan.description}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">
-                          {plan.numInstallments} installments • Every{" "}
-                          {plan.intervalDays} days
-                        </p>
-                        {plan.interestType && plan.interestType !== "NONE" && (
-                          <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                            Interest: {plan.interestType} ({plan.interestValue})
-                          </p>
-                        )}
-                        {plan.allowEarlyPayoff && (
-                          <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                            Early payoff available
-                          </p>
-                        )}
-                      </div>
-
-                      {selectedPlanId === plan.id && (
-                        <span className="text-xs font-semibold text-blue-600">
-                          Selected
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                <input
-                  type="checkbox"
-                  checked={enableAutoPay}
-                  onChange={(e) => setEnableAutoPay(e.target.checked)}
-                />
-                Enable Auto-Pay for future installments
-              </label>
-
-              {selectedPlan && (
-                <div className="rounded-lg border bg-gray-50 dark:bg-[#111] p-3 text-sm text-gray-700 dark:text-gray-200">
-                  <p className="font-medium">
-                    Selected Plan: {selectedPlan.name}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                    {selectedPlan.description}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* ─────────────────────────────────────────
             CREDIT BALANCE CARD (DESIGN FROM IMAGE)
         ────────────────────────────────────────── */}
@@ -738,29 +842,158 @@ export default function OrderSummary() {
           </p>
         </div>
 
-        {/* Installment schedule preview (after initiation) */}
-        {paymentMode === "installment" && installmentSchedule.length > 0 && (
-          <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4">
-            <p className="font-semibold mb-2">Payment Schedule</p>
-            <div className="space-y-2">
-              {installmentSchedule.map((item: any) => (
-                <div
-                  key={item.installmentNumber}
-                  className="flex items-center justify-between text-sm border rounded-lg px-3 py-2 bg-gray-50 dark:bg-[#111]"
-                >
-                  <span className="font-medium">#{item.installmentNumber}</span>
-                  <span className="text-gray-600 dark:text-gray-300">
-                    {item.dueDate}
-                  </span>
-                  <span className="font-semibold">{item.totalAmount}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* ─────────────────────────────────────────
+            PAYMENT METHOD SELECTOR (NEW)
+        ────────────────────────────────────────── */}
+        {/* <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4 space-y-3">
+          <p className="font-medium">Choose Payment Method</p>
 
-        {/* INITIATE PAYMENT */}
-        {!clientSecret && (
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              checked={paymentMode === "card"}
+              onChange={() => setPaymentMode("card")}
+            />
+            <span>Pay in Full</span>
+          </label>
+
+          {paymentMode === "card" && (
+            <div className="pl-6"> */}
+        {/* <p className="text-sm text-gray-500 mb-1">
+                Select payment method
+              </p> */}
+
+        {/* <select
+                className="w-full border rounded-lg p-2 bg-white dark:bg-[#101010]"
+                value={fullPaymentProvider}
+                onChange={(e) =>
+                  setFullPaymentProvider(e.target.value as FullPaymentProvider)
+                }
+              >
+                {fullPaymentMethods.map((m) => (
+                  <option key={m.type} value={m.type}>
+                    {m.displayName}
+                  </option>
+                ))}
+              </select> */}
+        {/* </div>
+          )}
+
+          {bnplAvailable && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={paymentMode === "bnpl"}
+                  onChange={() => setPaymentMode("bnpl")}
+                />
+                <span>Buy Now, Pay Later (BNPL)</span>
+              </label>
+              {paymentMode === "bnpl" && (
+                <div className="pl-6"> */}
+        {/* <p className="text-sm text-gray-500 mb-1">
+                    Select BNPL provider
+                  </p> */}
+
+        {/* <select
+                    className="w-full border rounded-lg p-2 bg-white dark:bg-[#101010]"
+                    value={bnplProvider}
+                    onChange={(e) =>
+                      setBnplProvider(e.target.value as BNPLProvider)
+                    }
+                  >
+                    {bnplPaymentMethods.map((m) => (
+                      <option key={m.type} value={m.type}>
+                        {m.displayName}
+                      </option>
+                    ))}
+                  </select> */}
+        {/* </div>
+              )}
+            </div>
+          )}
+
+          {installmentPlans.length > 0 && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={paymentMode === "installment"}
+                  onChange={() => setPaymentMode("installment")}
+                />
+                <span>Pay in Installments</span>
+              </label>
+
+              {paymentMode === "installment" && (
+                <div className="pl-6 space-y-3">
+                  <p className="text-sm text-gray-500">
+                    Select Installment Plan
+                  </p>
+
+                  <select
+                    className="w-full border rounded-lg p-2 bg-white dark:bg-[#101010]"
+                    value={selectedPlanId || ""}
+                    onChange={(e) => setSelectedPlanId(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      Select a plan
+                    </option>
+                    {installmentPlans.map((plan: any) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} ({plan.numInstallments} payments)
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={enableAutoPay}
+                      onChange={(e) => setEnableAutoPay(e.target.checked)}
+                    />
+                    Enable Auto-Pay for future installments
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+        </div> */}
+
+        <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4 space-y-3">
+          <p className="font-medium">Payment Options</p>
+
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              checked={paymentMode === "stripe"}
+              onChange={() => setPaymentMode("stripe")}
+            />
+            <span>Pay Now (Card, Wallets, BNPL)</span>
+          </label>
+
+          {installmentPlans.length > 0 && (
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={paymentMode === "installment"}
+                onChange={() => setPaymentMode("installment")}
+              />
+              <span>Pay in Installments</span>
+            </label>
+          )}
+
+          {paymentMode === "stripe" && (
+            <p className="text-xs text-gray-500">
+              Available payment methods (Card, Apple Pay, Google Pay, PayPal,
+              BNPL) will appear automatically.
+            </p>
+          )}
+        </div>
+
+        {/* ─────────────────────────────────────────
+            INITIATE PAYMENT BUTTONS
+        ────────────────────────────────────────── */}
+        {!clientSecret && paymentMode !== "installment" && (
           <Button
             className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2"
             onClick={handlePaymentInitiate}
@@ -789,26 +1022,81 @@ export default function OrderSummary() {
                 </svg>
                 Initializing payment…
               </>
-            ) : paymentMode === "direct" ? (
-              "Continue to Payment"
             ) : (
-              "Continue to First Installment"
+              "Continue to Payment"
             )}
           </Button>
         )}
 
-        {/* STRIPE CARD FORM */}
-        {clientSecret && stripePromise && (
+        {!clientSecret && paymentMode === "installment" && (
+          <Button
+            className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2"
+            onClick={handleInstallmentInitiate}
+            disabled={initiatingPayment}
+          >
+            {initiatingPayment ? (
+              <>
+                <svg
+                  className="h-4 w-4 animate-spin text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                Initializing installment…
+              </>
+            ) : (
+              "Continue with Installments"
+            )}
+          </Button>
+        )}
+
+        {/* ─────────────────────────────────────────
+            STRIPE FORMS
+        ────────────────────────────────────────── */}
+        {/* {clientSecret && stripePromise && paymentMode === "card" && (
           <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <StripePaymentForm
-              clientSecret={clientSecret}
-              mode={paymentMode}
-              installmentPurchaseId={installmentPurchaseId || undefined}
-              setupIntentClientSecret={setupIntentClientSecret || undefined}
-              enableAutoPay={enableAutoPay}
-            />
+            <StripePaymentForm clientSecret={clientSecret} />
           </Elements>
         )}
+
+        {clientSecret && stripePromise && paymentMode === "bnpl" && (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <StripeBNPLPaymentForm clientSecret={clientSecret} />
+          </Elements>
+        )} */}
+
+        {clientSecret && stripePromise && paymentMode !== "installment" && (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <StripeUnifiedPaymentForm clientSecret={clientSecret} />
+          </Elements>
+        )}
+
+        {clientSecret &&
+          stripePromise &&
+          paymentMode === "installment" &&
+          installmentPurchaseId && (
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <StripeInstallmentPaymentForm
+                clientSecret={clientSecret}
+                installmentPurchaseId={installmentPurchaseId}
+                setupIntentClientSecret={setupIntentClientSecret}
+                enableAutoPay={enableAutoPay}
+              />
+            </Elements>
+          )}
       </div>
     </div>
   );

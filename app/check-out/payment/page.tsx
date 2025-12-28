@@ -26,6 +26,8 @@ export default function PaymentSuccessPage() {
   const [paymentData, setPaymentData] = useState<any>(null);
   const [ticketQrs, setTicketQrs] = useState<TicketQR[]>([]);
 
+  const [confirming, setConfirming] = useState(false);
+
   const generateTicketImage = async (params: {
     qrDataUrl: string;
     eventName: string;
@@ -148,8 +150,7 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const stored = localStorage.getItem("confirmedPurchase");
     if (stored) {
-      const parsed = JSON.parse(stored);
-      setPaymentData(parsed?.data);
+      setPaymentData(JSON.parse(stored)?.data);
     }
   }, []);
 
@@ -300,6 +301,45 @@ export default function PaymentSuccessPage() {
       alert("Failed to download tickets");
     }
   };
+
+  const confirmBnplPayment = async (paymentIntentId: string) => {
+    if (confirming) return; // ✅ guard
+    setConfirming(true);
+
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      const res = await axios.post(
+        `${API_BASE_URL}/payments/confirm`,
+        { paymentIntentId }, // ✅ ONLY this for BNPL
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
+
+      localStorage.setItem("confirmedPurchase", JSON.stringify(res.data));
+      setPaymentData(res.data.data);
+    } catch (err) {
+      console.error("BNPL confirm failed", err);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const paymentIntentId =
+      params.get("payment_intent") ||
+      params.get("payment_intent_client_secret");
+
+    // ✅ Stripe BNPL ALWAYS returns payment_intent
+    if (!paymentIntentId) return;
+
+    confirmBnplPayment(paymentIntentId);
+  }, []);
 
   return (
     <main className="bg-white text-black dark:bg-[#101010] dark:text-gray-100 transition-colors duration-300">
