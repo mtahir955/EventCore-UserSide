@@ -497,7 +497,7 @@ export default function BuyersPage() {
         )}
 
         {/* Table */}
-        <div className="mx-4 sm:mx-8 bg-white dark:bg-[#101010] rounded-xl shadow-sm">
+        <div className="mx-4 sm:mx-8 bg-white dark:bg-[#101010] rounded-xl shadow-sm overflow-x-auto">
           {/* DESKTOP HEADER */}
           <div
             className="
@@ -632,8 +632,12 @@ export default function BuyersPage() {
                 </div>
 
                 {/* DESKTOP COLUMNS */}
-                <div className="hidden md:block">{b.email}</div>
-                <div className="hidden md:block">{b.phone}</div>
+                <div className="hidden md:block break-all max-w-[250px]">
+                  {b.email}
+                </div>
+
+                <div className="hidden md:block break-words">{b.phone}</div>
+
                 <div className="hidden md:block">{b.city}</div>
                 <div className="hidden md:block">{b.gender}</div>
 

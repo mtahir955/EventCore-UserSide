@@ -509,6 +509,16 @@ export default function OrderSummary() {
     [price, qty, calculatedServiceFee]
   );
 
+  // ───────── BUYER CREDITS ─────────
+  const [creditPoints, setCreditPoints] = useState<number>(0);
+  const [creditUsd, setCreditUsd] = useState<number>(0);
+  const [creditExpiry, setCreditExpiry] = useState<string | null>(null);
+  const [creditCurrency, setCreditCurrency] = useState<string>("USD");
+  const [loadingCredits, setLoadingCredits] = useState(false);
+
+  // ✅ NEW: toggle for using credits
+  const [useCredits, setUseCredits] = useState<boolean>(false);
+
   const getToken = () => {
     if (typeof window === "undefined") return null;
     let raw =
@@ -529,6 +539,42 @@ export default function OrderSummary() {
   useEffect(() => {
     const token = getToken();
     setIsAuthenticated(!!token);
+  }, []);
+
+  /* ─────────────── FETCH BUYER CREDITS ───────────────*/
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+
+    const fetchBuyerCredits = async () => {
+      try {
+        setLoadingCredits(true);
+
+        const res = await axios.get(`${API_BASE_URL}/users/buyer/credits`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        });
+
+        const data = res?.data?.data;
+
+        setCreditPoints(Number(data?.balance || 0)); // points
+        setCreditUsd(Number(data?.usdEquivalent || 0)); // USD
+        setCreditExpiry(data?.earliestExpiry || null);
+        setCreditCurrency(data?.currency || "USD");
+      } catch (err) {
+        // Fail-safe
+        setCreditPoints(0);
+        setCreditUsd(0);
+        setCreditExpiry(null);
+        setCreditCurrency("USD");
+      } finally {
+        setLoadingCredits(false);
+      }
+    };
+
+    fetchBuyerCredits();
   }, []);
 
   /* ─────────────── FETCH EVENT ───────────────*/
@@ -718,6 +764,7 @@ export default function OrderSummary() {
       const body: any = {
         ticketId: type,
         quantity: qty,
+        useCredits: useCredits, // 👈 THIS IS THE KEY LINE
       };
 
       // ✅ Send serviceFee ONLY when included in subtotal
@@ -841,31 +888,76 @@ export default function OrderSummary() {
         </div>
 
         {/* ─────────────────────────────────────────
-            CREDIT BALANCE CARD (DESIGN FROM IMAGE)
-        ────────────────────────────────────────── */}
-        <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4 shadow-sm">
-          <div className="rounded-lg border bg-gray-50 dark:bg-[#111] p-4 mb-3">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-              Current Credit Balance:{" "}
+    CREDIT BALANCE CARD
+────────────────────────────────────────── */}
+        <div
+          className={`rounded-xl border p-4 shadow-sm cursor-pointer transition
+    ${
+      useCredits
+        ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+        : "bg-white dark:bg-[#1a1a1a]"
+    }`}
+          onClick={() => {
+            if (creditPoints > 0) {
+              setUseCredits((prev) => !prev);
+            }
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useCredits}
+                disabled={creditPoints === 0}
+                onChange={(e) => setUseCredits(e.target.checked)}
+              />
+              <span className="font-medium">Use Available Credits</span>
+            </div>
+
+            {useCredits && (
+              <span className="text-xs font-medium text-blue-600">Applied</span>
+            )}
+          </div>
+
+          <div className="rounded-lg border bg-gray-50 dark:bg-[#111] p-4 mb-3 space-y-2">
+            {/* POINTS */}
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between">
+              <span>Current Credit Points</span>
               <span className="font-semibold text-black dark:text-white">
-                $120.00
+                {loadingCredits ? "Loading..." : creditPoints.toLocaleString()}
               </span>
             </p>
 
-            <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-              Expires:{" "}
+            {/* USD */}
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between">
+              <span>USD Equivalent</span>
               <span className="font-semibold text-black dark:text-white">
-                12/30/2025
+                {loadingCredits
+                  ? "—"
+                  : new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: creditCurrency,
+                    }).format(creditUsd)}
+              </span>
+            </p>
+
+            {/* EXPIRY */}
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between">
+              <span>Expires On</span>
+              <span className="font-semibold text-black dark:text-white">
+                {creditPoints > 0 && creditExpiry
+                  ? new Date(creditExpiry).toLocaleDateString()
+                  : "N/A"}
               </span>
             </p>
           </div>
 
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Promo credit will expire on{" "}
-            <span className="font-semibold text-black dark:text-white">
-              12/30/2025
-            </span>
-            .
+            {creditPoints > 0
+              ? `Your promotional credits will expire on ${new Date(
+                  creditExpiry as string
+                ).toLocaleDateString()}.`
+              : "You currently have no promotional credits available."}
           </p>
         </div>
 
