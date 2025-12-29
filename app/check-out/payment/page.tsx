@@ -8,6 +8,7 @@ import { CalendarModal } from "../components/calendar-modal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import Link from "next/link";
 import axios from "axios";
+import toast from "react-hot-toast";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import JSZip from "jszip";
@@ -308,7 +309,11 @@ export default function PaymentSuccessPage() {
 
     try {
       const token = getToken();
-      if (!token) return;
+      if (!token) {
+        toast.error("Authentication required. Please log in again.");
+        setConfirming(false);
+        return;
+      }
 
       const res = await axios.post(
         `${API_BASE_URL}/payments/confirm`,
@@ -323,8 +328,16 @@ export default function PaymentSuccessPage() {
 
       localStorage.setItem("confirmedPurchase", JSON.stringify(res.data));
       setPaymentData(res.data.data);
-    } catch (err) {
+      toast.success("Payment confirmed successfully!");
+    } catch (err: any) {
       console.error("BNPL confirm failed", err);
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Payment confirmation failed. Please contact support with payment ID: " +
+          paymentIntentId;
+      toast.error(errorMessage);
+      setConfirming(false);
     }
   };
 
