@@ -156,7 +156,13 @@ const getAuthToken = () => {
 //   );
 // }
 
-function StripeUnifiedPaymentForm({ clientSecret }: { clientSecret: string }) {
+function StripeUnifiedPaymentForm({ 
+  clientSecret,
+  bnplMethods = []
+}: { 
+  clientSecret: string;
+  bnplMethods?: any[];
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -167,47 +173,118 @@ function StripeUnifiedPaymentForm({ clientSecret }: { clientSecret: string }) {
 
     setLoading(true);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/check-out/payment`,
-      },
-    });
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/check-out/payment`,
+        },
+      });
 
-    if (error) {
-      toast.error(error.message || "Payment failed");
-      setLoading(false);
-      return;
-    }
+      if (error) {
+        toast.error(error.message || "Payment failed");
+        setLoading(false);
+        return;
+      }
 
-    // For CARD → succeeds instantly
-    if (paymentIntent?.status === "succeeded") {
-      const token = getAuthToken();
-      await axios.post(
-        `${API_BASE_URL}/payments/confirm`,
-        { paymentIntentId: paymentIntent.id },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
+      // For CARD → succeeds instantly
+      if (paymentIntent?.status === "succeeded") {
+        const token = getAuthToken();
+        if (!token) {
+          toast.error("Authentication required. Please log in again.");
+          setLoading(false);
+          return;
         }
-      );
 
-      toast.success("Payment successful!");
-      window.location.href = "/check-out/payment";
+        try {
+          const confirmResponse = await axios.post(
+            `${API_BASE_URL}/payments/confirm`,
+            { paymentIntentId: paymentIntent.id },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "X-Tenant-ID": HOST_Tenant_ID,
+              },
+            }
+          );
+
+          // Store confirmed purchase for success page
+          localStorage.setItem(
+            "confirmedPurchase",
+            JSON.stringify(confirmResponse.data)
+          );
+
+          toast.success("Payment successful!");
+          window.location.href = "/check-out/payment";
+        } catch (error: any) {
+          console.error("Payment confirmation error:", error);
+          const errorMessage =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Payment succeeded but confirmation failed. Please contact support with payment ID: " +
+              paymentIntent.id;
+          toast.error(errorMessage);
+          // Don't redirect - let user retry or contact support
+          setLoading(false);
+          return;
+        }
+      } else if (!paymentIntent && !error) {
+        // Redirect is happening (PayPal, BNPL) - Stripe will handle redirect
+        toast.loading("Redirecting to payment provider...", { id: "redirect-payment" });
+        // Don't set loading to false - let redirect happen
+        return;
+      } else {
+        // Other status (processing, requires_action, etc.)
+        // These are handled by Stripe redirects automatically
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Payment error:", err);
+      toast.error(err?.message || "An unexpected error occurred during payment");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-      <PaymentElement />
+      <div className="space-y-3">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Select your payment method below. BNPL options will appear if available for your order and country.
+        </p>
+        <div className="border rounded-lg p-4 bg-white dark:bg-[#1a1a1a]">
+          <PaymentElement 
+            options={{
+              layout: 'accordion', // Expandable accordion layout - shows more methods
+              defaultValues: {
+                billingDetails: {
+                  address: {
+                    country: 'US', // Default, will be auto-detected
+                  },
+                },
+              },
+              fields: {
+                billingDetails: {
+                  address: {
+                    country: 'auto', // Auto-detect country
+                  },
+                },
+              },
+              // Show all available payment methods
+              paymentMethodOrder: undefined, // Let Stripe decide based on availability
+            }}
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Click on payment methods to expand and see more options. After submission, you will be redirected to securely complete next steps.
+        </p>
+      </div>
       <Button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full h-11 bg-blue-600 text-white"
+        className="w-full h-11 bg-blue-600 text-white rounded-lg"
       >
         {loading ? "Processing..." : "Pay Now"}
       </Button>
@@ -336,7 +413,7 @@ function StripeInstallmentPaymentForm({
 
 const MAX_TICKETS_PER_ORDER = 10;
 
-type PaymentMode = "stripe" | "installment";
+type PaymentMode = "stripe";
 
 // type PaymentMode = "card" | "bnpl" | "installment";
 // type BNPLProvider = "klarna" | "afterpay_clearpay" | "affirm";
@@ -381,15 +458,10 @@ export default function OrderSummary() {
   // const [fullPaymentProvider, setFullPaymentProvider] =
   //   useState<FullPaymentProvider>("card");
 
-  const [installmentPlans, setInstallmentPlans] = useState<any[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-
-  // Installment purchase details returned by backend
-  const [installmentPurchaseId, setInstallmentPurchaseId] =
-    useState<string>("");
-  const [setupIntentClientSecret, setSetupIntentClientSecret] =
-    useState<string>("");
-  const [enableAutoPay, setEnableAutoPay] = useState(true);
+  // Stripe BNPL options (Klarna, Afterpay, Affirm) - from Stripe dashboard
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<any[]>([]);
+  const [bnplMethods, setBnplMethods] = useState<any[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const getToken = () => {
     if (typeof window === "undefined") return null;
@@ -406,6 +478,12 @@ export default function OrderSummary() {
       return raw;
     }
   };
+
+  // Check authentication status
+  useEffect(() => {
+    const token = getToken();
+    setIsAuthenticated(!!token);
+  }, []);
 
   /* ─────────────── FETCH EVENT ───────────────*/
   useEffect(() => {
@@ -443,22 +521,42 @@ export default function OrderSummary() {
       .catch(() => toast.error("Failed to load tickets"));
   }, [eventId]);
 
-  /* ─────────────── FETCH AVAILABLE PAYMENT METHODS ───────────────*/
-  // useEffect(() => {
-  //   if (!total) return;
+  /* ─────────────── FETCH AVAILABLE PAYMENT METHODS (Stripe BNPL) ───────────────*/
+  useEffect(() => {
+    if (!total || total <= 0) return;
 
-  //   axios
-  //     .get(`${API_BASE_URL}/payments/available-methods?amount=${total}`, {
-  //       headers: {
-  //         "X-Tenant-ID": HOST_Tenant_ID,
-  //       },
-  //     })
-  //     .then((res) => {
-  //       const methods = res.data?.data?.paymentMethods || [];
-  //       setAvailableMethods(methods);
-  //     })
-  //     .catch(() => {});
-  // }, [total]);
+    // Try to detect country from browser or use default
+    // You can also get this from user profile or IP geolocation
+    const userCountry = navigator.language?.split('-')[1]?.toUpperCase() || 'US';
+    
+    console.log('🔄 Fetching Stripe payment methods for amount:', total, 'country:', userCountry);
+    
+    axios
+      .get(`${API_BASE_URL}/payments/available-methods?amount=${total}&country=${userCountry}`, {
+        headers: {
+          "X-Tenant-ID": HOST_Tenant_ID,
+        },
+      })
+      .then((res) => {
+        const methods = res.data?.data?.paymentMethods || res.data?.paymentMethods || [];
+        console.log('✅ Available payment methods:', methods);
+        
+        setAvailablePaymentMethods(methods);
+        
+        // Filter BNPL methods (Klarna, Afterpay, Affirm) - only show available ones
+        const bnpl = methods.filter((m: any) => 
+          m.available && 
+          (m.type === 'klarna' || m.type === 'afterpay_clearpay' || m.type === 'affirm')
+        );
+        console.log('📦 BNPL methods available:', bnpl);
+        setBnplMethods(bnpl);
+      })
+      .catch((err) => {
+        console.error('❌ Failed to fetch payment methods:', err);
+        setAvailablePaymentMethods([]);
+        setBnplMethods([]);
+      });
+  }, [total]);
 
   // const fullPaymentMethods = useMemo(
   //   () => availableMethods.filter((m) => m.available && !m.minAmount),
@@ -499,32 +597,24 @@ export default function OrderSummary() {
   //   }
   // }, [allowedBnplProviders, bnplProvider]);
 
-  /* ─────────────── FETCH INSTALLMENT PLANS ───────────────*/
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/payments/installments/plans`, {
-        headers: { "X-Tenant-ID": HOST_Tenant_ID },
-      })
-      .then((res) => {
-        const plans = res.data?.data || [];
-        setInstallmentPlans(plans);
-
-        // If plan defaults exist, pick default
-        const defaultPlan = plans.find((p: any) => p.isDefault);
-        if (defaultPlan?.id) setSelectedPlanId(defaultPlan.id);
-      })
-      .catch(() => {});
-  }, []);
 
   // Reset payment state when user switches mode / ticket / qty
   useEffect(() => {
     setClientSecret("");
-    setInstallmentPurchaseId("");
-    setSetupIntentClientSecret("");
   }, [paymentMode, type, qty]);
 
   /* ─────────────── INITIATE DIRECT / BNPL PAYMENT ───────────────*/
   const handlePaymentInitiate = async () => {
+    const token = getToken();
+    if (!token) {
+      toast.error("You must be logged in to proceed with payment. Please sign in first.");
+      // Redirect to sign-in page after a short delay
+      setTimeout(() => {
+        window.location.href = "/sign-up";
+      }, 2000);
+      return;
+    }
+
     if (!type) {
       toast.error("Please select a ticket");
       return;
@@ -542,16 +632,6 @@ export default function OrderSummary() {
       return;
     }
 
-    const token = getToken();
-    if (!token) {
-      toast.error("You must be logged in");
-      return;
-    }
-
-    if (paymentMode === "installment") {
-      toast.error("Please use installment button below");
-      return;
-    }
 
     try {
       setInitiatingPayment(true);
@@ -612,104 +692,6 @@ export default function OrderSummary() {
     }
   };
 
-  /* ─────────────── INITIATE INSTALLMENT PURCHASE ───────────────*/
-  const handleInstallmentInitiate = async () => {
-    if (!type) {
-      toast.error("Please select a ticket");
-      return;
-    }
-
-    if (qty < 1) {
-      toast.error("Quantity must be at least 1");
-      return;
-    }
-
-    if (qty > MAX_TICKETS_PER_ORDER) {
-      toast.error(
-        `Maximum ${MAX_TICKETS_PER_ORDER} tickets are allowed per purchase`
-      );
-      return;
-    }
-
-    if (!selectedPlanId) {
-      toast.error("Please select an installment plan");
-      return;
-    }
-
-    const token = getToken();
-    if (!token) {
-      toast.error("You must be logged in");
-      return;
-    }
-
-    try {
-      setInitiatingPayment(true);
-
-      // 1) get publishable key
-      const pubRes = await axios.get(
-        `${API_BASE_URL}/payments/config/publishable-key`,
-        {
-          headers: { "X-Tenant-ID": HOST_Tenant_ID },
-        }
-      );
-
-      const publishableKey = pubRes.data?.data?.publishableKey;
-
-      if (!publishableKey) {
-        toast.error("Stripe key missing");
-        setInitiatingPayment(false);
-        return;
-      }
-
-      setStripePromise(loadStripe(publishableKey));
-
-      // 2) initiate installment purchase
-      const res = await axios.post(
-        `${API_BASE_URL}/payments/installments/purchase`,
-        {
-          ticketId: type,
-          paymentPlanId: selectedPlanId,
-          quantity: qty,
-          enableAutoPay: enableAutoPay,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = res.data?.data;
-      const secret = data?.clientSecret;
-      const ipId = data?.installmentPurchaseId;
-      const setiSecret = data?.setupIntentClientSecret;
-
-      if (!secret || !ipId) {
-        toast.error("Installment initiation failed (missing response data)");
-        return;
-      }
-
-      setClientSecret(secret);
-      setInstallmentPurchaseId(ipId);
-      setSetupIntentClientSecret(setiSecret || "");
-
-      // store info for future pages if needed
-      localStorage.setItem("lastInstallmentInit", JSON.stringify(data));
-
-      toast.success("Installment session created");
-    } catch (err: any) {
-      toast.error(
-        err?.response?.data?.message || "Installment initiation failed",
-        {
-          id: "init-installment",
-        }
-      );
-    } finally {
-      setInitiatingPayment(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0077F71A] dark:bg-[#101010] rounded-2xl flex justify-center py-8 px-4">
@@ -971,19 +953,39 @@ export default function OrderSummary() {
             <span>Pay Now (Card, Wallets, BNPL)</span>
           </label>
 
-          {installmentPlans.length > 0 && (
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={paymentMode === "installment"}
-                onChange={() => setPaymentMode("installment")}
-              />
-              <span>Pay in Installments</span>
-            </label>
+          {/* Show BNPL options from Stripe */}
+          {bnplMethods.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Buy Now, Pay Later Options:
+              </p>
+              <div className="space-y-2 pl-4">
+                {bnplMethods.map((method: any) => (
+                  <div key={method.type} className="flex items-center gap-2 text-sm">
+                    {method.logoUrl && (
+                      <img 
+                        src={method.logoUrl} 
+                        alt={method.displayName}
+                        className="h-6 w-auto"
+                      />
+                    )}
+                    <span>{method.displayName}</span>
+                    {method.description && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        - {method.description}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 pl-4">
+                BNPL options (Klarna, Afterpay, Affirm) will appear automatically in the payment form when you proceed.
+              </p>
+            </div>
           )}
 
           {paymentMode === "stripe" && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Available payment methods (Card, Apple Pay, Google Pay, PayPal,
               BNPL) will appear automatically.
             </p>
@@ -991,13 +993,41 @@ export default function OrderSummary() {
         </div>
 
         {/* ─────────────────────────────────────────
+            AUTHENTICATION WARNING
+        ────────────────────────────────────────── */}
+        {!isAuthenticated && (
+          <div className="rounded-xl border border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+              ⚠️ Login Required
+            </p>
+            <p className="text-xs text-yellow-700 dark:text-yellow-300">
+              You must be logged in to proceed with payment. Please{" "}
+              <a
+                href="/sign-up"
+                className="underline font-medium hover:text-yellow-900 dark:hover:text-yellow-100"
+              >
+                sign in
+              </a>{" "}
+              or{" "}
+              <a
+                href="/sign-up"
+                className="underline font-medium hover:text-yellow-900 dark:hover:text-yellow-100"
+              >
+                create an account
+              </a>{" "}
+              to continue.
+            </p>
+          </div>
+        )}
+
+        {/* ─────────────────────────────────────────
             INITIATE PAYMENT BUTTONS
         ────────────────────────────────────────── */}
         {!clientSecret && paymentMode !== "installment" && (
           <Button
-            className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2"
+            className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handlePaymentInitiate}
-            disabled={initiatingPayment}
+            disabled={initiatingPayment || !isAuthenticated}
           >
             {initiatingPayment ? (
               <>
@@ -1022,46 +1052,14 @@ export default function OrderSummary() {
                 </svg>
                 Initializing payment…
               </>
+            ) : !isAuthenticated ? (
+              "Please Sign In to Continue"
             ) : (
               "Continue to Payment"
             )}
           </Button>
         )}
 
-        {!clientSecret && paymentMode === "installment" && (
-          <Button
-            className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2"
-            onClick={handleInstallmentInitiate}
-            disabled={initiatingPayment}
-          >
-            {initiatingPayment ? (
-              <>
-                <svg
-                  className="h-4 w-4 animate-spin text-white"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                  />
-                </svg>
-                Initializing installment…
-              </>
-            ) : (
-              "Continue with Installments"
-            )}
-          </Button>
-        )}
 
         {/* ─────────────────────────────────────────
             STRIPE FORMS
@@ -1078,25 +1076,20 @@ export default function OrderSummary() {
           </Elements>
         )} */}
 
-        {clientSecret && stripePromise && paymentMode !== "installment" && (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <StripeUnifiedPaymentForm clientSecret={clientSecret} />
+        {clientSecret && stripePromise && (
+          <Elements 
+            stripe={stripePromise} 
+            options={{ 
+              clientSecret,
+              appearance: {
+                theme: 'stripe',
+              },
+            }}
+          >
+            <StripeUnifiedPaymentForm clientSecret={clientSecret} bnplMethods={bnplMethods} />
           </Elements>
         )}
 
-        {clientSecret &&
-          stripePromise &&
-          paymentMode === "installment" &&
-          installmentPurchaseId && (
-            <Elements stripe={stripePromise} options={{ clientSecret }}>
-              <StripeInstallmentPaymentForm
-                clientSecret={clientSecret}
-                installmentPurchaseId={installmentPurchaseId}
-                setupIntentClientSecret={setupIntentClientSecret}
-                enableAutoPay={enableAutoPay}
-              />
-            </Elements>
-          )}
       </div>
     </div>
   );
