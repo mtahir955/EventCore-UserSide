@@ -45,37 +45,35 @@ export default function Header({ title }: { title: string }) {
   }, []);
 
   const { resolvedTheme, theme, setTheme } = useTheme();
+
   const [staffName, setStaffName] = useState("Staff");
 
   useEffect(() => {
-    // Wait for client to mount (important in Next.js)
     if (typeof window === "undefined") return;
 
     const raw = localStorage.getItem("staffUser");
 
-    // If missing OR empty → redirect
-    if (!raw || raw === "undefined" || raw === "") {
-      console.warn("No valid staff session found.");
-      return; // ❗ DO NOT REDIRECT IMMEDIATELY
-    }
-
-    let user = null;
-
-    try {
-      user = JSON.parse(raw);
-    } catch (err) {
-      console.error("Invalid staffUser JSON:", err);
-      return; // ❗ DO NOT REDIRECT IMMEDIATELY
-    }
-
-    // If parsed but not a valid object → stop
-    if (!user || typeof user !== "object") {
-      console.warn("Invalid user data");
+    // 🔐 Guard against invalid values
+    if (!raw || raw === "undefined" || raw === "null") {
+      setStaffName("Staff");
       return;
     }
 
-    // SUCCESS → Set staff name
-    setStaffName(user.userName || user.fullName || "Staff");
+    try {
+      const user = JSON.parse(raw);
+
+      const name =
+        user?.fullName ||
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+        user?.userName ||
+        user?.email ||
+        "Staff";
+
+      setStaffName(name);
+    } catch (err) {
+      console.error("Invalid staffUser JSON", err);
+      setStaffName("Staff");
+    }
   }, []);
 
   return (

@@ -87,8 +87,14 @@ export default function EventSettingsPageInline({
       const updated = {
         ...existing,
         eventSettings: {
-          passFee,
-          absorbFee,
+          serviceFee: {
+            enabled: serviceFeeEnabled,
+            handling: passFee
+              ? "PASS_TO_BUYER"
+              : absorbFee
+              ? "ABSORB_TO_HOST"
+              : null,
+          },
         },
       };
 

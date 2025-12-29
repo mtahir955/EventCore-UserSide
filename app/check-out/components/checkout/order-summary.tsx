@@ -156,10 +156,10 @@ const getAuthToken = () => {
 //   );
 // }
 
-function StripeUnifiedPaymentForm({ 
+function StripeUnifiedPaymentForm({
   clientSecret,
-  bnplMethods = []
-}: { 
+  bnplMethods = [],
+}: {
   clientSecret: string;
   bnplMethods?: any[];
 }) {
@@ -230,7 +230,9 @@ function StripeUnifiedPaymentForm({
         }
       } else if (!paymentIntent && !error) {
         // Redirect is happening (PayPal, BNPL) - Stripe will handle redirect
-        toast.loading("Redirecting to payment provider...", { id: "redirect-payment" });
+        toast.loading("Redirecting to payment provider...", {
+          id: "redirect-payment",
+        });
         // Don't set loading to false - let redirect happen
         return;
       } else {
@@ -240,7 +242,9 @@ function StripeUnifiedPaymentForm({
       }
     } catch (err: any) {
       console.error("Payment error:", err);
-      toast.error(err?.message || "An unexpected error occurred during payment");
+      toast.error(
+        err?.message || "An unexpected error occurred during payment"
+      );
       setLoading(false);
     }
   };
@@ -249,23 +253,24 @@ function StripeUnifiedPaymentForm({
     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
       <div className="space-y-3">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Select your payment method below. BNPL options will appear if available for your order and country.
+          Select your payment method below. BNPL options will appear if
+          available for your order and country.
         </p>
         <div className="border rounded-lg p-4 bg-white dark:bg-[#1a1a1a]">
-          <PaymentElement 
+          <PaymentElement
             options={{
-              layout: 'accordion', // Expandable accordion layout - shows more methods
+              layout: "accordion", // Expandable accordion layout - shows more methods
               defaultValues: {
                 billingDetails: {
                   address: {
-                    country: 'US', // Default, will be auto-detected
+                    country: "US", // Default, will be auto-detected
                   },
                 },
               },
               fields: {
                 billingDetails: {
                   address: {
-                    country: 'auto', // Auto-detect country
+                    country: "auto", // Auto-detect country
                   },
                 },
               },
@@ -275,10 +280,21 @@ function StripeUnifiedPaymentForm({
           />
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
-          Click on payment methods to expand and see more options. After submission, you will be redirected to securely complete next steps.
+          Click on payment methods to expand and see more options. After
+          submission, you will be redirected to securely complete next steps.
         </p>
       </div>
       <Button
@@ -443,8 +459,8 @@ export default function OrderSummary() {
   const selectedTicket = tickets.find((t) => t.id === type);
   const price = selectedTicket ? selectedTicket.price : 0;
 
-  const serviceFee = 3.75;
-  const total = useMemo(() => price * qty + serviceFee, [price, qty]);
+  // const serviceFee = 3.75;
+  // const total = useMemo(() => price * qty + serviceFee, [price, qty]);
 
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState("");
@@ -459,9 +475,39 @@ export default function OrderSummary() {
   //   useState<FullPaymentProvider>("card");
 
   // Stripe BNPL options (Klarna, Afterpay, Affirm) - from Stripe dashboard
-  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<any[]>([]);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<any[]>(
+    []
+  );
   const [bnplMethods, setBnplMethods] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // ───────── SERVICE FEE DERIVED STATE ─────────
+  const serviceFeeConfig = eventData?.features?.serviceFee;
+  const serviceFeeHandling = eventData?.eventSettings?.serviceFee?.handling;
+
+  // Show service fee ONLY when PASS_TO_BUYER
+  const showServiceFee =
+    serviceFeeHandling === "PASS_TO_BUYER" && serviceFeeConfig?.enabled;
+
+  // Calculate service fee dynamically
+  const calculatedServiceFee = useMemo(() => {
+    if (!showServiceFee || !serviceFeeConfig) return 0;
+
+    if (serviceFeeConfig.type === "flat") {
+      return serviceFeeConfig.value;
+    }
+
+    if (serviceFeeConfig.type === "percentage") {
+      return (price * qty * serviceFeeConfig.value) / 100;
+    }
+
+    return 0;
+  }, [showServiceFee, serviceFeeConfig, price, qty]);
+
+  const total = useMemo(
+    () => price * qty + calculatedServiceFee,
+    [price, qty, calculatedServiceFee]
+  );
 
   const getToken = () => {
     if (typeof window === "undefined") return null;
@@ -527,32 +573,45 @@ export default function OrderSummary() {
 
     // Try to detect country from browser or use default
     // You can also get this from user profile or IP geolocation
-    const userCountry = navigator.language?.split('-')[1]?.toUpperCase() || 'US';
-    
-    console.log('🔄 Fetching Stripe payment methods for amount:', total, 'country:', userCountry);
-    
+    const userCountry =
+      navigator.language?.split("-")[1]?.toUpperCase() || "US";
+
+    console.log(
+      "🔄 Fetching Stripe payment methods for amount:",
+      total,
+      "country:",
+      userCountry
+    );
+
     axios
-      .get(`${API_BASE_URL}/payments/available-methods?amount=${total}&country=${userCountry}`, {
-        headers: {
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      })
+      .get(
+        `${API_BASE_URL}/payments/available-methods?amount=${total}&country=${userCountry}`,
+        {
+          headers: {
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      )
       .then((res) => {
-        const methods = res.data?.data?.paymentMethods || res.data?.paymentMethods || [];
-        console.log('✅ Available payment methods:', methods);
-        
+        const methods =
+          res.data?.data?.paymentMethods || res.data?.paymentMethods || [];
+        console.log("✅ Available payment methods:", methods);
+
         setAvailablePaymentMethods(methods);
-        
+
         // Filter BNPL methods (Klarna, Afterpay, Affirm) - only show available ones
-        const bnpl = methods.filter((m: any) => 
-          m.available && 
-          (m.type === 'klarna' || m.type === 'afterpay_clearpay' || m.type === 'affirm')
+        const bnpl = methods.filter(
+          (m: any) =>
+            m.available &&
+            (m.type === "klarna" ||
+              m.type === "afterpay_clearpay" ||
+              m.type === "affirm")
         );
-        console.log('📦 BNPL methods available:', bnpl);
+        console.log("📦 BNPL methods available:", bnpl);
         setBnplMethods(bnpl);
       })
       .catch((err) => {
-        console.error('❌ Failed to fetch payment methods:', err);
+        console.error("❌ Failed to fetch payment methods:", err);
         setAvailablePaymentMethods([]);
         setBnplMethods([]);
       });
@@ -597,17 +656,20 @@ export default function OrderSummary() {
   //   }
   // }, [allowedBnplProviders, bnplProvider]);
 
-
   // Reset payment state when user switches mode / ticket / qty
   useEffect(() => {
     setClientSecret("");
   }, [paymentMode, type, qty]);
 
+  const shouldSendServiceFee = showServiceFee && calculatedServiceFee > 0;
+
   /* ─────────────── INITIATE DIRECT / BNPL PAYMENT ───────────────*/
   const handlePaymentInitiate = async () => {
     const token = getToken();
     if (!token) {
-      toast.error("You must be logged in to proceed with payment. Please sign in first.");
+      toast.error(
+        "You must be logged in to proceed with payment. Please sign in first."
+      );
       // Redirect to sign-in page after a short delay
       setTimeout(() => {
         window.location.href = "/sign-up";
@@ -631,7 +693,6 @@ export default function OrderSummary() {
       );
       return;
     }
-
 
     try {
       setInitiatingPayment(true);
@@ -658,6 +719,11 @@ export default function OrderSummary() {
         ticketId: type,
         quantity: qty,
       };
+
+      // ✅ Send serviceFee ONLY when included in subtotal
+      if (shouldSendServiceFee) {
+        body.serviceFee = Number(calculatedServiceFee.toFixed(2));
+      }
 
       // if (paymentMode === "card") {
       //   body.paymentMethodType = fullPaymentProvider;
@@ -691,7 +757,6 @@ export default function OrderSummary() {
       setInitiatingPayment(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-[#0077F71A] dark:bg-[#101010] rounded-2xl flex justify-center py-8 px-4">
@@ -811,10 +876,19 @@ export default function OrderSummary() {
             <span>{formatter.format(price * qty)}</span>
           </p>
 
-          <p className="flex justify-between mt-1">
-            <span>Service Fee:</span>
-            <span>{formatter.format(serviceFee)}</span>
-          </p>
+          {/* SERVICE FEE — ONLY WHEN PASS_TO_BUYER */}
+          {showServiceFee && (
+            <p className="flex justify-between mt-1">
+              <span>
+                Service Fee{" "}
+                {serviceFeeConfig?.type === "percentage"
+                  ? `(${serviceFeeConfig.value}%)`
+                  : ""}
+                :
+              </span>
+              <span>{formatter.format(calculatedServiceFee)}</span>
+            </p>
+          )}
 
           <hr className="my-2" />
 
@@ -950,21 +1024,24 @@ export default function OrderSummary() {
               checked={paymentMode === "stripe"}
               onChange={() => setPaymentMode("stripe")}
             />
-            <span>Pay Now (Card, Wallets, BNPL)</span>
+            <span>Pay Now (Card, Wallets Or Buy Now Pay Later)</span>
           </label>
 
           {/* Show BNPL options from Stripe */}
-          {bnplMethods.length > 0 && (
+          {/* {bnplMethods.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Buy Now, Pay Later Options:
               </p>
               <div className="space-y-2 pl-4">
                 {bnplMethods.map((method: any) => (
-                  <div key={method.type} className="flex items-center gap-2 text-sm">
+                  <div
+                    key={method.type}
+                    className="flex items-center gap-2 text-sm"
+                  >
                     {method.logoUrl && (
-                      <img 
-                        src={method.logoUrl} 
+                      <img
+                        src={method.logoUrl}
                         alt={method.displayName}
                         className="h-6 w-auto"
                       />
@@ -979,17 +1056,18 @@ export default function OrderSummary() {
                 ))}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 pl-4">
-                BNPL options (Klarna, Afterpay, Affirm) will appear automatically in the payment form when you proceed.
+                BNPL options (Klarna, Afterpay, Affirm) will appear
+                automatically in the payment form when you proceed.
               </p>
             </div>
-          )}
+          )} */}
 
-          {paymentMode === "stripe" && (
+          {/* {paymentMode === "stripe" && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Available payment methods (Card, Apple Pay, Google Pay, PayPal,
               BNPL) will appear automatically.
             </p>
-          )}
+          )} */}
         </div>
 
         {/* ─────────────────────────────────────────
@@ -1060,7 +1138,6 @@ export default function OrderSummary() {
           </Button>
         )}
 
-
         {/* ─────────────────────────────────────────
             STRIPE FORMS
         ────────────────────────────────────────── */}
@@ -1077,19 +1154,21 @@ export default function OrderSummary() {
         )} */}
 
         {clientSecret && stripePromise && (
-          <Elements 
-            stripe={stripePromise} 
-            options={{ 
+          <Elements
+            stripe={stripePromise}
+            options={{
               clientSecret,
               appearance: {
-                theme: 'stripe',
+                theme: "stripe",
               },
             }}
           >
-            <StripeUnifiedPaymentForm clientSecret={clientSecret} bnplMethods={bnplMethods} />
+            <StripeUnifiedPaymentForm
+              clientSecret={clientSecret}
+              bnplMethods={bnplMethods}
+            />
           </Elements>
         )}
-
       </div>
     </div>
   );

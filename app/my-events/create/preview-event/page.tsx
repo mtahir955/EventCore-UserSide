@@ -64,6 +64,20 @@ export default function PreviewEventPage({
       formData.append("endTime", draft.details.endTime || "");
       formData.append("eventLocation", draft.details.eventLocation || "");
 
+      /* ================= EVENT SETTINGS ================= */
+
+      if (draft.eventSettings) {
+        formData.append(
+          "eventSettings",
+          JSON.stringify({
+            serviceFee: {
+              enabled: Boolean(draft.eventSettings?.serviceFee?.enabled),
+              handling: draft.eventSettings?.serviceFee?.handling || null,
+            },
+          })
+        );
+      }
+
       const dataURLtoFile = (dataUrl: string, filename: string): File => {
         const arr = dataUrl.split(",");
         const mimeMatch = arr[0].match(/:(.*?);/);

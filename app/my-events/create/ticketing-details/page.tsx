@@ -312,25 +312,73 @@ export default function TicketingDetailsPage({
               </div>
             )}
 
-            <button
-              onClick={handleAddTicket}
-              className="h-12 px-8 rounded-xl bg-[#D19537] text-white font-semibold"
-            >
-              Add Ticket
-            </button>
+            {/* Add Ticket Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleAddTicket}
+                className="h-10 sm:h-12 px-6 sm:px-8 rounded-xl text-[13px] sm:text-[14px] font-semibold flex items-center gap-2 bg-[#D19537] text-white"
+              >
+                Add
+                <img
+                  src="/images/icons/plus-icon.png"
+                  alt="add"
+                  className="w-4 h-4"
+                />
+              </button>
+            </div>
 
+            {/* Ticket List */}
             {tickets.length > 0 && (
               <div className="mt-6 space-y-3">
                 {tickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010]"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
                   >
-                    <p className="font-semibold">{ticket.name}</p>
-                    <p className="text-sm">Price: {ticket.price}</p>
-                    <p className="text-sm">
-                      Transferable: {ticket.transferable ? "YES" : "NO"}
-                    </p>
+                    {/* LEFT SIDE */}
+                    <div className="space-y-1">
+                      {/* Ticket Name & Type */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold">
+                          {ticket.name}
+                        </span>
+
+                        <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase">
+                          {ticket.type}
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      <div className="text-[13px] text-[#666666]">
+                        Price: {ticket.price}
+                      </div>
+
+                      {/* Transferable */}
+                      <div className="text-[13px]">
+                        Transferable:{" "}
+                        {ticket.transferable ? (
+                          <span className="text-green-600 font-semibold">
+                            YES
+                          </span>
+                        ) : (
+                          <span className="text-red-500 font-semibold">NO</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RIGHT SIDE */}
+                    <button
+                      onClick={() => {
+                        const updatedTickets = tickets.filter(
+                          (t) => t.id !== ticket.id
+                        );
+                        setTickets(updatedTickets);
+                        saveTicketsToLocalStorage(updatedTickets, eventType);
+                      }}
+                      className="text-[13px] sm:text-[14px] font-medium text-[#D6111A] sm:ml-4 mt-3 sm:mt-0"
+                    >
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>
@@ -660,77 +708,77 @@ export default function TicketingDetailsPage({
 //               </button>
 //             </div>
 
-//             {/* Add Ticket Button */}
-//             <div className="flex justify-end">
-//               <button
-//                 onClick={handleAddTicket}
-//                 className="h-10 sm:h-12 px-6 sm:px-8 rounded-xl text-[13px] sm:text-[14px] font-semibold flex items-center gap-2 bg-[#D19537] text-white"
-//               >
-//                 Add
-//                 <img
-//                   src="/images/icons/plus-icon.png"
-//                   alt="add"
-//                   className="w-4 h-4"
-//                 />
-//               </button>
-//             </div>
+// {/* Add Ticket Button */}
+// <div className="flex justify-end">
+//   <button
+//     onClick={handleAddTicket}
+//     className="h-10 sm:h-12 px-6 sm:px-8 rounded-xl text-[13px] sm:text-[14px] font-semibold flex items-center gap-2 bg-[#D19537] text-white"
+//   >
+//     Add
+//     <img
+//       src="/images/icons/plus-icon.png"
+//       alt="add"
+//       className="w-4 h-4"
+//     />
+//   </button>
+// </div>
 
-//             {/* Ticket List */}
-//             {tickets.length > 0 && (
-//               <div className="mt-6 space-y-3">
-//                 {tickets.map((ticket) => (
-//                   <div
-//                     key={ticket.id}
-//                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
-//                   >
-//                     {/* LEFT SIDE */}
-//                     <div className="space-y-1">
-//                       {/* Ticket Name & Type */}
-//                       <div className="flex items-center gap-2">
-//                         <span className="text-[14px] font-semibold">
-//                           {ticket.name}
-//                         </span>
+// {/* Ticket List */}
+// {tickets.length > 0 && (
+//   <div className="mt-6 space-y-3">
+//     {tickets.map((ticket) => (
+//       <div
+//         key={ticket.id}
+//         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
+//       >
+//         {/* LEFT SIDE */}
+//         <div className="space-y-1">
+//           {/* Ticket Name & Type */}
+//           <div className="flex items-center gap-2">
+//             <span className="text-[14px] font-semibold">
+//               {ticket.name}
+//             </span>
 
-//                         <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase">
-//                           {ticket.type}
-//                         </span>
-//                       </div>
+//             <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase">
+//               {ticket.type}
+//             </span>
+//           </div>
 
-//                       {/* Price */}
-//                       <div className="text-[13px] text-[#666666]">
-//                         Price: {ticket.price}
-//                       </div>
+//           {/* Price */}
+//           <div className="text-[13px] text-[#666666]">
+//             Price: {ticket.price}
+//           </div>
 
-//                       {/* Transferable */}
-//                       <div className="text-[13px]">
-//                         Transferable:{" "}
-//                         {ticket.transferable ? (
-//                           <span className="text-green-600 font-semibold">
-//                             YES
-//                           </span>
-//                         ) : (
-//                           <span className="text-red-500 font-semibold">NO</span>
-//                         )}
-//                       </div>
-//                     </div>
-
-//                     {/* RIGHT SIDE */}
-//                     <button
-//                       onClick={() => {
-//                         const updatedTickets = tickets.filter(
-//                           (t) => t.id !== ticket.id
-//                         );
-//                         setTickets(updatedTickets);
-//                         saveTicketsToLocalStorage(updatedTickets, eventType);
-//                       }}
-//                       className="text-[13px] sm:text-[14px] font-medium text-[#D6111A] sm:ml-4 mt-3 sm:mt-0"
-//                     >
-//                       Remove
-//                     </button>
-//                   </div>
-//                 ))}
-//               </div>
+//           {/* Transferable */}
+//           <div className="text-[13px]">
+//             Transferable:{" "}
+//             {ticket.transferable ? (
+//               <span className="text-green-600 font-semibold">
+//                 YES
+//               </span>
+//             ) : (
+//               <span className="text-red-500 font-semibold">NO</span>
 //             )}
+//           </div>
+//         </div>
+
+//         {/* RIGHT SIDE */}
+//         <button
+//           onClick={() => {
+//             const updatedTickets = tickets.filter(
+//               (t) => t.id !== ticket.id
+//             );
+//             setTickets(updatedTickets);
+//             saveTicketsToLocalStorage(updatedTickets, eventType);
+//           }}
+//           className="text-[13px] sm:text-[14px] font-medium text-[#D6111A] sm:ml-4 mt-3 sm:mt-0"
+//         >
+//           Remove
+//         </button>
+//       </div>
+//     ))}
+//   </div>
+// )}
 //           </div>
 //         )}
 

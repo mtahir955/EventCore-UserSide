@@ -73,7 +73,10 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       localStorage.setItem("token", token);
       localStorage.setItem("hostToken", JSON.stringify({ token }));
       localStorage.setItem("hostUser", JSON.stringify({ token }));
-      localStorage.setItem("staffUser", JSON.stringify(response.data.user));
+      localStorage.setItem(
+        "staffUser",
+        JSON.stringify(response.data.data.user)
+      );
 
       // ⭐ redirect
       window.location.href = "/staff-dashboard";
