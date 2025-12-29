@@ -11,6 +11,8 @@ interface PaymentWithdrawalModalProps {
   onClose: () => void;
   request: RefundRequest | null;
 
+  creditEnabled: boolean; // ✅ NEW
+
   onDecision: (data: {
     refundRequestId: string;
     decision: "ACCEPT" | "DECLINE";
@@ -29,9 +31,9 @@ interface PaymentWithdrawalModalProps {
     refundRequestId: string;
     buyerEmail: string;
     message: string;
-    amount: number; // ✅ ADD
+    amount: number;
     receiptFileName?: string;
-    receiptFile?: File; // ✅ REQUIRED for multipart
+    receiptFile?: File;
   }) => void;
 }
 
@@ -39,6 +41,7 @@ export function PaymentWithdrawalModal({
   isOpen,
   onClose,
   request,
+  creditEnabled,
   onDecision,
   onAddCredit,
   onSendReceipt,
@@ -55,13 +58,11 @@ export function PaymentWithdrawalModal({
     return `Refund Request • ${request.refundRequestId}`;
   }, [request]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (request?.amount != null) {
       setRemainingRefundAmount(request.amount);
     }
-  }, [request]);  
-
-  if (!isOpen) return null;
+  }, [request]);
 
   const handleDecline = () => {
     if (!request) return;
@@ -76,6 +77,14 @@ export function PaymentWithdrawalModal({
     if (!request) return;
     setIsUploadReceiptOpen(true);
   };
+
+  useEffect(() => {
+    if (!creditEnabled) {
+      setIsAddCreditOpen(false);
+    }
+  }, [creditEnabled]);
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -102,13 +111,22 @@ export function PaymentWithdrawalModal({
             </div>
 
             {/* Add Credit Button */}
-            <button
+            {/* <button
               onClick={() => setIsAddCreditOpen(true)}
               className="self-start sm:self-auto rounded-full px-4 py-2 text-sm font-medium text-white"
               style={{ backgroundColor: "#0077F7" }}
             >
               + Add Credit
-            </button>
+            </button> */}
+            {creditEnabled && (
+              <button
+                onClick={() => setIsAddCreditOpen(true)}
+                className="self-start sm:self-auto rounded-full px-4 py-2 text-sm font-medium text-white"
+                style={{ backgroundColor: "#0077F7" }}
+              >
+                + Add Credit
+              </button>
+            )}
           </div>
 
           {/* Content */}

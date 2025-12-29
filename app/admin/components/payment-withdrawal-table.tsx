@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { PaymentWithdrawalModal } from "./Payment-withdrawal-modal";
 import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
@@ -111,6 +111,8 @@ export function PaymentWithdrawalTable({
 
   const totalPages = Math.ceil(filteredRequests.length / entriesPerPage);
 
+  const [isCreditEnabled, setIsCreditEnabled] = useState<boolean>(false);
+
   const currentRows = useMemo(() => {
     const indexOfLast = currentPage * entriesPerPage;
     const indexOfFirst = indexOfLast - entriesPerPage;
@@ -203,6 +205,31 @@ export function PaymentWithdrawalTable({
       console.error("❌ Refund failed", error?.response?.data || error.message);
     }
   };
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        const token = localStorage.getItem("hostToken");
+        if (!token) return;
+
+        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-tenant-id": HOST_Tenant_ID,
+          },
+        });
+
+        setIsCreditEnabled(
+          Boolean(res.data?.data?.features?.creditSystem?.enabled)
+        );
+      } catch (err) {
+        console.error("❌ Failed to load tenant features", err);
+        setIsCreditEnabled(false);
+      }
+    };
+
+    fetchFeatures();
+  }, []);
 
   return (
     <div className="flex flex-col w-full gap-10">
@@ -359,7 +386,7 @@ export function PaymentWithdrawalTable({
           )}
 
           {/* Modal */}
-          <PaymentWithdrawalModal
+          {/* <PaymentWithdrawalModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             request={selected}
@@ -368,6 +395,15 @@ export function PaymentWithdrawalTable({
             onSendReceipt={handleRefund}
             // onAddCredit={(payload) => console.log("ADD CREDIT:", payload)}
             onAddCredit={handleAddCredit}
+          /> */}
+          <PaymentWithdrawalModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            request={selected}
+            onDecision={(payload) => console.log("DECISION:", payload)}
+            onSendReceipt={handleRefund}
+            onAddCredit={handleAddCredit}
+            creditEnabled={isCreditEnabled} // ✅ NEW
           />
         </div>
       </div>
