@@ -332,7 +332,7 @@ export default function Page() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 mt-8 mb-4">
           <div className="lg:col-span-7">
             <LineChartCard />
           </div>
@@ -342,7 +342,7 @@ export default function Page() {
         </div>
 
         {/* Events */}
-        <div className="px-4 md:px-8 mt-10 mb-12">
+        {/* <div className="px-4 md:px-8 mt-10 mb-12">
           <h2 className="text-lg md:text-[18px] font-semibold mb-4">
             Explore More Events
           </h2>
@@ -351,7 +351,7 @@ export default function Page() {
               <MyEventsCard key={index} {...event} isEditEvent />
             ))}
           </div>
-        </div>
+        </div> */}
       </section>
 
       {/* Logout Modal */}

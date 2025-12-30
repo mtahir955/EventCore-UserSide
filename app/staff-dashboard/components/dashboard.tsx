@@ -14,6 +14,8 @@ export default function Dashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [userName, setUserName] = useState("User");
+
   // PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
@@ -82,6 +84,21 @@ export default function Dashboard() {
   const currentEvents = events.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(events.length / entriesPerPage);
 
+  useEffect(() => {
+    const rawUser =
+      localStorage.getItem("staffUser") || localStorage.getItem("hostUser");
+
+    if (rawUser) {
+      try {
+        const user = JSON.parse(rawUser);
+
+        setUserName(user.fullName || user.userName || "User");
+      } catch (err) {
+        console.error("Invalid user object in storage");
+      }
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-white dark:bg-[#101010] font-sans overflow-x-hidden">
       {/* Sidebar */}
@@ -95,8 +112,9 @@ export default function Dashboard() {
         <div className="mx-4 sm:mx-6 md:mx-8 mt-8 md:mt-6 flex flex-row items-center justify-between rounded-2xl bg-[#F5EDE5] p-4 sm:p-6 md:p-8 w-[300px] sm:w-auto gap-4">
           <div>
             <h3 className="mb-2 text-xl sm:text-2xl md:text-3xl font-bold text-black">
-              Welcome Back, User Name
+              Welcome Back, {userName}
             </h3>
+
             <p className="text-sm sm:text-base md:text-lg text-gray-700">
               You&apos;ve made great progress this week. Keep it up!
             </p>
@@ -111,7 +129,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="mx-4 sm:mx-6 md:mx-8 mt-6 mr-[410px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 justify-items-center md:justify-items-stretch">
+        <div className="mx-4 sm:mx-6 md:mx-8 mt-6 mr-[410px] grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 justify-items-center md:justify-items-stretch">
           <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
               <div className="rounded-full bg-blue-50 dark:bg-[#101010] p-4 mt-1">
@@ -175,7 +193,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
+          {/* <div className="w-[300px] sm:w-full rounded-2xl bg-white dark:bg-black p-5 sm:p-6 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-start gap-4">
               <div className="rounded-full bg-orange-50 dark:bg-[#101010] p-4 mt-1">
                 <Image
@@ -194,7 +212,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Events Table */}

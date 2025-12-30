@@ -1108,15 +1108,27 @@ export default function OrderSummary() {
         </div> */}
 
         <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4 space-y-3">
-          <p className="font-medium">Payment Options</p>
+          <p className="font-medium mb-2">Payment Options</p>
 
-          <label className="flex items-center gap-2">
+          <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="radio"
+              className="mt-1"
               checked={paymentMode === "stripe"}
               onChange={() => setPaymentMode("stripe")}
             />
-            <span>Pay Now (Card, Wallets Or Buy Now Pay Later)</span>
+
+            <div>
+              {/* Main heading */}
+              <p className="font-medium text-sm">Pay Now</p>
+
+              {/* Sub-points */}
+              <ul className="mt-1 ml-4 list-disc text-sm text-gray-600 dark:text-gray-400">
+                <li>Card</li>
+                <li>Wallets</li>
+                <li>Buy Now, Pay Later</li>
+              </ul>
+            </div>
           </label>
 
           {/* Show BNPL options from Stripe */}
