@@ -12,20 +12,13 @@ interface Event {
   status: "Active" | "Completed" | "Upcoming";
 }
 
-const events: Event[] = [
-  { name: "Starry Nights", date: "2025-09-04", status: "Active" },
-  { name: "Starry Nights", date: "2025-09-04", status: "Active" },
-  { name: "Starry Nights", date: "2025-09-04", status: "Completed" },
-  { name: "Starry Nights", date: "2025-09-04", status: "Upcoming" },
-];
-
-export function RecentEventsTable() {
+export function RecentEventsTable({ events }: { events: any[] }) {
   const [isdeletemodalopen, setisdeletemodalopen] = useState(false);
 
   return (
     <div className="bg-background rounded-xl p-6 shadow-sm w-full">
       <h2 className="text-xl font-bold text-foreground mb-6 text-left">
-        Recent Events
+        Ongoing Events
       </h2>
 
       <div className="border rounded-xl w-full overflow-hidden">

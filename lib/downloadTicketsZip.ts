@@ -1,121 +1,63 @@
-import axios from "axios";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import axios from "axios";
 import QRCode from "qrcode";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
-type IssuedTicket = {
-  id: string;
-  ticketNumber: number;
-};
-
-type DownloadParams = {
-  issuedTickets: IssuedTicket[];
-  confirmationNumber: string;
+type DownloadEventTicketsParams = {
+  eventId: string;
   getToken: () => string | null;
+  generateTicketImage: (params: any) => Promise<string>;
 };
 
-export async function downloadTicketsZip({
-  issuedTickets,
-  confirmationNumber,
+export async function downloadEventTicketsZip({
+  eventId,
   getToken,
-}: DownloadParams) {
-  if (!issuedTickets?.length) {
-    alert("Tickets not ready yet");
-    return;
-  }
-
+  generateTicketImage,
+}: DownloadEventTicketsParams) {
   const token = getToken();
-  if (!token) {
-    alert("Not authenticated");
-    return;
-  }
+  if (!token) throw new Error("Not authenticated");
 
-  try {
-    const zip = new JSZip();
-    const folder = zip.folder("tickets");
-    let addedCount = 0;
-
-    await Promise.all(
-      issuedTickets.map(async (issued) => {
-        const res = await axios.get(
-          `${API_BASE_URL}/tickets/${issued.id}/qr`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-            },
-          }
-        );
-
-        const qrCodeUrl = res.data?.data?.qrCode;
-        const meta = res.data?.data?.metadata;
-
-        if (!qrCodeUrl || !meta) return;
-
-        const qrPng = await QRCode.toDataURL(qrCodeUrl, {
-          width: 300,
-          margin: 1,
-        });
-
-        const canvas = document.createElement("canvas");
-        canvas.width = 1000;
-        canvas.height = 450;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        // Background
-        ctx.fillStyle = "#0f172a";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, 650, canvas.height);
-
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 36px Arial";
-        ctx.fillText(meta.eventName, 40, 70);
-
-        ctx.font = "18px Arial";
-        ctx.fillText(`📍 ${meta.location}`, 40, 120);
-        ctx.fillText(`📅 ${meta.date}`, 40, 155);
-        ctx.fillText(`⏰ ${meta.time}`, 40, 190);
-
-        ctx.font = "bold 22px Arial";
-        ctx.fillText(`🎟 ${meta.ticketName}`, 40, 255);
-        ctx.font = "18px Arial";
-        ctx.fillText(`Type: ${meta.ticketType}`, 40, 290);
-        ctx.fillText(`Price: ${meta.price}`, 40, 325);
-        ctx.fillText(`Ticket #: ${issued.ticketNumber}`, 40, 365);
-
-        const img = new Image();
-        img.src = qrPng;
-
-        await new Promise((res) => (img.onload = res));
-
-        ctx.drawImage(img, 730, 140, 200, 200);
-
-        const base64 = canvas
-          .toDataURL("image/png")
-          .replace(/^data:image\/png;base64,/, "");
-
-        folder?.file(`ticket-${issued.ticketNumber}.png`, base64, {
-          base64: true,
-        });
-
-        addedCount++;
-      })
-    );
-
-    if (!addedCount) {
-      alert("No tickets generated");
-      return;
+  const res = await axios.get(
+    `${API_BASE_URL}/tickets/event/${eventId}/qr`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Tenant-ID": HOST_Tenant_ID,
+      },
     }
+  );
 
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, `tickets-${confirmationNumber}.zip`);
-  } catch (err) {
-    console.error("Download failed:", err);
-    alert("Failed to download tickets");
+  const tickets = res.data?.data?.tickets || [];
+  if (!tickets.length) {
+    throw new Error("No tickets found for this event");
   }
+
+  const zip = new JSZip();
+  const folder = zip.folder("tickets");
+
+  await Promise.all(
+    tickets.map(async (ticket: any) => {
+      const qrPng = await QRCode.toDataURL(ticket.qrCode, {
+        width: 300,
+        margin: 1,
+      });
+
+      const image = await generateTicketImage({
+        qrDataUrl: qrPng,
+        ...ticket.metadata,
+        ticketNumber: ticket.ticketNumber,
+      });
+
+      const base64 = image.replace(/^data:image\/png;base64,/, "");
+
+      folder?.file(`ticket-${ticket.ticketNumber}.png`, base64, {
+        base64: true,
+      });
+    })
+  );
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  saveAs(blob, `event-${eventId}-tickets.zip`);
 }

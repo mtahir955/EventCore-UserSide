@@ -20,6 +20,12 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
 
+  const [stats, setStats] = useState({
+    pendingEvents: 0,
+    completedEvents: 0,
+    ticketsChecked: 0,
+  });
+
   const getToken = () => {
     let raw =
       localStorage.getItem("staffToken") ||
@@ -61,7 +67,7 @@ export default function Dashboard() {
         name: e.eventName,
         date: e.eventDate,
         address: e.eventAddress,
-        status: e.status,
+        status: e.status?.toUpperCase(),
       }));
 
       setEvents(formatted);
@@ -73,8 +79,38 @@ export default function Dashboard() {
     }
   };
 
+  // ============================================
+  // 🔥 GET /events/dashboard/stats
+  // ============================================
+  const fetchDashboardStats = async () => {
+    try {
+      const token = getToken();
+
+      const res = await axios.get(`${API_BASE_URL}/staff/events/dashboard/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Tenant-ID": HOST_Tenant_ID,
+        },
+      });
+
+      const data = res.data?.data || {};
+
+      setStats({
+        pendingEvents: data.pendingEvents?.count ?? 0,
+        completedEvents: data.completedEvents?.count ?? 0,
+        ticketsChecked: data.totalTicketsChecked?.count ?? 0,
+      });
+    } catch (err: any) {
+      console.error("❌ Failed to fetch dashboard stats", err);
+      toast.error(
+        err?.response?.data?.message || "Failed to load dashboard stats"
+      );
+    }
+  };
+
   useEffect(() => {
     fetchEventsList();
+    fetchDashboardStats();
   }, []);
 
   // PAGINATION
@@ -142,7 +178,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
-                  150
+                  {stats.pendingEvents}
                 </div>
                 <div className="mt-1 text-sm text-gray-600 dark:text-white">
                   Pending Events
@@ -163,7 +199,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
-                  720
+                  {stats.completedEvents}
                 </div>
                 <div className="mt-1 text-sm text-gray-600 dark:text-white">
                   Events Completed
@@ -184,7 +220,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
-                  12,00
+                  {stats.ticketsChecked}
                 </div>
                 <div className="mt-1 text-sm text-gray-600 dark:text-white">
                   Total Tickets Checked
@@ -284,14 +320,18 @@ export default function Dashboard() {
                         {event.status}
                       </td>
                       <td className="px-6 py-4">
-                        {event.status === "Upcoming" ? (
+                        {event.status === "UPCOMING" ||
+                        event.status === "ONGOING" ? (
                           <Link href="/ticket-check-staff">
                             <button className="rounded-full bg-[#D19537] px-5 py-2 text-sm font-medium text-white hover:bg-[#b8802f]">
                               Start Checking
                             </button>
                           </Link>
                         ) : (
-                          <button className="rounded-full bg-gray-300 px-5 py-2 text-sm font-medium text-gray-600">
+                          <button
+                            disabled
+                            className="rounded-full bg-gray-300 px-5 py-2 text-sm font-medium text-gray-600"
+                          >
                             Expired
                           </button>
                         )}

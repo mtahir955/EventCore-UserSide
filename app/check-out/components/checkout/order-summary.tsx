@@ -780,6 +780,23 @@ export default function OrderSummary() {
       //   body.paymentMethodType = bnplProvider;
       // }
 
+      // const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+
+      // const secret = res.data?.data?.clientSecret;
+      // if (!secret) {
+      //   toast.error("Client secret missing");
+      //   return;
+      // }
+
+      // setClientSecret(secret);
+      // toast.success("Payment session created");
+
       const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -788,9 +805,35 @@ export default function OrderSummary() {
         },
       });
 
-      const secret = res.data?.data?.clientSecret;
+      const responseData = res.data?.data;
+
+      /* ─────────────────────────────────────────
+   ✅ CASE 1: FULLY PAID WITH CREDITS
+──────────────────────────────────────────*/
+      if (responseData?.isFullyPaidWithCredits) {
+        toast.success("Payment completed using credits 🎉");
+
+        // Save confirmed purchase (same as Stripe success)
+        localStorage.setItem(
+          "confirmedPurchase",
+          JSON.stringify({
+            confirmationNumber: responseData.confirmationNumber,
+            tickets: responseData.issuedTickets,
+            orderSummary: responseData.orderSummary,
+          })
+        );
+
+        // Redirect to success page
+        window.location.href = "/check-out/payment";
+        return;
+      }
+
+      /* ─────────────────────────────────────────
+   ✅ CASE 2: STRIPE PAYMENT REQUIRED
+──────────────────────────────────────────*/
+      const secret = responseData?.clientSecret;
       if (!secret) {
-        toast.error("Client secret missing");
+        toast.error("Payment initialization failed. Please try again.");
         return;
       }
 

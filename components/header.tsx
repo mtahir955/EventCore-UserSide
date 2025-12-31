@@ -9,6 +9,8 @@ import { Moon, Sun, Menu, X, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTicketsStore } from "@/store/ticketsStore";
 import { useNotificationsStore } from "@/store/notificationsStore";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 export function Header() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -18,6 +20,9 @@ export function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { resolvedTheme, theme, setTheme } = useTheme();
+
+  const [tenantLogo, setTenantLogo] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   const tickets = useTicketsStore((state) => state.tickets);
   const ticketsCount = tickets.length;
@@ -50,6 +55,67 @@ export function Header() {
   }, []);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const fetchProfilePhoto = async () => {
+      try {
+        if (!isLoggedIn) return;
+
+        const raw =
+          localStorage.getItem("buyerToken") ||
+          localStorage.getItem("userToken") ||
+          localStorage.getItem("hostToken");
+
+        if (!raw) return;
+
+        const token = raw.startsWith("{") ? JSON.parse(raw)?.token : raw;
+
+        const res = await fetch(`${API_BASE_URL}/users/buyer/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        });
+
+        const json = await res.json();
+
+        if (json?.success && json?.data?.profilePhoto) {
+          setProfilePhoto(json.data.profilePhoto);
+        }
+      } catch (err) {
+        console.error("Failed to load profile photo", err);
+      }
+    };
+
+    fetchProfilePhoto();
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    const fetchTenantLogo = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/tenants/public/about`, {
+          headers: {
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        });
+
+        const json = await res.json();
+
+        if (json?.success && json?.data?.logoUrl) {
+          // Build full URL if backend returns relative path
+          const logo = json.data.logoUrl.startsWith("http")
+            ? json.data.logoUrl
+            : `${API_BASE_URL}${json.data.logoUrl}`;
+
+          setTenantLogo(logo);
+        }
+      } catch (err) {
+        console.error("Failed to load tenant logo", err);
+      }
+    };
+
+    fetchTenantLogo();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -112,12 +178,20 @@ export function Header() {
         <div className="max-w-[1440px] mx-auto flex items-center justify-between py-3 px-2 sm:px-6 md:px-8">
           {/* Logo */}
           <Link href="/#" className="flex items-center flex-shrink-0">
-            <Image
+            {/* <Image
               src="/images/header-logo.png"
               alt="Good Life Trainings"
               width={160}
               height={50}
               className="h-10 sm:h-12 w-auto sm:ml-8 transition-all"
+            /> */}
+            <Image
+              src={tenantLogo || "/images/header-logo.png"}
+              alt="Tenant Logo"
+              width={160}
+              height={50}
+              priority
+              className="h-10 sm:h-12 w-auto sm:ml-8 transition-all object-contain"
             />
           </Link>
 
@@ -149,13 +223,21 @@ export function Header() {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-1 sm:gap-2 hover:bg-gray-100 dark:hover:bg-[#2E2E2E] rounded-full px-2 sm:px-3 py-1 transition-colors flex-shrink-0"
               >
-                <Image
+                {/* <Image
                   src="/images/profile.jpeg"
                   alt="Profile"
                   width={28}
                   height={28}
                   className="rounded-full object-cover"
+                /> */}
+                <Image
+                  src={profilePhoto || "/images/profile.jpeg"}
+                  alt="Profile"
+                  width={28}
+                  height={28}
+                  className="rounded-full object-cover"
                 />
+
                 <svg
                   width="10"
                   height="6"
@@ -211,13 +293,21 @@ export function Header() {
               <div className="absolute right-0 top-12 sm:top-14 bg-white dark:bg-[#2A2A2A] rounded-lg shadow-lg border border-gray-200 dark:border-[#3A3A3A] w-[260px] sm:w-[272px] z-50 transition-colors">
                 <div className="p-4 border-b border-gray-100 dark:border-[#3A3A3A]">
                   <div className="flex items-center gap-3">
-                    <Image
+                    {/* <Image
                       src="/images/profile.jpeg"
                       alt="User profile"
                       width={44}
                       height={44}
                       className="rounded-full"
+                    /> */}
+                    <Image
+                      src={profilePhoto || "/images/profile.jpeg"}
+                      alt="User profile"
+                      width={44}
+                      height={44}
+                      className="rounded-full object-cover"
                     />
+
                     <div>
                       <div className="font-semibold text-gray-900 dark:text-gray-100">
                         {userName || "User"}

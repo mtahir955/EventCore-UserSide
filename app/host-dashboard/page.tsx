@@ -15,12 +15,25 @@ import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { syncThemeWithBackend } from "@/utils/themeManager";
+import { API_BASE_URL } from "@/config/apiConfig";
 
 export default function Page() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+
+  const [overview, setOverview] = useState({
+    totalEvents: 0,
+    upcomingEvents: 0,
+    ticketsSold: 0,
+    revenue: 0,
+    soldPercentage: 0,
+    transferredPercentage: 0,
+    salesTrend: [],
+  });
+
+  const [loadingOverview, setLoadingOverview] = useState(true);
 
   // Dropdowns
   const [showNotifications, setShowNotifications] = useState(false);
@@ -116,6 +129,76 @@ export default function Page() {
       // Force redirect if no host session found
       window.location.href = "/sign-in-host";
     }
+  }, []);
+
+  const getAuthToken = () => {
+    const raw =
+      localStorage.getItem("hostToken") ||
+      localStorage.getItem("staffToken") ||
+      localStorage.getItem("token");
+
+    if (!raw) return null;
+
+    // If stored as JSON: { token: "..." }
+    if (raw.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed.token || null;
+      } catch {
+        return null;
+      }
+    }
+
+    // Otherwise already a JWT string
+    return raw;
+  };
+
+  const fetchDashboardOverview = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const res = await fetch(
+        `${API_BASE_URL}/admin/events/dashboard/overview`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
+
+      const json = await res.json();
+      const data = json?.data || {};
+
+      setOverview({
+        // ───── Stats ─────
+        totalEvents: data.stats?.totalEvents?.count ?? 0,
+        ticketsSold: data.stats?.ticketsSold?.count ?? 0,
+        revenue: data.stats?.totalRevenue?.amount ?? 0,
+        upcomingEvents: data.stats?.upcomingEvents?.count ?? 0,
+
+        // ───── Donut Chart ─────
+        soldPercentage: data.analytics?.donutChart?.ticketSoldPercentage ?? 0,
+        transferredPercentage:
+          data.analytics?.donutChart?.ticketTransferredPercentage ?? 0,
+
+        // ───── Line Chart ─────
+        salesTrend:
+          data.reports?.lineChart?.data?.map((item: any) => ({
+            date: item.label,
+            value: item.value,
+          })) ?? [],
+      });
+    } catch (err) {
+      console.error("❌ Failed to load dashboard overview", err);
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardOverview();
   }, []);
 
   return (
@@ -308,25 +391,32 @@ export default function Page() {
           <StatCard
             icon="/images/icons/1.png"
             label="Total Events"
-            value="20+"
+            value={loadingOverview ? "--" : String(overview.totalEvents)}
             accent="indigo"
           />
+
           <StatCard
             icon="/images/icons/4.png"
             label="Tickets Sold"
-            value="12,00"
+            value={
+              loadingOverview ? "--" : overview.ticketsSold.toLocaleString()
+            }
             accent="yellow"
           />
+
           <StatCard
             icon="/images/icons/2.png"
             label="Revenue"
-            value="$67,000"
+            value={
+              loadingOverview ? "--" : `$${overview.revenue.toLocaleString()}`
+            }
             accent="peach"
           />
+
           <StatCard
             icon="/images/icons/3.png"
             label="Upcoming Events"
-            value="5"
+            value={loadingOverview ? "--" : String(overview.upcomingEvents)}
             accent="indigo"
           />
         </div>
@@ -334,10 +424,13 @@ export default function Page() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 mt-8 mb-4">
           <div className="lg:col-span-7">
-            <LineChartCard />
+            <LineChartCard data={overview.salesTrend} />
           </div>
           <div className="lg:col-span-5">
-            <DonutChartCard />
+            <DonutChartCard
+              soldPercentage={overview.soldPercentage}
+              transferredPercentage={overview.transferredPercentage}
+            />
           </div>
         </div>
 

@@ -19,7 +19,7 @@ const data = [
   { year: "2022", value: 2000000 },
 ];
 
-export function TicketSoldChart() {
+export function TicketSoldChart({ data }: { data: any[] }) {
   return (
     <div className="bg-background rounded-xl p-4 sm:p-6 shadow-sm w-full">
       {/* Header */}

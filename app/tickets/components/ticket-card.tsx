@@ -5,13 +5,16 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { TransferTicketModal } from "../components/transfer-ticket-modal";
 import { RefundRequestModal } from "../components/refund-request-modal";
-import { downloadTicketsZip } from "@/lib/downloadTicketsZip";
 import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { useToast } from "@/components/ui/use-toast";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import QRCode from "qrcode";
 
 type TicketProps = {
+  eventId: string;
   userTicketId: string;
   purchaseId: string;
 
@@ -48,6 +51,7 @@ type TicketProps = {
 };
 
 export function TicketCard({
+  eventId,
   userTicketId,
   purchaseId,
   date,
@@ -172,6 +176,155 @@ export function TicketCard({
         variant: "destructive",
         title: "Refund request failed",
         description: msg,
+      });
+    }
+  };
+
+  const downloadEventTicketsZip = async (eventId: string) => {
+    try {
+      const raw =
+        localStorage.getItem("buyerToken") ||
+        localStorage.getItem("staffToken") ||
+        localStorage.getItem("hostToken") ||
+        localStorage.getItem("token");
+
+      if (!raw) {
+        toast({
+          variant: "destructive",
+          title: "Authentication required",
+          description: "Please login again to download tickets.",
+        });
+        return;
+      }
+
+      const token = raw.startsWith("{") ? JSON.parse(raw)?.token : raw;
+
+      const res = await axios.get(
+        `${API_BASE_URL}/tickets/event/${eventId}/qr`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": HOST_Tenant_ID,
+          },
+        }
+      );
+
+      const tickets = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (!tickets.length) {
+        toast({
+          variant: "destructive",
+          title: "Download failed",
+          description: "No tickets found for this event",
+        });
+        return;
+      }
+
+      const zip = new JSZip();
+      const folder = zip.folder("tickets");
+
+      await Promise.all(
+        tickets.map(async (ticket: any, index: number) => {
+          /* ───────────────── Canvas Setup ───────────────── */
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+
+          const width = 900;
+          const height = 420;
+          canvas.width = width;
+          canvas.height = height;
+
+          /* ───────────────── Colors ───────────────── */
+          const leftBg = "#ffffff";
+          const rightBg = "#0B132B";
+          const textDark = "#0f172a";
+          const textMuted = "#475569";
+
+          /* ───────────────── Background ───────────────── */
+          ctx.fillStyle = leftBg;
+          ctx.fillRect(0, 0, 600, height);
+
+          ctx.fillStyle = rightBg;
+          ctx.fillRect(600, 0, 300, height);
+
+          /* ───────────────── Left Content ───────────────── */
+          ctx.fillStyle = textDark;
+
+          // Event title
+          ctx.font = "bold 28px Arial";
+          ctx.fillText(ticket.metadata.eventName, 40, 55);
+
+          ctx.font = "16px Arial";
+          ctx.fillStyle = textMuted;
+          ctx.fillText(`📍 Location: ${ticket.metadata.location}`, 40, 100);
+          ctx.fillText(
+            `📅 Date: ${new Date(ticket.metadata.date).toLocaleDateString()}`,
+            40,
+            130
+          );
+          ctx.fillText(`⏰ Time: ${ticket.metadata.time}`, 40, 160);
+
+          // Divider
+          ctx.strokeStyle = "#e5e7eb";
+          ctx.beginPath();
+          ctx.moveTo(40, 185);
+          ctx.lineTo(560, 185);
+          ctx.stroke();
+
+          // Ticket details
+          ctx.fillStyle = textDark;
+          ctx.font = "bold 18px Arial";
+          ctx.fillText(`🎟 Ticket: ${ticket.metadata.ticketName}`, 40, 225);
+
+          ctx.font = "16px Arial";
+          ctx.fillText(`Type: ${ticket.metadata.ticketType}`, 40, 255);
+          ctx.fillText(`Price: $${ticket.metadata.price}`, 40, 285);
+
+          ctx.font = "bold 16px Arial";
+          ctx.fillText(`Ticket No: #${index + 1}`, 40, 325);
+          ctx.fillText(`Ticket Code: ${ticket.metadata.ticketCode}`, 40, 355);
+
+          /* ───────────────── QR Code ───────────────── */
+          const qrDataUrl = await QRCode.toDataURL(ticket.qrCode, {
+            width: 300,
+            margin: 1,
+          });
+
+          const qrImg = new window.Image();
+          qrImg.src = qrDataUrl;
+          await new Promise((resolve) => (qrImg.onload = resolve));
+
+          const qrSize = 180;
+          const qrX = 600 + (300 - qrSize) / 2;
+          const qrY = 95;
+          ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+          // Scan text
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "14px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("Scan at Entry", 750, qrY + qrSize + 28);
+          ctx.textAlign = "left";
+
+          /* ───────────────── Save PNG ───────────────── */
+          const base64 = canvas
+            .toDataURL("image/png")
+            .replace(/^data:image\/png;base64,/, "");
+
+          folder?.file(`ticket-${index + 1}.png`, base64, {
+            base64: true,
+          });
+        })
+      );
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      saveAs(blob, `event-${eventId}-tickets.zip`);
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: "Failed to download tickets",
       });
     }
   };
@@ -384,14 +537,8 @@ export function TicketCard({
               </span>
             ) : (
               <button
-                onClick={handleDownloadTickets}
-                disabled={!canDownload}
-                className={cn(
-                  "h-8 px-4 rounded-full text-[12px] text-white",
-                  canDownload
-                    ? "bg-[#0077F7]"
-                    : "bg-gray-400 cursor-not-allowed"
-                )}
+                onClick={() => downloadEventTicketsZip(eventId)}
+                className="h-8 px-4 rounded-full text-[12px] text-white bg-[#0077F7]"
               >
                 Download Tickets
               </button>

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 type TicketCardUI = {
+  eventId: string;
   userTicketId: string;
   purchaseId: string;
   date: { day: string; month: string; weekday: string; time: string };
@@ -220,6 +221,7 @@ export default function Page() {
               : undefined;
 
           return {
+            eventId: ev.id,
             userTicketId,
             purchaseId,
             date: formatEventDate(ev.startDateTime),
@@ -490,6 +492,7 @@ export default function Page() {
               {currentTickets.map((t) => (
                 <TicketCard
                   key={t.userTicketId}
+                  eventId={t.eventId} // ✅ THIS FIXES THE UUID ERROR
                   userTicketId={t.userTicketId}
                   purchaseId={t.purchaseId}
                   date={t.date}
@@ -505,9 +508,8 @@ export default function Page() {
                   canTransfer={t.canTransfer}
                   badge={t.badge}
                   transferredOut={t.transferredOut}
-                  /* 🔥 NEW */
-                  status={t.status} // "ACTIVE" | "USED"
-                  verifiedAt={t.verifiedAt} // optional ISO string
+                  status={t.status}
+                  verifiedAt={t.verifiedAt}
                 />
               ))}
             </div>

@@ -12,11 +12,22 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModal from "@/components/modals/LogoutModal";
 import useAuthInterceptor from "@/utils/useAuthInterceptor";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 
 export default function DashboardPage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const [overview, setOverview] = useState({
+    totalEvents: "--",
+    ticketsSold: "--",
+    revenue: "--",
+    activeEvents: "--",
+    ticketSoldChart: [],
+    recentEvents: [],
+  });
 
   const { setTheme } = useTheme();
   const [adminName, setAdminName] = useState("Admin");
@@ -57,6 +68,41 @@ export default function DashboardPage() {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const fetchAdminDashboardOverview = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+
+      const res = await fetch(
+        `${API_BASE_URL}/super-admin/events/dashboard/overview`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Tenant-ID": SAAS_Tenant_ID,
+          },
+        }
+      );
+
+      const json = await res.json();
+      const data = json?.data || {};
+
+      setOverview({
+        totalEvents: data.stats?.totalEvents?.display ?? "--",
+        ticketsSold: data.stats?.ticketsSold?.display ?? "--",
+        revenue: data.stats?.totalRevenue?.display ?? "--",
+        activeEvents: data.stats?.activeEvents?.display ?? "--",
+        ticketSoldChart: data.charts?.ticketSold?.data ?? [],
+        recentEvents: data.recentEvents ?? [],
+      });
+    } catch (err) {
+      console.error("Failed to load super admin dashboard", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminDashboardOverview();
   }, []);
 
   return (
@@ -151,25 +197,28 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatCard
               icon="/icons/calendar-active-icon.png"
-              value="720"
+              value={overview.totalEvents}
               label="Total Events"
               bgColor="bg-blue-100"
             />
+
             <StatCard
               icon="/icons/ticket-icon.png"
-              value="12,00"
+              value={overview.ticketsSold}
               label="Tickets Sold"
               bgColor="bg-yellow-100"
             />
+
             <StatCard
               icon="/icons/dashboard-icon-1.png"
-              value="$67,000"
+              value={overview.revenue}
               label="Revenue"
               bgColor="bg-red-100"
             />
+
             <StatCard
               icon="/icons/dashboard-icon-2.png"
-              value="150"
+              value={overview.activeEvents}
               label="Active Events"
               bgColor="bg-purple-100"
             />
@@ -177,12 +226,12 @@ export default function DashboardPage() {
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <RecentEventsTable />
-            <TicketSoldChart />
+            <RecentEventsTable events={overview.recentEvents} />
+            <TicketSoldChart data={overview.ticketSoldChart} />
           </div>
 
           {/* Payment Chart */}
-          <PaymentChart />
+          {/* <PaymentChart /> */}
         </div>
       </main>
 
