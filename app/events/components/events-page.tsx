@@ -407,7 +407,7 @@ allEvents.unshift(
   }
 );
 
-type StatusFilter = "all" | "training" | "trips" | "fun" | "past";
+type StatusFilter = "all" | "training" | "trips" | "fun" | "past" | "blocks";
 type ModeFilter = "all" | "online" | "offline" | "hybrid";
 type PriceRangeFilter = "all" | "20-50" | "60-100" | "110-150";
 
@@ -460,7 +460,12 @@ export function EventsPage() {
         },
       });
 
-      const events = res?.data?.data?.events || [];
+      const events =
+        res?.data?.data?.events?.map((ev: any) => ({
+          ...ev,
+          image: ev.image ? `${API_BASE_URL}${ev.image}` : "/placeholder.svg",
+        })) || [];
+
       setApiEvents(events);
     } catch (err: any) {
       console.error("❌ Upcoming events error:", err);
@@ -477,10 +482,34 @@ export function EventsPage() {
 
   const finalEvents = apiEvents.length > 0 ? apiEvents : allEvents;
 
+  const normalizeStatus = (status?: string) => {
+    if (!status) return "";
+
+    return status.toLowerCase().replace(/\s+/g, "").replace(/s$/, ""); // remove trailing "s"
+  };
+
+  const backendStatusToFilter: Record<string, StatusFilter> = {
+    trainings: "training",
+    training: "training",
+
+    escapes: "trips",
+    escape: "trips",
+
+    fun: "fun",
+
+    past: "past",
+
+    training_room_blocks: "blocks",
+    blocks: "blocks",
+  };
+
   const filteredEvents = useMemo(() => {
     return finalEvents.filter((event) => {
       const matchesStatus =
-        filters.status === "all" ? true : event.status === filters.status;
+        filters.status === "all"
+          ? true
+          : backendStatusToFilter[event.status?.toLowerCase()] ===
+            filters.status;
 
       const matchesMarket =
         filters.market === "all" ? true : event.marketSlug === filters.market;
@@ -566,7 +595,7 @@ export function EventsPage() {
               <SelectItem value="trips">Escapes</SelectItem>
               <SelectItem value="fun">Traincations</SelectItem>
               <SelectItem value="past">Excursions</SelectItem>
-              <SelectItem value="past">Training Room Blocks</SelectItem>
+              <SelectItem value="blocks">Training Room Blocks</SelectItem>
             </SelectContent>
           </Select>
 

@@ -185,8 +185,13 @@ export default function MyEventsPage() {
       // REPLACE your mapped events array with this:
       const mapped = response.data?.data?.map((ev: any) => ({
         id: ev.id, // ⭐ IMPORTANT
-        imageSrc: ev.bannerImage || "/images/event-1.png",
-        price: ev.tickets?.[0]?.price || "0",
+        // imageSrc: ev.bannerImage || "/images/event-1.png",
+        imageSrc: ev.bannerImage
+          ? `${API_BASE_URL}${ev.bannerImage}`
+          : "/images/event-1.png",
+
+        // price: ev.tickets?.[0]?.price || "0",
+        // price: ev.minTicketPrice ?? ev.ticketPrice ?? "0",
         hostby: ev.hostName || "Unknown",
         title: ev.eventTitle,
         description: ev.eventDescription,

@@ -107,8 +107,9 @@ export default function EventCard({
               </button>
             ) : (
               <TicketDialog cta={cta} />
-            )}
-            <SharePopover />
+            )
+            }
+            {/* <SharePopover /> */}
           </div>
         </div>
       </div>

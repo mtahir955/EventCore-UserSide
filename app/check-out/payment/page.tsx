@@ -19,6 +19,14 @@ type TicketQR = {
   ticketId: string;
   ticketNumber: number;
   qrImage: string;
+  metadata: {
+    eventName: string;
+    location: string;
+    date: string;
+    time: string;
+    price: string;
+    confirmationNumber: string;
+  };
 };
 
 export default function PaymentSuccessPage() {
@@ -28,6 +36,8 @@ export default function PaymentSuccessPage() {
   const [ticketQrs, setTicketQrs] = useState<TicketQR[]>([]);
 
   const [confirming, setConfirming] = useState(false);
+
+  const ticketMeta = ticketQrs?.[0]?.metadata;
 
   const generateTicketImage = async (params: {
     qrDataUrl: string;
@@ -196,7 +206,8 @@ export default function PaymentSuccessPage() {
           list.push({
             ticketId: issued.id,
             ticketNumber: issued.ticketNumber,
-            qrImage: res.data?.data?.metadata?.qrImage,
+            qrImage: res.data?.data?.qrCode,
+            metadata: res.data?.data?.metadata, // ✅ ADD THIS
           });
         }
 
@@ -438,7 +449,7 @@ export default function PaymentSuccessPage() {
                   Download Your Tickets!
                 </h4>
                 <p className="text-xs sm:text-sm text-white/90 mb-3 sm:mb-4">
-                  Event Name
+                  {ticketQrs?.[0]?.metadata?.eventName || "Event"}
                 </p>
 
                 <div className="flex flex-col items-center mb-3 sm:mb-4">
@@ -456,18 +467,32 @@ export default function PaymentSuccessPage() {
 
                 <div className="text-[12px] sm:text-[14px] space-y-2 sm:space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">1 Tickets</span>
-                    <span className="font-semibold">$205.35</span>
+                    <span className="font-semibold">Tickets</span>
+                    <span className="font-semibold">
+                      ${ticketQrs?.[0]?.metadata?.price || "0.00"}
+                    </span>
                   </div>
+
                   <p className="font-semibold">
-                    Location: <span className="font-normal">California</span>
+                    Location:{" "}
+                    <span className="font-normal">
+                      {ticketQrs?.[0]?.metadata?.location || "—"}
+                    </span>
                   </p>
+
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">
-                      Date: <span className="font-normal">4 June</span>
+                      Date:{" "}
+                      <span className="font-normal">
+                        {formatDate(ticketQrs?.[0]?.metadata?.date)}
+                      </span>
                     </p>
+
                     <p className="font-semibold">
-                      Time: <span className="font-normal">8 pm</span>
+                      Time:{" "}
+                      <span className="font-normal">
+                        {ticketQrs?.[0]?.metadata?.time || "—"}
+                      </span>
                     </p>
                   </div>
                 </div>

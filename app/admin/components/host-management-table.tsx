@@ -229,7 +229,7 @@ export function HostManagementTable({
               >
                 <td className="pl-10 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-foreground overflow-hidden flex-shrink-0">
+                    {/* <div className="w-10 h-10 rounded-full bg-foreground overflow-hidden flex-shrink-0">
                       <Image
                         src={host.avatar || "/placeholder.svg"}
                         alt={host.tenantName}
@@ -237,7 +237,7 @@ export function HostManagementTable({
                         height={40}
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                    </div> */}
                     <span className="text-sm text-foreground font-medium">
                       {host.tenantName}
                     </span>

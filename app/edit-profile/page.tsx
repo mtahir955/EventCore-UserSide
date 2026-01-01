@@ -127,12 +127,12 @@ export default function Page() {
               />
             </SectionCard>
 
-            <SectionCard title="Payment Details">
+            {/* <SectionCard title="Payment Details">
               <PaymentDetails
                 ref={paymentDetailsRef}
                 existing={profileData?.paymentDetails}
               />
-            </SectionCard>
+            </SectionCard> */}
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row justify-center sm:justify-end gap-4 pt-2 mb-10">

@@ -269,7 +269,7 @@ export function HostRequestTable({
                 >
                   <td className="pl-10 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden">
+                      {/* <div className="w-10 h-10 rounded-full overflow-hidden">
                         <Image
                           src={host.avatar || "/avatars/avatar-1.png"}
                           alt={host.tenantName}
@@ -277,7 +277,7 @@ export function HostRequestTable({
                           height={40}
                           className="object-cover"
                         />
-                      </div>
+                      </div> */}
                       <span className="text-sm font-medium">
                         {host.tenantName}
                       </span>
@@ -374,13 +374,13 @@ export function HostRequestTable({
           )}
         </table>
 
-        <HostRequestModal
+        {/* <HostRequestModal
           isOpen={isHostRequestModalOpen}
           onClose={closeModal}
           host={selectedHost}
           onActivate={handleActivate}
           onDeactivate={handleDeactivate}
-        />
+        /> */}
       </div>
     </div>
   );

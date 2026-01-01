@@ -50,9 +50,9 @@ export default function Page() {
               <ContactDetails data={profile?.contactDetails} />
             </SectionCard>
 
-            <SectionCard title="Payment Details">
+            {/* <SectionCard title="Payment Details">
               <PaymentDetails data={profile?.paymentDetails} />
-            </SectionCard>
+            </SectionCard> */}
           </div>
         </div>
 

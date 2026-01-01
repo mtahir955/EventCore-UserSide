@@ -131,9 +131,9 @@ export function MyEventsCard({
           </div>
 
           {/* Price */}
-          <div className="h-7 px-3 rounded-full text-[12px] font-semibold bg-[#D19537] text-white grid place-items-center">
+          {/* <div className="h-7 px-3 rounded-full text-[12px] font-semibold bg-[#D19537] text-white grid place-items-center">
             ${price}
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom Content */}

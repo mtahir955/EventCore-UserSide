@@ -147,12 +147,12 @@ export function Header() {
       href: "/tickets",
       counter: ticketsCount,
     },
-    {
-      icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/notifications-icon-YNBdsbLEdRySLL7MtsqsOP5jYisuIh.png",
-      label: "Notifications",
-      href: "/notifications",
-      counter: notificationsCount,
-    },
+    // {
+    //   icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/notifications-icon-YNBdsbLEdRySLL7MtsqsOP5jYisuIh.png",
+    //   label: "Notifications",
+    //   href: "/notifications",
+    //   counter: notificationsCount,
+    // },
   ];
 
   const menuItems = [

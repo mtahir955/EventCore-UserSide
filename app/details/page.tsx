@@ -131,7 +131,7 @@ export default function EventDetailPage() {
             <Image
               src={
                 eventData?.bannerImage
-                  ? `${API_BASE_URL}/${eventData.bannerImage}`
+                  ? `${API_BASE_URL}${eventData.bannerImage}`
                   : "/images/hero-image.png"
               }
               alt={eventData?.title || "Event Banner"}
@@ -139,6 +139,7 @@ export default function EventDetailPage() {
               className="object-cover"
               priority
             />
+
             <div className="absolute inset-0 bg-black/30" />
 
             <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
@@ -253,7 +254,7 @@ export default function EventDetailPage() {
                       className="bg-white dark:bg-[#191919] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5 text-center hover:-translate-y-1 hover:shadow-md transition"
                     >
                       <img
-                        src={trainer.image}
+                        src={`${API_BASE_URL}${trainer.image}`}
                         className="h-12 w-12 rounded-full mx-auto mb-3 object-cover"
                         alt={trainer.name}
                       />
@@ -345,9 +346,7 @@ export default function EventDetailPage() {
         </section>
 
         {/* Explore More */}
-        <Link href="/events">
           <ExploreEvents />
-        </Link>
       </main>
 
       <Footer />

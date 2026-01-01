@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { FileUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from "@/config/apiConfig";
 
 const BasicInformationSection = forwardRef((props, ref) => {
   const [formData, setFormData] = useState({
@@ -42,6 +43,12 @@ const BasicInformationSection = forwardRef((props, ref) => {
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
+  const resolveFileUrl = (path?: string) => {
+    if (!path) return "";
+    if (path.startsWith("http")) return path;
+    return `${API_BASE_URL}/${path}`;
+  };
+
   useImperativeHandle(ref, () => ({
     validate: () => {
       const requiredFields = ["logo", "banner"];
@@ -64,8 +71,10 @@ const BasicInformationSection = forwardRef((props, ref) => {
         ...prev,
 
         /* ---------- MEDIA ---------- */
-        logo: data.logoUrl ?? prev.logo,
-        banner: data.bannerUrl ?? prev.banner,
+        // logo: data.logoUrl ?? prev.logo,
+        // banner: data.bannerUrl ?? prev.banner,
+        logo: resolveFileUrl(data.logoUrl) ?? prev.logo,
+        banner: resolveFileUrl(data.bannerUrl) ?? prev.banner,
 
         /* ---------- SERVICE FEE ---------- */
         serviceFee: data.features?.serviceFee?.enabled ?? false,
@@ -520,7 +529,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
                     value={formData.maxInstallments}
                     onChange={(e) => {
                       const value = Number(e.target.value);
-                      if (value <= 4) {
+                      if (value <= 3) {
                         setFormData((p) => ({
                           ...p,
                           maxInstallments: e.target.value,
@@ -539,7 +548,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
             </div>
           )}
 
-          <label className="flex gap-3 items-center cursor-pointer group">
+          {/* <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="showLoginHelp"
@@ -552,7 +561,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
             <span className="group-hover:text-[#D19537] transition">
               Show Help Center / Login Help Links
             </span>
-          </label>
+          </label> */}
         </div>
       </div>
 

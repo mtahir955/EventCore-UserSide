@@ -817,9 +817,7 @@ export default function OrderSummary() {
         localStorage.setItem(
           "confirmedPurchase",
           JSON.stringify({
-            confirmationNumber: responseData.confirmationNumber,
-            tickets: responseData.issuedTickets,
-            orderSummary: responseData.orderSummary,
+            data: responseData, // 👈 FULL OBJECT
           })
         );
 

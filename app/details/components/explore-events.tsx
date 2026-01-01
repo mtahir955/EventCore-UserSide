@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "./event-card";
+import Link from "next/link";
 
 const events = [
   {
@@ -50,35 +51,23 @@ export function ExploreEvents() {
           Explore More Events
         </h2>
 
-        <div className="relative">
-          {/* Responsive grid — single column on mobile */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {events.map((event, index) => (
-              <EventCard key={index} {...event} />
-            ))}
-          </div>
-
-          {/* Navigation arrows (hidden on mobile) */}
-          <div className="hidden sm:flex">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 bg-black dark:bg-gray-200 hover:bg-black/80 dark:hover:bg-gray-300 text-white dark:text-black rounded-full w-10 sm:w-12 h-10 sm:h-12 transition-colors"
-              onClick={goToPrevious}
-            >
-              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 bg-black dark:bg-gray-200 hover:bg-black/80 dark:hover:bg-gray-300 text-white dark:text-black rounded-full w-10 sm:w-12 h-10 sm:h-12 transition-colors"
-              onClick={goToNext}
-            >
-              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6" />
-            </Button>
-          </div>
-        </div>
+        <Link href="/events">
+          <Button
+            className="
+      rounded-full
+      px-7 py-3
+      text-sm font-semibold
+      bg-[#0077F7]
+      text-white
+      hover:bg-[#0077F7]/90
+      active:scale-95
+      transition-all
+      shadow-md
+    "
+          >
+            Explore Events
+          </Button>
+        </Link>
       </div>
     </section>
   );

@@ -355,7 +355,7 @@ export default function HostDetailsPage() {
           </div>
 
           {/* Static Events For Now */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
             {[1, 2, 3, 4].map((id) => (
               <MyEventsCard
                 key={id}
@@ -363,7 +363,7 @@ export default function HostDetailsPage() {
                 price="$99.99"
               />
             ))}
-          </div>
+          </div> */}
 
           {/* Back Button */}
           <div className="flex justify-center sm:justify-end">

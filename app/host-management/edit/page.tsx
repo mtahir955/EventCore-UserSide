@@ -115,31 +115,31 @@ export default function Home() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="hidden sm:ml-[250px] lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
-            <h1 className="text-3xl font-semibold text-foreground">
-              Edit Tenant
-            </h1>
+          <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
+          <h1 className="text-3xl font-semibold text-foreground">
+            Tenant Host
+          </h1>
 
-            <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <Link href="/push-notification">
-                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
-                  <Bell className="h-5 w-5 text-gray-600" />
-                </button>
-              </Link>
+          <div className="flex items-center gap-4">
+            {/* Notifications */}
+            <Link href="/push-notification">
+              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
+                <Bell className="h-5 w-5 text-gray-600" />
+              </button>
+            </Link>
 
-              {/* Profile */}
-              <div
-                className="relative flex items-center gap-2"
-                ref={profileRef}
-              >
-                <span className="hidden sm:block font-semibold">
-                  {adminName}
-                </span>
+            {/* Profile */}
+            <div className="relative flex items-center gap-2" ref={profileRef}>
+              {/* Admin Name */}
+              <span className="hidden sm:block font-semibold text-black dark:text-white">
+                {adminName}
+              </span>
 
+              {/* Profile Icon */}
+              <div className="relative">
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="bg-black h-9 w-9 flex justify-center items-center rounded-full"
+                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
                 >
                   <img
                     src="/images/icons/profile-user.png"
@@ -148,23 +148,36 @@ export default function Home() {
                   />
                 </button>
 
+                {/* Dropdown */}
                 {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border rounded-xl z-50 py-2">
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
                     <Link href="/tenant-form">
-                      <button className="dropdown-btn">Create Tenant</button>
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Create Tenant
+                      </button>
                     </Link>
 
                     <Link href="/host-management">
-                      <button className="dropdown-btn">Tenant Host</button>
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Host
+                      </button>
+                    </Link>
+
+                    <Link href="/tenant-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Management
+                      </button>
                     </Link>
 
                     <Link href="/system-settings">
-                      <button className="dropdown-btn">System Settings</button>
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        System Settings
+                      </button>
                     </Link>
 
                     <button
                       onClick={() => setShowLogoutModal(true)}
-                      className="dropdown-btn"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
                     >
                       Logout
                     </button>
@@ -172,7 +185,8 @@ export default function Home() {
                 )}
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
           {/* Page Content */}
           <div className="flex-1 overflow-auto bg-neutral-100">

@@ -117,7 +117,7 @@ export default function TrainersPage() {
               <div className="flex flex-col sm:flex-row">
                 <div className="w-full sm:w-48 h-64 relative flex-shrink-0">
                   <Image
-                    src={trainer.image}
+                    src={`${API_BASE_URL}${trainer.image}`}
                     alt={trainer.name}
                     fill
                     className="object-cover"
@@ -138,27 +138,45 @@ export default function TrainersPage() {
                   </p>
 
                   <div className="flex space-x-3">
+                    {/* LinkedIn */}
                     {trainer.socials?.linkedin && (
-                      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                      <a
+                        href={trainer.socials.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center hover:scale-110 transition"
+                      >
                         <Linkedin className="w-5 h-5 text-black dark:text-white" />
-                      </div>
+                      </a>
                     )}
 
+                    {/* Twitter (X) */}
                     {trainer.socials?.twitter && (
-                      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                      <a
+                        href={trainer.socials.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center hover:scale-110 transition"
+                      >
                         <Image
                           src="/icons/twitter.png"
-                          alt="Custom Icon"
+                          alt="Twitter"
                           width={16}
-                          height={18}
+                          height={16}
                         />
-                      </div>
+                      </a>
                     )}
 
+                    {/* Instagram */}
                     {trainer.socials?.instagram && (
-                      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                      <a
+                        href={trainer.socials.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center hover:scale-110 transition"
+                      >
                         <Instagram className="w-5 h-5 text-black dark:text-white" />
-                      </div>
+                      </a>
                     )}
                   </div>
                 </div>

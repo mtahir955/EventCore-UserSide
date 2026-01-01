@@ -55,6 +55,7 @@ export function EventCard({ event }: EventCardProps) {
           alt={event.title}
           fill
           className="object-cover"
+          unoptimized={false}
         />
 
         {/* Overlay */}

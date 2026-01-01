@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { MapPin, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { City } from "country-state-city";
 
 const ContactDetailsSection = forwardRef((props, ref) => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,8 @@ const ContactDetailsSection = forwardRef((props, ref) => {
     address: "",
     nationalId: "",
   });
+
+  const usCities = City.getCitiesOfCountry("US") ?? [];
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -208,16 +211,15 @@ const ContactDetailsSection = forwardRef((props, ref) => {
             value={formData.city}
             onChange={handleChange}
             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
-              ${
-                errors.city
-                  ? "border-red-500"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+    ${errors.city ? "border-red-500" : "border-gray-300 dark:border-gray-700"}
+    bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
           >
             <option value="">Select City</option>
-            <option value="California">California</option>
-            <option value="New York">New York</option>
-            <option value="Texas">Texas</option>
+            {usCities.map((city) => (
+              <option key={`${city.name}-${city.stateCode}`} value={city.name}>
+                {city.name}
+              </option>
+            ))}
           </select>
         </div>
 

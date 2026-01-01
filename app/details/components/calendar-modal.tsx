@@ -327,6 +327,15 @@ export function CalendarModal({
 
       const isEventDay = isSameDay(date, initialDate);
 
+      const isNewSelectedDay =
+        !isSameDay(date, initialDate) &&
+        !(
+          isPinned &&
+          initialPinnedDateState &&
+          isSameDay(date, initialPinnedDateState)
+        ) &&
+        isSameDay(date, selectedDate);
+
       const isSelectedPinnedDay =
         isPinned &&
         initialPinnedDateState &&
@@ -336,12 +345,17 @@ export function CalendarModal({
         "h-10 sm:h-12 flex items-center justify-center text-xs sm:text-sm rounded-lg transition-colors ";
 
       if (isEventDay) {
-        // 🔵 Event Date ALWAYS blue
+        // 🔵 Event date (always blue)
         classes += "bg-[#0077F7] text-white";
       } else if (isSelectedPinnedDay) {
-        // 🔴 Pinned date
+        // 🔴 Pinned reminder
         classes += "bg-red-500 text-white";
+      } else if (isNewSelectedDay) {
+        // ⚪ Newly selected (gray)
+        classes +=
+          "bg-gray-200 dark:bg-[#2A2A2A] text-gray-900 dark:text-white";
       } else {
+        // Default
         classes +=
           "text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1E1E1E]";
       }
@@ -380,7 +394,7 @@ export function CalendarModal({
           </button>
 
           {/* Event image */}
-          <div className="relative h-[140px] sm:h-[100px] w-full">
+          {/* <div className="relative h-[140px] sm:h-[100px] w-full">
             <Image
               src={eventImage}
               alt={eventTitle}
@@ -388,15 +402,15 @@ export function CalendarModal({
               className="object-cover"
             />
             <div className="absolute inset-0 bg-black/30" />
-          </div>
+          </div> */}
 
           {/* Content */}
           <div className="p-4 sm:p-4">
             <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
               {eventTitle}
             </h2>
-            <p className="text-[10px] sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
-              {eventDescription}
+            <p className="text-[10px] sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 break-all line-clamp-2">
+              {eventDescription || "No description available."}
             </p>
 
             {/* Navigation */}

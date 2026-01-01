@@ -86,15 +86,6 @@ export default function CalendarView({
   const monthName = currentDate.toLocaleString("default", { month: "long" });
   const year = currentDate.getFullYear();
 
-  let eventsForDay = eventsMap.filter((e: any) => e.date === dayNum);
-
-  // ⭐ FIX: Remove duplicates by id + type
-  eventsForDay = eventsForDay.filter(
-    (event, index, self) =>
-      index ===
-      self.findIndex((e) => e.id === event.id && e.type === event.type)
-  );
-
   return (
     <section className="mx-auto mt-6 sm:mt-8 max-w-full relative">
       <div className="rounded-2xl border bg-card p-4 sm:p-6 md:p-8 shadow-sm transition-all">
@@ -141,9 +132,19 @@ export default function CalendarView({
           {calendarDays.flatMap((week, wi) =>
             week.map((d, di) => {
               const dayNum = parseInt(d as string);
-              const eventsForDay = eventsMap.filter(
-                (e: any) => e.date === dayNum
-              );
+              // const eventsForDay = eventsMap.filter(
+              //   (e: any) => e.date === dayNum
+              // );
+
+              const eventsForDay = eventsMap
+                .filter((e: any) => e.date === dayNum)
+                .filter(
+                  (event: any, index: number, self: any[]) =>
+                    index ===
+                    self.findIndex(
+                      (e) => e.id === event.id && e.type === event.type
+                    )
+                );
 
               const selected =
                 (checkIn === dayNum && !checkOut) ||

@@ -576,7 +576,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
                     value={formData.maxInstallments}
                     onChange={(e) => {
                       const value = Number(e.target.value);
-                      if (value <= 4) {
+                      if (value <= 3) {
                         setFormData((p) => ({
                           ...p,
                           maxInstallments: e.target.value,
@@ -595,7 +595,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
             </div>
           )}
 
-          <label className="flex gap-3 items-center cursor-pointer group">
+          {/* <label className="flex gap-3 items-center cursor-pointer group">
             <input
               type="checkbox"
               name="showLoginHelp"
@@ -608,7 +608,7 @@ const BasicInformationSection = forwardRef((props, ref) => {
             <span className="group-hover:text-[#D19537] transition">
               Show Help Center / Login Help Links
             </span>
-          </label>
+          </label> */}
         </div>
       </div>
 
