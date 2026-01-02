@@ -15,8 +15,8 @@ import LogoutModal from "@/components/modals/LogoutModal";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
-export const API_BASE_URL = "http://192.168.18.202:8080";
-export const SAAS_Tenant_ID = "bb4e95c5-5f42-4e74-b8c9-f6d26d1f8266";
+import { API_BASE_URL } from "@/config/apiConfig";
+import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 
 interface BroadcastEmail {
   id: string;
@@ -168,42 +168,112 @@ export default function PushNotificationPage() {
 
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* Header */}
-        <header className="hidden lg:flex bg-background border-b px-8 py-6 items-center justify-between sticky top-0 z-30">
-          <h1 className="text-3xl font-semibold">Push Notification Center</h1>
+        <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
+          <h1 className="text-3xl font-semibold text-foreground">
+            Push Notification
+          </h1>
 
           <div className="flex items-center gap-4">
+            {/* Light/Dark toggle */}
+            {/* <Button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              variant="ghost"
+              size="sm"
+              className="hidden lg:flex text-gray-600 dark:text-gray-300 gap-2 hover:text-[#0077F7]"
+            >
+              {theme === "light" ? (
+                <>
+                  <Moon className="h-4 w-4" /> Dark Mode
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4" /> Light Mode
+                </>
+              )}
+            </Button> */}
+
+            {/* Mobile toggle */}
+            {/* <button
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              className="lg:hidden p-1 text-gray-700 dark:text-gray-300 hover:text-[#0077F7] flex-shrink-0"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+              ) : (
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </button> */}
             <Link href="/push-notification">
-              <button className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                <Bell className="h-5 w-5" />
+              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
+                <Bell className="h-5 w-5 text-gray-600" />
               </button>
             </Link>
+            {/* Profile Name + Icon + Dropdown */}
+            <div className="relative flex items-center gap-2" ref={profileRef}>
+              {/* Admin Name */}
+              <span className="hidden sm:block font-semibold text-black dark:text-white">
+                {adminName}
+              </span>
 
-            <div ref={profileRef} className="relative flex items-center gap-2">
-              <span className="hidden sm:block font-semibold">{adminName}</span>
+              {/* Profile Icon Wrapper for relative dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+                >
+                  <img
+                    src="/images/icons/profile-user.png"
+                    alt="profile"
+                    className="h-4 w-4"
+                  />
+                </button>
 
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="bg-black h-9 w-9 rounded-full flex items-center justify-center"
-              >
-                <img src="/images/icons/profile-user.png" className="h-4 w-4" />
-              </button>
+                {/* Dropdown — Positioned relative to icon */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
+                    <Link href="/tenant-form">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Create Tenant
+                      </button>
+                    </Link>
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] rounded-xl shadow-lg py-2">
-                  <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+                    <Link href="/host-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Host
+                      </button>
+                    </Link>
+
+                    <Link href="/tenant-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Management
+                      </button>
+                    </Link>
+
+                    <Link href="/system-settings">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        System Settings
+                      </button>
+                    </Link>
+
+                    <button
+                      onClick={() => setShowLogoutModal(true)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 sm:mt-16 mt-16 lg:mt-0">
           {/* Send Form */}
           <div className="bg-background rounded-xl p-6 shadow-sm mb-8">
             <h2 className="text-2xl font-bold mb-6">Send Notification</h2>

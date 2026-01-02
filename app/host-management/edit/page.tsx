@@ -116,7 +116,7 @@ export default function Home() {
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
-          <h1 className="text-3xl font-semibold text-foreground">
+          <h1 className="text-3xl ml-62 font-semibold text-black dark:text-white ">
             Tenant Host
           </h1>
 
@@ -189,7 +189,7 @@ export default function Home() {
         </header>
 
           {/* Page Content */}
-          <div className="flex-1 overflow-auto bg-neutral-100">
+          <div className="flex-1 overflow-auto bg-neutral-100 dark:bg-[#080808]">
             {loading ? (
               <div className="p-6 text-sm">Loading tenant data...</div>
             ) : (

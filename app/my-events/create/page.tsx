@@ -240,7 +240,7 @@ export default function CreateEventPage() {
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
               {/* Notification icon */}
-              <div ref={notificationsRef} className="relative">
+              {/* <div ref={notificationsRef} className="relative">
                 <button
                   onClick={() => {
                     setShowNotifications(!showNotifications);
@@ -252,15 +252,15 @@ export default function CreateEventPage() {
                     src="/icons/Vector.png"
                     alt="notification"
                     className="h-4 w-4"
-                  />
+                  /> */}
                   {/* Counter badge */}
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                  {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
-                </button>
+                </button> */}
 
                 {/* Notification popup */}
-                {showNotifications && (
+                {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
@@ -283,7 +283,7 @@ export default function CreateEventPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Profile Name + Icon + Dropdown */}
               <div

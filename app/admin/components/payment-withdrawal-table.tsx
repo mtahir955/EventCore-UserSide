@@ -241,25 +241,25 @@ export function PaymentWithdrawalTable({
                 className="border-b border-border"
                 style={{ background: "rgba(245, 237, 229, 1)" }}
               >
-                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground dark:text-black">
                   Buyer
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground dark:text-black">
                   Email
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground dark:text-black">
                   Phone
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground dark:text-black">
                   Event Name
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-foreground">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground dark:text-black">
                   Date
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-foreground text-right">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground text-right dark:text-black">
                   Amount
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-foreground text-center">
+                <th className="px-6 py-4 text-sm font-semibold text-foreground text-center dark:text-black">
                   Status
                 </th>
               </tr>
@@ -313,7 +313,12 @@ export function PaymentWithdrawalTable({
                     <td className="px-6 py-4 text-sm">{req.buyerPhone}</td>
 
                     {/* EVENT */}
-                    <td className="px-6 py-4 text-sm">{req.eventName}</td>
+                    {/* EVENT */}
+                    <td className="px-6 py-4 text-sm max-w-[220px]">
+                      <p className="truncate" title={req.eventName}>
+                        {req.eventName}
+                      </p>
+                    </td>
 
                     {/* DATE */}
                     <td className="px-6 py-4 text-sm">{req.eventDate}</td>

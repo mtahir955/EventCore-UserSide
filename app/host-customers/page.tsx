@@ -12,6 +12,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { createPortal } from "react-dom";
 
 /* ─────────────────────────────────────────
    TYPES
@@ -58,6 +59,12 @@ export default function BuyersPage() {
   const [creditMode, setCreditMode] = useState<"add" | "update">("add");
 
   const [isCreditSystemEnabled, setIsCreditSystemEnabled] = useState(false);
+
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    left: number;
+    buyerId: string;
+  } | null>(null);
 
   /* ─────────────────────────────────────────
      AUTH CHECK
@@ -355,7 +362,7 @@ export default function BuyersPage() {
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-4 relative">
               {/* Notification icon */}
-              <div ref={notificationsRef} className="relative">
+              {/* <div ref={notificationsRef} className="relative">
                 <button
                   onClick={() => {
                     setShowNotifications(!showNotifications);
@@ -367,15 +374,15 @@ export default function BuyersPage() {
                     src="/icons/Vector.png"
                     alt="notification"
                     className="h-4 w-4"
-                  />
-                  {/* Counter badge */}
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                  /> */}
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
-                </button>
+                </button> */}
 
-                {/* Notification popup */}
-                {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
@@ -398,7 +405,7 @@ export default function BuyersPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Profile Name + Icon + Dropdown */}
               <div
@@ -470,7 +477,7 @@ export default function BuyersPage() {
         <div className="border-b border-gray-200 dark:border-gray-800" />
 
         {/* Search */}
-        <div className="px-8 sm:mt-8 mt-20 mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="px-8 sm:mt-20 lg:mt-8 mt-20 mb-6 flex flex-col sm:flex-row gap-4">
           <input
             type="text"
             placeholder="Search name, email or phone..."
@@ -507,11 +514,11 @@ export default function BuyersPage() {
     "
             style={{ backgroundColor: "#F5EDE5" }}
           >
-            <div>Name</div>
-            <div>Email</div>
-            <div>Phone</div>
-            <div>City</div>
-            <div>Gender</div>
+            <div className="dark:text-black">Name</div>
+            <div className="dark:text-black">Email</div>
+            <div className="dark:text-black">Phone</div>
+            <div className="dark:text-black">City</div>
+            <div className="dark:text-black">Gender</div>
             <div />
           </div>
 
@@ -543,74 +550,25 @@ export default function BuyersPage() {
                   <div className="relative md:hidden">
                     {isCreditSystemEnabled && (
                       <button
-                        className="p-2 rounded-full hover:bg-gray-200"
-                        onClick={() =>
-                          setOpenMenuId(openMenuId === b.id ? null : b.id)
-                        }
+                        className="p-2 rounded-full dark:bg-[#101010] hover:bg-gray-200 dark:hover:bg-gray-800"
+                        onClick={(e) => {
+                          e.stopPropagation();
+
+                          const rect = (
+                            e.currentTarget as HTMLElement
+                          ).getBoundingClientRect();
+
+                          setMenuPosition({
+                            top: rect.bottom + 6,
+                            left: rect.left - 120, // adjust alignment
+                            buyerId: b.id,
+                          });
+
+                          setOpenMenuId(b.id);
+                        }}
                       >
                         ⋯
                       </button>
-                    )}
-
-                    {openMenuId === b.id && (
-                      <div
-                        ref={(el) => {
-                          if (el) menuRefs.current[b.id] = el;
-                        }}
-                        className="absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg z-[9999]"
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        {/* ADD CREDIT */}
-                        {!hasCredits && (
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-
-                              setSelectedBuyer(b);
-                              setCreditMode("add");
-                              setShowAddCreditModal(true);
-                              setOpenMenuId(null);
-                            }}
-                          >
-                            Add Credit
-                          </button>
-                        )}
-
-                        {/* UPDATE / REMOVE */}
-                        {hasCredits && (
-                          <>
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-
-                                setSelectedBuyer(b);
-                                setCreditMode("update");
-                                setShowAddCreditModal(true);
-                                setOpenMenuId(null);
-                              }}
-                            >
-                              Update Credit
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-
-                                handleRemoveCredit(b.id);
-                                setOpenMenuId(null);
-                              }}
-                            >
-                              Remove Credit
-                            </button>
-                          </>
-                        )}
-                      </div>
                     )}
                   </div>
                 </div>
@@ -645,72 +603,25 @@ export default function BuyersPage() {
                 <div className="hidden md:flex justify-center relative">
                   {isCreditSystemEnabled && (
                     <button
-                      className="p-2 rounded-full hover:bg-gray-200"
-                      onClick={() =>
-                        setOpenMenuId(openMenuId === b.id ? null : b.id)
-                      }
+                      className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800"
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        const rect = (
+                          e.currentTarget as HTMLElement
+                        ).getBoundingClientRect();
+
+                        setMenuPosition({
+                          top: rect.bottom + 6,
+                          left: rect.left - 120, // adjust alignment
+                          buyerId: b.id,
+                        });
+
+                        setOpenMenuId(b.id);
+                      }}
                     >
                       ⋯
                     </button>
-                  )}
-
-                  {openMenuId === b.id && (
-                    <div
-                      ref={(el) => {
-                        if (el) menuRefs.current[b.id] = el;
-                      }}
-                      className="absolute right-0 top-8 w-44 bg-white border rounded-lg shadow-lg z-50"
-                      onPointerDown={(e) => e.stopPropagation()}
-                    >
-                      {!hasCredits && (
-                        <button
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedBuyer(b);
-                            setCreditMode("add");
-                            setShowAddCreditModal(true);
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          Add Credit
-                        </button>
-                      )}
-
-                      {hasCredits && (
-                        <>
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              // ✅ REQUIRED LINES
-                              setSelectedBuyer(b);
-                              setCreditMode("update");
-                              setShowAddCreditModal(true);
-
-                              setOpenMenuId(null);
-                            }}
-                          >
-                            Update Credit
-                          </button>
-
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              // ✅ REQUIRED LINE
-                              handleRemoveCredit(b.id);
-
-                              setOpenMenuId(null);
-                            }}
-                          >
-                            Remove Credit
-                          </button>
-                        </>
-                      )}
-                    </div>
                   )}
                 </div>
               </div>
@@ -770,6 +681,70 @@ export default function BuyersPage() {
           </div>
         )}
       </main>
+
+      {openMenuId &&
+        menuPosition &&
+        createPortal(
+          (() => {
+            const buyer = buyers.find((b) => b.id === openMenuId);
+            const credit = buyer?.creditBalance ?? 0;
+
+            return (
+              <div
+                style={{
+                  position: "fixed",
+                  top: menuPosition.top,
+                  left: menuPosition.left,
+                }}
+                className="w-44 bg-white dark:bg-[#101010] border rounded-lg shadow-xl z-[99999]"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                {credit === 0 && (
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    onClick={() => {
+                      if (!buyer) return;
+                      setSelectedBuyer(buyer);
+                      setCreditMode("add");
+                      setShowAddCreditModal(true);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    Add Credit
+                  </button>
+                )}
+
+                {credit > 0 && (
+                  <>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                      onClick={() => {
+                        if (!buyer) return;
+                        setSelectedBuyer(buyer);
+                        setCreditMode("update");
+                        setShowAddCreditModal(true);
+                        setOpenMenuId(null);
+                      }}
+                    >
+                      Update Credit
+                    </button>
+
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg"
+                      onClick={() => {
+                        handleRemoveCredit(openMenuId);
+                        setOpenMenuId(null);
+                      }}
+                    >
+                      Remove Credit
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })(),
+          document.body
+        )}
 
       {/* Modals */}
       <LogoutModalHost

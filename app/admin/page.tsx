@@ -113,18 +113,17 @@ export default function DashboardPage() {
       {/* ===== Main Content ===== */}
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* ===== Header ===== */}
-        <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30 dark:bg-[#101010] dark:border-gray-800">
+        <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30 dark:bg-[#080808] dark:border-gray-800">
           <h1 className="text-3xl font-semibold text-foreground dark:text-white">
             Dashboard
           </h1>
 
           <div className="flex items-center gap-4">
             <Link href="/push-notification">
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700">
-                <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-300">
+                <Bell className="h-5 w-5 text-gray-600" />
               </button>
             </Link>
-
             {/* Profile + Dropdown */}
             <div className="relative flex items-center gap-2" ref={profileRef}>
               <span className="hidden sm:block font-semibold text-black dark:text-white">

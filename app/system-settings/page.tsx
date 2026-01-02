@@ -200,7 +200,7 @@ export default function SystemSettingsPage() {
       <div className="flex-1 overflow-auto md:ml-[250px]">
         {/* HEADER */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
-          <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-semibold text-foreground">System Settings</h1>
 
           <div className="flex items-center gap-4">
             {/* Light/Dark toggle */}
@@ -302,7 +302,7 @@ export default function SystemSettingsPage() {
         </header>
 
         {/* CONTENT */}
-        <div className="p-6">
+        <div className="p-6 sm:mt-16 lg:mt-0">
           <div className="bg-white mt-16 sm:mt-0 dark:bg-black/60 rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
               System Settings

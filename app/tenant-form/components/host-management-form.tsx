@@ -235,7 +235,7 @@ export default function HostManagementForm() {
   // RENDER UI
   // ==============================
   return (
-    <div className="w-[329px] dark:bg-[#101010] px-4 sm:px-6 lg:px-8 py-6 sm:py-8 mx-auto space-y-6 sm:w-[95%] lg:w-[1175px] sm:ml-0 lg:ml-[250px]">
+    <div className="w-[329px] dark:bg-[#101010] sm:mt-14 lg:mt-0 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 mx-auto space-y-6 sm:w-[95%] lg:w-[1175px] sm:ml-0 lg:ml-[250px]">
       <BasicInformationSection ref={basicInfoRef} />
       <DatabaseConfigurationSection ref={dbConfigRef} />
       <AccountSettingsSection ref={accountSettingsRef} />

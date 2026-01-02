@@ -76,6 +76,7 @@ export default function HostManagementForm() {
           space-y-6 
           sm:w-[95%] lg:w-[1170px] 
           sm:ml-0 lg:ml-[250px]
+          sm:mt-12 lg:mt-0
         "
       >
         {/* Header Buttons */}

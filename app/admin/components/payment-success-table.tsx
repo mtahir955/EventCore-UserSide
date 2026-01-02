@@ -79,15 +79,25 @@ export function PaymentSuccessTable({ data = [] }: PaymentSuccessTableProps) {
               className="border-b border-border"
               style={{ background: "rgba(245, 237, 229, 1)" }}
             >
-              <th className="px-6 py-4 text-sm font-semibold">Buyer</th>
-              <th className="px-6 py-4 text-sm font-semibold">Email</th>
-              <th className="px-6 py-4 text-sm font-semibold">Phone</th>
-              <th className="px-6 py-4 text-sm font-semibold">Event Name</th>
-              <th className="px-6 py-4 text-sm font-semibold">Date</th>
-              <th className="px-6 py-4 text-sm font-semibold text-right">
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Buyer
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Email
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Phone
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Event Name
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+                Date
+              </th>
+              <th className="px-6 py-4 text-sm font-semibold text-right dark:text-black">
                 Amount
               </th>
-              <th className="px-6 py-4 text-sm font-semibold text-center">
+              <th className="px-6 py-4 text-sm font-semibold text-center dark:text-black">
                 Status
               </th>
             </tr>
@@ -112,7 +122,12 @@ export function PaymentSuccessTable({ data = [] }: PaymentSuccessTableProps) {
                 <td className="px-6 py-4 text-sm">{row.buyerPhone}</td>
 
                 {/* Event */}
-                <td className="px-6 py-4 text-sm">{row.eventName}</td>
+                {/* EVENT */}
+                <td className="px-6 py-4 text-sm max-w-[220px]">
+                  <p className="truncate" title={row.eventName}>
+                    {row.eventName}
+                  </p>
+                </td>
 
                 {/* Date */}
                 <td className="px-6 py-4 text-sm">{row.eventDate}</td>

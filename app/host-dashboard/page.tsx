@@ -8,7 +8,7 @@ import { DonutChartCard } from "../host-dashboard/components/charts/donut-chart-
 import { MyEventsCard } from "../host-dashboard/components/my-events-card";
 import { WithdrawModal } from "../host-dashboard/components/withdraw-modal";
 import { WithdrawSuccessModal } from "../host-dashboard/components/withdraw-success-modal";
-import { X, LogOut, Moon, Sun } from "lucide-react";
+import { X, LogOut, Moon, Sun, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -16,9 +16,12 @@ import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { syncThemeWithBackend } from "@/utils/themeManager";
 import { API_BASE_URL } from "@/config/apiConfig";
+import HostDashboardHelpModal from "../help/HostDashboardHelpModal";
 
 export default function Page() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const [showHelp, setShowHelp] = useState(false);
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -262,7 +265,7 @@ export default function Page() {
                 )}
               </button> */}
               {/* Notification icon */}
-              <div ref={notificationsRef} className="relative">
+              {/* <div ref={notificationsRef} className="relative">
                 <button
                   onClick={() => {
                     setShowNotifications(!showNotifications);
@@ -274,15 +277,15 @@ export default function Page() {
                     src="/icons/Vector.png"
                     alt="notification"
                     className="h-4 w-4"
-                  />
-                  {/* Counter badge */}
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                  /> */}
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
-                </button>
+                </button> */}
 
-                {/* Notification popup */}
-                {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
@@ -305,7 +308,7 @@ export default function Page() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Profile Name + Icon + Dropdown */}
               <div
@@ -369,6 +372,27 @@ export default function Page() {
                     </div>
                   )}
                 </div>
+
+                {/* Help Button */}
+                <button
+                  onClick={() => setShowHelp(true)}
+                  className="
+    h-9
+    px-4
+    text-sm
+    font-medium
+    rounded-lg
+    border
+    border-[#D19537]
+    text-[#D19537]
+    hover:bg-[#D19537]
+    hover:text-white
+    transition
+    whitespace-nowrap
+  "
+                >
+                  Help
+                </button>
               </div>
             </div>
 
@@ -472,6 +496,10 @@ export default function Page() {
       <WithdrawSuccessModal
         open={successOpen}
         onClose={() => setSuccessOpen(false)}
+      />
+      <HostDashboardHelpModal
+        open={showHelp}
+        onClose={() => setShowHelp(false)}
       />
     </main>
   );

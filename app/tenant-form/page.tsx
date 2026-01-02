@@ -133,7 +133,7 @@ export default function Home() {
           </header>
 
           {/* Page Content */}
-          <div className="flex-1 overflow-auto bg-neutral-100">
+          <div className="flex-1 overflow-auto bg-neutral-100 dark:bg-[#080808]">
             <HostManagementForm />
           </div>
         </div>

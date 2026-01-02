@@ -219,7 +219,7 @@ export default function HostManagementForm() {
   }
 
   return (
-    <div className="w-[329px] px-4 sm:px-6 lg:px-8 py-6 mx-auto space-y-6 sm:w-[95%] lg:w-[1175px] lg:ml-[250px]">
+    <div className="w-[329px] sm:mt-14 lg:mt-0 dark:bg-[#080808] px-4 sm:px-6 lg:px-8 py-6 mx-auto space-y-6 sm:w-[95%] lg:w-[1175px] lg:ml-[250px]">
       <BasicInformationSection ref={basicInfoRef} />
       <ContactDetailsSection ref={contactDetailsRef} />
       <EventcorePercentageSection ref={eventcorePercentageRef} />
