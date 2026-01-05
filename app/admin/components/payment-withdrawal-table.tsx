@@ -126,9 +126,10 @@ export function PaymentWithdrawalTable({
     reason: string;
     expiresAt: string;
   }) => {
+    if (!selected) return null;
+
     try {
       const token = localStorage.getItem("hostToken");
-
       if (!token) {
         console.error("❌ No auth token found");
         return null;
@@ -151,8 +152,15 @@ export function PaymentWithdrawalTable({
         }
       );
 
-      // ✅ RETURN BACKEND VALUE
-      return res.data.data.remainingAmount;
+      const usdValue = res.data.data.usdValue ?? 0;
+
+      // Calculate remaining amount
+      const remaining = (selected.amount ?? 0) - usdValue;
+
+      // Update local selected state so modal shows updated value
+      setSelected((prev) => (prev ? { ...prev, amount: remaining } : prev));
+
+      return remaining;
     } catch (error: any) {
       console.error(
         "❌ Add credit failed",

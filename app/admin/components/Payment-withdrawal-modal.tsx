@@ -11,7 +11,7 @@ interface PaymentWithdrawalModalProps {
   onClose: () => void;
   request: RefundRequest | null;
 
-  creditEnabled: boolean; // ✅ NEW
+  creditEnabled: boolean;
 
   onDecision: (data: {
     refundRequestId: string;
@@ -50,7 +50,7 @@ export function PaymentWithdrawalModal({
   const [isUploadReceiptOpen, setIsUploadReceiptOpen] = useState(false);
 
   const [remainingRefundAmount, setRemainingRefundAmount] = useState<number>(
-    request?.amount || 0
+    request?.amount ?? 0
   );
 
   const title = useMemo(() => {
@@ -58,10 +58,9 @@ export function PaymentWithdrawalModal({
     return `Refund Request • ${request.refundRequestId}`;
   }, [request]);
 
+  // Update remainingRefundAmount when request changes
   useEffect(() => {
-    if (request?.amount != null) {
-      setRemainingRefundAmount(request.amount);
-    }
+    setRemainingRefundAmount(request?.amount ?? 0);
   }, [request]);
 
   const handleDecline = () => {
@@ -85,6 +84,8 @@ export function PaymentWithdrawalModal({
   }, [creditEnabled]);
 
   if (!isOpen) return null;
+
+  const safeToFixed = (value?: number) => (value ?? 0).toFixed(2);
 
   return (
     <>
@@ -110,14 +111,6 @@ export function PaymentWithdrawalModal({
               </p>
             </div>
 
-            {/* Add Credit Button */}
-            {/* <button
-              onClick={() => setIsAddCreditOpen(true)}
-              className="self-start sm:self-auto rounded-full px-4 py-2 text-sm font-medium text-white"
-              style={{ backgroundColor: "#0077F7" }}
-            >
-              + Add Credit
-            </button> */}
             {creditEnabled && (
               <button
                 onClick={() => setIsAddCreditOpen(true)}
@@ -140,20 +133,23 @@ export function PaymentWithdrawalModal({
               <div className="rounded-2xl border border-border dark:border-gray-800 p-5">
                 <div className="space-y-1">
                   <p className="text-lg font-semibold text-foreground">
-                    {request.buyerName}
+                    {request.buyerName || "N/A"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {request.buyerEmail}
+                    {request.buyerEmail || "N/A"}
                   </p>
                 </div>
 
                 <div className="mt-4 space-y-3 text-sm">
-                  <InfoRow label="Phone" value={request.buyerPhone} />
-                  <InfoRow label="Event" value={request.eventName} />
-                  <InfoRow label="Event Date" value={request.eventDate} />
+                  <InfoRow label="Phone" value={request.buyerPhone || "N/A"} />
+                  <InfoRow label="Event" value={request.eventName || "N/A"} />
+                  <InfoRow
+                    label="Event Date"
+                    value={request.eventDate || "N/A"}
+                  />
                   <InfoRow
                     label="Refund Amount"
-                    value={`$${remainingRefundAmount.toFixed(2)}`}
+                    value={`$${safeToFixed(remainingRefundAmount)}`}
                     strong
                   />
                 </div>
@@ -171,25 +167,31 @@ export function PaymentWithdrawalModal({
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                  <InfoRow label="Ticket ID" value={request.ticketId} />
+                  <InfoRow
+                    label="Ticket ID"
+                    value={request.ticketId || "N/A"}
+                  />
 
                   <InfoRow
                     label="Ticket Type"
-                    value={request.ticketType}
+                    value={request.ticketType || "N/A"}
                     badge
                     badgeTone={request.ticketType === "VIP" ? "purple" : "blue"}
                   />
 
                   <InfoRow
                     label="Ticket Price"
-                    value={`$${request.ticketPrice.toFixed(2)}`}
+                    value={`$${safeToFixed(request.ticketPrice)}`}
                   />
 
-                  <InfoRow label="Request Date" value={request.requestDate} />
+                  <InfoRow
+                    label="Request Date"
+                    value={request.requestDate || "N/A"}
+                  />
 
                   <InfoRow
                     label="Payment Method"
-                    value={request.paymentMethod}
+                    value={request.paymentMethod || "N/A"}
                     badge
                     badgeTone={
                       request.paymentMethod === "Installments"
@@ -200,7 +202,7 @@ export function PaymentWithdrawalModal({
 
                   <InfoRow
                     label="Refund Account (Buyer)"
-                    value={request.refundAccount}
+                    value={request.refundAccount || "N/A"}
                     mono
                   />
                 </div>
@@ -234,19 +236,27 @@ export function PaymentWithdrawalModal({
       </div>
 
       {/* Add Credit Modal */}
+      {/* <AddCreditModal
+        isOpen={isAddCreditOpen}
+        onClose={() => setIsAddCreditOpen(false)}
+        buyerEmail={request?.buyerEmail || ""}
+        refundRequestId={request?.refundRequestId || ""}
+        totalTicketAmount={request?.amount ?? 0}
+        onSubmit={async (payload) => {
+          const remaining = await onAddCredit(payload);
+          if (remaining != null) setRemainingRefundAmount(remaining);
+          setIsAddCreditOpen(false);
+        }}
+      /> */}
       <AddCreditModal
         isOpen={isAddCreditOpen}
         onClose={() => setIsAddCreditOpen(false)}
         buyerEmail={request?.buyerEmail || ""}
         refundRequestId={request?.refundRequestId || ""}
-        totalTicketAmount={request?.amount || 0} // 👈 HERE
+        totalTicketAmount={request?.amount ?? 0}
         onSubmit={async (payload) => {
-          const remaining = await onAddCredit(payload);
-
-          if (remaining !== null) {
-            setRemainingRefundAmount(remaining); // ✅ UI UPDATES
-          }
-
+          const remaining = await onAddCredit(payload); // must return remaining
+          if (remaining != null) setRemainingRefundAmount(remaining);
           setIsAddCreditOpen(false);
         }}
       />
@@ -330,6 +340,339 @@ function InfoRow({
     </div>
   );
 }
+
+// "use client";
+
+// import { X } from "lucide-react";
+// import { useMemo, useState, useEffect } from "react";
+// import type { RefundRequest } from "./payment-withdrawal-table";
+// import { AddCreditModal } from "./add-credit-modal";
+// import { UploadReceiptModal } from "./upload-receipt-modal";
+
+// interface PaymentWithdrawalModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   request: RefundRequest | null;
+
+//   creditEnabled: boolean; // ✅ NEW
+
+//   onDecision: (data: {
+//     refundRequestId: string;
+//     decision: "ACCEPT" | "DECLINE";
+//     note?: string;
+//   }) => void;
+
+//   onAddCredit: (data: {
+//     refundRequestId: string;
+//     buyerEmail: string;
+//     amount: number;
+//     reason: string;
+//     expiresAt: string;
+//   }) => void;
+
+//   onSendReceipt: (data: {
+//     refundRequestId: string;
+//     buyerEmail: string;
+//     message: string;
+//     amount: number;
+//     receiptFileName?: string;
+//     receiptFile?: File;
+//   }) => void;
+// }
+
+// export function PaymentWithdrawalModal({
+//   isOpen,
+//   onClose,
+//   request,
+//   creditEnabled,
+//   onDecision,
+//   onAddCredit,
+//   onSendReceipt,
+// }: PaymentWithdrawalModalProps) {
+//   const [isAddCreditOpen, setIsAddCreditOpen] = useState(false);
+//   const [isUploadReceiptOpen, setIsUploadReceiptOpen] = useState(false);
+
+//   const [remainingRefundAmount, setRemainingRefundAmount] = useState<number>(
+//     request?.amount || 0
+//   );
+
+//   const title = useMemo(() => {
+//     if (!request) return "Refund Request";
+//     return `Refund Request • ${request.refundRequestId}`;
+//   }, [request]);
+
+//   useEffect(() => {
+//     if (request?.amount != null) {
+//       setRemainingRefundAmount(request.amount);
+//     }
+//   }, [request]);
+
+//   const handleDecline = () => {
+//     if (!request) return;
+//     onDecision({
+//       refundRequestId: request.refundRequestId,
+//       decision: "DECLINE",
+//     });
+//     onClose();
+//   };
+
+//   const handleAccept = () => {
+//     if (!request) return;
+//     setIsUploadReceiptOpen(true);
+//   };
+
+//   useEffect(() => {
+//     if (!creditEnabled) {
+//       setIsAddCreditOpen(false);
+//     }
+//   }, [creditEnabled]);
+
+//   if (!isOpen) return null;
+
+//   return (
+//     <>
+//       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-6">
+//         <div className="relative bg-white dark:bg-[#101010] rounded-2xl shadow-2xl w-full max-w-[820px] max-h-[90vh] overflow-y-auto p-5 sm:p-8">
+//           {/* Close */}
+//           <button
+//             onClick={onClose}
+//             className="absolute top-4 right-4 sm:top-6 sm:right-6 hover:opacity-70 transition-opacity"
+//             aria-label="Close"
+//           >
+//             <X className="w-6 h-6 text-foreground" strokeWidth={3} />
+//           </button>
+
+//           {/* Header */}
+//           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pr-10">
+//             <div>
+//               <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+//                 {title}
+//               </h2>
+//               <p className="text-sm text-muted-foreground mt-1">
+//                 Review buyer details and take action.
+//               </p>
+//             </div>
+
+//             {/* Add Credit Button */}
+//             {/* <button
+//               onClick={() => setIsAddCreditOpen(true)}
+//               className="self-start sm:self-auto rounded-full px-4 py-2 text-sm font-medium text-white"
+//               style={{ backgroundColor: "#0077F7" }}
+//             >
+//               + Add Credit
+//             </button> */}
+//             {creditEnabled && (
+//               <button
+//                 onClick={() => setIsAddCreditOpen(true)}
+//                 className="self-start sm:self-auto rounded-full px-4 py-2 text-sm font-medium text-white"
+//                 style={{ backgroundColor: "#0077F7" }}
+//               >
+//                 + Add Credit
+//               </button>
+//             )}
+//           </div>
+
+//           {/* Content */}
+//           {!request ? (
+//             <div className="mt-8 text-sm text-muted-foreground">
+//               No request selected.
+//             </div>
+//           ) : (
+//             <div className="mt-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5">
+//               {/* Left: Buyer Info */}
+//               <div className="rounded-2xl border border-border dark:border-gray-800 p-5">
+//                 <div className="space-y-1">
+//                   <p className="text-lg font-semibold text-foreground">
+//                     {request.buyerName}
+//                   </p>
+//                   <p className="text-sm text-muted-foreground">
+//                     {request.buyerEmail}
+//                   </p>
+//                 </div>
+
+//                 <div className="mt-4 space-y-3 text-sm">
+//                   <InfoRow label="Phone" value={request.buyerPhone} />
+//                   <InfoRow label="Event" value={request.eventName} />
+//                   <InfoRow label="Event Date" value={request.eventDate} />
+//                   <InfoRow
+//                     label="Refund Amount"
+//                     value={`$${remainingRefundAmount.toFixed(2)}`}
+//                     strong
+//                   />
+//                 </div>
+
+//                 <div className="mt-5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900 px-3 py-2 text-[12px] text-blue-800 dark:text-blue-300">
+//                   Ensure the refund account and receipt proof are valid before
+//                   approving.
+//                 </div>
+//               </div>
+
+//               {/* Right: Request Details */}
+//               <div className="rounded-2xl border border-border dark:border-gray-800 p-5">
+//                 <h3 className="text-lg font-bold text-foreground mb-4">
+//                   Request Details
+//                 </h3>
+
+//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+//                   <InfoRow label="Ticket ID" value={request.ticketId} />
+
+//                   <InfoRow
+//                     label="Ticket Type"
+//                     value={request.ticketType}
+//                     badge
+//                     badgeTone={request.ticketType === "VIP" ? "purple" : "blue"}
+//                   />
+
+//                   <InfoRow
+//                     label="Ticket Price"
+//                     value={`$${request.ticketPrice.toFixed(2)}`}
+//                   />
+
+//                   <InfoRow label="Request Date" value={request.requestDate} />
+
+//                   <InfoRow
+//                     label="Payment Method"
+//                     value={request.paymentMethod}
+//                     badge
+//                     badgeTone={
+//                       request.paymentMethod === "Installments"
+//                         ? "orange"
+//                         : "green"
+//                     }
+//                   />
+
+//                   <InfoRow
+//                     label="Refund Account (Buyer)"
+//                     value={request.refundAccount}
+//                     mono
+//                   />
+//                 </div>
+
+//                 <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4">
+//                   <button
+//                     onClick={handleDecline}
+//                     className="w-full sm:w-1/2 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
+//                     style={{ backgroundColor: "#F5EDE5", color: "#000000" }}
+//                   >
+//                     Decline
+//                   </button>
+
+//                   <button
+//                     onClick={handleAccept}
+//                     className="w-full sm:w-1/2 py-2.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
+//                     style={{ backgroundColor: "#D19537" }}
+//                   >
+//                     Accept
+//                   </button>
+//                 </div>
+
+//                 <p className="mt-3 text-xs text-muted-foreground">
+//                   Accepting will require you to upload a payment receipt for
+//                   proof and send a confirmation message to the buyer.
+//                 </p>
+//               </div>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+
+//       {/* Add Credit Modal */}
+//       <AddCreditModal
+//         isOpen={isAddCreditOpen}
+//         onClose={() => setIsAddCreditOpen(false)}
+//         buyerEmail={request?.buyerEmail || ""}
+//         refundRequestId={request?.refundRequestId || ""}
+//         totalTicketAmount={request?.amount || 0} // 👈 HERE
+//         onSubmit={async (payload) => {
+//           const remaining = await onAddCredit(payload);
+
+//           if (remaining !== null) {
+//             setRemainingRefundAmount(remaining); // ✅ UI UPDATES
+//           }
+
+//           setIsAddCreditOpen(false);
+//         }}
+//       />
+
+//       {/* Upload Receipt Modal */}
+//       <UploadReceiptModal
+//         isOpen={isUploadReceiptOpen}
+//         onClose={() => setIsUploadReceiptOpen(false)}
+//         buyerEmail={request?.buyerEmail || ""}
+//         refundRequestId={request?.refundRequestId || ""}
+//         onDone={(payload) => {
+//           onSendReceipt({
+//             ...payload,
+//             amount: remainingRefundAmount,
+//           });
+
+//           if (request) {
+//             onDecision({
+//               refundRequestId: request.refundRequestId,
+//               decision: "ACCEPT",
+//             });
+//           }
+
+//           setIsUploadReceiptOpen(false);
+//           onClose();
+//         }}
+//       />
+//     </>
+//   );
+// }
+
+// /* ---------------- Helpers ---------------- */
+
+// function InfoRow({
+//   label,
+//   value,
+//   strong,
+//   mono,
+//   badge,
+//   badgeTone,
+// }: {
+//   label: string;
+//   value: string;
+//   strong?: boolean;
+//   mono?: boolean;
+//   badge?: boolean;
+//   badgeTone?: "blue" | "purple" | "green" | "orange";
+// }) {
+//   if (badge) {
+//     const tone =
+//       badgeTone === "purple"
+//         ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+//         : badgeTone === "green"
+//         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+//         : badgeTone === "orange"
+//         ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+//         : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+
+//     return (
+//       <div className="flex items-start justify-between gap-4">
+//         <p className="text-xs text-gray-500">{label}</p>
+//         <span
+//           className={`px-3 py-1 rounded-full text-xs font-semibold ${tone}`}
+//         >
+//           {value}
+//         </span>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="flex items-start justify-between gap-4">
+//       <p className="text-xs text-gray-500">{label}</p>
+//       <p
+//         className={`text-sm text-foreground text-right ${
+//           strong ? "font-semibold" : ""
+//         } ${mono ? "font-mono text-[12px] break-all" : ""}`}
+//       >
+//         {value}
+//       </p>
+//     </div>
+//   );
+// }
 
 // "use client";
 
