@@ -155,7 +155,7 @@ export default function MyEvents() {
                   {/* Image */}
                   <div className="w-full sm:w-[220px] h-[200px] sm:h-[300px] overflow-hidden">
                     <Image
-                      src={event.image}
+                      src={`${API_BASE_URL}/${event.image}`}
                       alt={event.title}
                       width={220}
                       height={200}

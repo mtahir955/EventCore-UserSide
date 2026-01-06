@@ -23,7 +23,6 @@ export interface RefundRequest {
   eventDate: string;
   amount: number;
 
-  // details for modal
   ticketId: string;
   ticketType: "General" | "VIP";
   ticketPrice: number;
@@ -34,68 +33,9 @@ export interface RefundRequest {
   status: "PENDING" | "APPROVED" | "DECLINED";
 }
 
-const refundRequests: RefundRequest[] = [
-  {
-    refundRequestId: "RF-001",
-    buyerName: "Daniel Carter",
-    buyerEmail: "danielc@gmail.com",
-    buyerPhone: "+44 7412 558492",
-
-    eventName: "Starry Nights Music Fest",
-    eventDate: "12 Nov 2025",
-    amount: 205.35,
-
-    ticketId: "TCK-482917-AB56",
-    ticketType: "VIP",
-    ticketPrice: 205.35,
-    requestDate: "10 Nov 2025",
-    paymentMethod: "Full Payment",
-    refundAccount: "PK92SCBL0000001234567890",
-
-    status: "PENDING",
-  },
-
-  {
-    refundRequestId: "RF-002",
-    buyerName: "Sarah Mitchell",
-    buyerEmail: "sarahm@gmail.com",
-    buyerPhone: "+1 305 555 0142",
-
-    eventName: "Good Life Trainings Meetup",
-    eventDate: "18 Nov 2025",
-    amount: 99.99,
-
-    ticketId: "TCK-781245-ZX11",
-    ticketType: "General",
-    ticketPrice: 99.99,
-    requestDate: "17 Nov 2025",
-    paymentMethod: "Installments",
-    refundAccount: "PK15HBL0000009876543210",
-    status: "PENDING",
-  },
-  {
-    refundRequestId: "RF-003",
-    buyerName: "Emily Carter",
-    buyerEmail: "emilyc@gmail.com",
-    buyerPhone: "+92 300 1234567",
-
-    eventName: "Tech Innovators Expo",
-    eventDate: "20 Nov 2025",
-    amount: 149.0,
-
-    ticketId: "TCK-663901-KK90",
-    ticketType: "VIP",
-    ticketPrice: 149.0,
-    requestDate: "19 Nov 2025",
-    paymentMethod: "Full Payment",
-    refundAccount: "PK09MCBL0000001111222233",
-    status: "PENDING",
-  },
-];
-
 export function PaymentWithdrawalTable({
   status,
-  data,
+  data = [],
   loading,
 }: PaymentWithdrawalTableProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,9 +45,7 @@ export function PaymentWithdrawalTable({
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 5;
 
-  const sourceData = data && data.length > 0 ? data : refundRequests;
-
-  const filteredRequests = sourceData.filter((req) => req.status === status);
+  const filteredRequests = data.filter((req) => req.status === status);
 
   const totalPages = Math.ceil(filteredRequests.length / entriesPerPage);
 
@@ -130,10 +68,7 @@ export function PaymentWithdrawalTable({
 
     try {
       const token = localStorage.getItem("hostToken");
-      if (!token) {
-        console.error("❌ No auth token found");
-        return null;
-      }
+      if (!token) return null;
 
       const res = await axios.post(
         `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/credit`,
@@ -153,13 +88,9 @@ export function PaymentWithdrawalTable({
       );
 
       const usdValue = res.data.data.usdValue ?? 0;
-
-      // Calculate remaining amount
       const remaining = (selected.amount ?? 0) - usdValue;
 
-      // Update local selected state so modal shows updated value
       setSelected((prev) => (prev ? { ...prev, amount: remaining } : prev));
-
       return remaining;
     } catch (error: any) {
       console.error(
@@ -179,15 +110,10 @@ export function PaymentWithdrawalTable({
     amount: number;
   }) => {
     try {
-      const token = localStorage.getItem("hostToken"); // 🔴 confirm key name
-
-      if (!token) {
-        console.error("❌ No auth token found");
-        return;
-      }
+      const token = localStorage.getItem("hostToken");
+      if (!token) return;
 
       const formData = new FormData();
-
       formData.append("refundRequestId", payload.refundRequestId);
       formData.append("amount", payload.amount.toString());
       formData.append("message", payload.message);
@@ -202,13 +128,10 @@ export function PaymentWithdrawalTable({
         {
           headers: {
             "x-tenant-id": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`, // ✅ REQUIRED
-            // ❌ DO NOT manually set Content-Type for FormData
+            Authorization: `Bearer ${token}`,
           },
         }
       );
-
-      console.log("✅ Refund processed");
     } catch (error: any) {
       console.error("❌ Refund failed", error?.response?.data || error.message);
     }
@@ -231,7 +154,6 @@ export function PaymentWithdrawalTable({
           Boolean(res.data?.data?.features?.creditSystem?.enabled)
         );
       } catch (err) {
-        console.error("❌ Failed to load tenant features", err);
         setIsCreditEnabled(false);
       }
     };

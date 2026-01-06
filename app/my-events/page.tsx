@@ -429,14 +429,14 @@ export default function MyEventsPage() {
               </div>
               <button
                 onClick={handleFilter}
-                className="h-11 px-6 rounded-xl text-[14px] font-semibold bg-[#D19537] text-white"
+                className="h-11 px-10 rounded-xl text-[14px] font-semibold bg-[#D19537] text-white"
               >
                 Search
               </button>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/my-events/create">
-                <button className="h-11 rounded-xl px-6 font-semibold flex items-center justify-center gap-2 bg-[#D19537] text-white text-[14px] w-full sm:w-auto">
+                <button className="h-11 rounded-xl px-10 font-semibold flex items-center justify-center gap-2 bg-[#D19537] text-white text-[14px] w-full sm:w-auto">
                   Create
                   <img
                     src="/images/icons/plus-icon.png"
@@ -445,18 +445,18 @@ export default function MyEventsPage() {
                   />
                 </button>
               </Link>
-              <div className="w-10 h-10 flex justify-center items-center border rounded-full bg-[#d19537]">
+              {/* <div className="w-10 h-10 flex justify-center items-center border rounded-full bg-[#d19537]">
                 <img
                   src="/images/icons/settings-icon.png"
                   alt="settings"
                   className="h-4 w-4"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 
           {/* Filter Inputs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             <input
               type="text"
               placeholder="Nearest Location"
@@ -483,17 +483,17 @@ export default function MyEventsPage() {
               onChange={(e) => setTime(e.target.value)}
               className="h-11 rounded-full border px-5 text-[14px] font-medium bg-white dark:bg-[#101010] outline-none text-gray-700"
             />
-          </div>
+          </div> */}
 
           {/* Reset Button */}
-          <div className="mt-3 flex justify-end">
+          {/* <div className="mt-3 flex justify-end">
             <button
               onClick={resetFilters}
               className="h-11 px-6 rounded-xl text-[14px] font-semibold border bg-white text-gray-800"
             >
               Reset
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Events List */}

@@ -264,7 +264,7 @@ export default function Dashboard() {
                     Date
                   </th>
                   <th className="px-6 py-4 text-left font-semibold text-gray-900">
-                    Address
+                    Location
                   </th>
                   <th className="px-6 py-4 text-left font-semibold text-gray-900">
                     Status

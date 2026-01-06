@@ -411,7 +411,7 @@ export default function Page() {
         </header>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 sm:mt-0 mt-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 sm:mt-20 md:mt-0 mt-20">
           <StatCard
             icon="/images/icons/1.png"
             label="Total Events"
