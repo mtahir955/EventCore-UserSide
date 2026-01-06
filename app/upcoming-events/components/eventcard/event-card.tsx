@@ -33,7 +33,7 @@ export default function EventCard({
   const handleCardClick = () => router.push("/details");
   const handleCTAClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (cta === "Join Event") router.push("/check-out");
+    if (cta === "Join Event") router.push("/events");
   };
 
   // ✅ Format date (for readability)
@@ -56,9 +56,9 @@ export default function EventCard({
             alt={event.title}
             className="h-[180px] sm:h-[200px] w-full sm:w-[220px] rounded-xl object-cover"
           />
-          <span className="absolute right-3 top-3 rounded-full bg-muted px-3 py-[4px] sm:py-[6px] text-[10px] sm:text-xs shadow">
+          {/* <span className="absolute right-3 top-3 rounded-full bg-muted px-3 py-[4px] sm:py-[6px] text-[10px] sm:text-xs shadow">
             {purchased ? "Purchased" : "$99.99"}
-          </span>
+          </span> */}
         </div>
 
         {/* Event Info */}
