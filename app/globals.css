@@ -975,4 +975,7 @@
   animation: none !important;
 }
 
+.font-passionate {
+  font-family: var(--font-feeling-passionate);
+}
 

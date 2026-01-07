@@ -52,7 +52,7 @@ export default function AboutPage() {
 
         <div className="relative z-10 text-center text-white px-4 sm:px-8 max-w-4xl mx-auto">
           {/* ONLY TITLE (NO HIGHLIGHT SPLIT) */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
+          <h1 className=" font-passionate text-[#89FD00] text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
             {hero?.title || "LIVIN' THE GOOD LIFE"}
           </h1>
 
@@ -71,7 +71,7 @@ export default function AboutPage() {
           <div className="order-2 md:order-1">
             {/* ONLY TITLE (NO HIGHLIGHT SPLIT) */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
-              {about?.title || "About Good Life Training"}
+              {about?.title}
             </h2>
 
             {/* PARAGRAPHS ONLY */}
