@@ -9,22 +9,28 @@ import { API_BASE_URL } from "@/config/apiConfig";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 
 export function HeroSection() {
-  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [heroImage, setHeroImage] = useState<string>("/images/bg-hero.png");
 
   useEffect(() => {
     const fetchHero = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/tenants/public/about`, {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
+          headers: { "X-Tenant-ID": HOST_Tenant_ID },
         });
 
         const banner =
           res.data?.data?.bannerUrl || res.data?.data?.hero?.backgroundImage;
 
-        if (banner) {
-          setHeroImage(`${API_BASE_URL}${banner}`);
+        // ✅ normalize banner safely
+        if (typeof banner === "string" && banner.trim()) {
+          const normalized = banner.trim();
+
+          // If already absolute URL, keep it. If relative, make absolute with base.
+          const absoluteUrl = normalized.startsWith("http")
+            ? normalized
+            : new URL(normalized, API_BASE_URL).toString();
+
+          setHeroImage(absoluteUrl);
         }
       } catch (err) {
         console.error("❌ Failed to load hero image:", err);
@@ -36,10 +42,9 @@ export function HeroSection() {
 
   return (
     <section className="relative w-full h-[500px] overflow-hidden bg-white dark:bg-[#212121] transition-colors duration-300">
-      {/* Background image */}
       <div className="absolute inset-0">
         <Image
-          src={heroImage || "/images/bg-hero.png"}
+          src={heroImage}
           alt="Hero banner"
           fill
           className="object-cover transition-all duration-500"

@@ -62,7 +62,7 @@ export default function Page() {
       {/* Hero Section */}
       <section className="w-full pt-10 sm:pt-12 pb-8 flex flex-col items-center text-center px-4">
         <h1 className="text-3xl sm:text-4xl md:text-[44px] font-semibold tracking-tight text-gray-900 dark:text-white">
-          FAQ
+          FAQ's
         </h1>
         <p className="mt-2 text-base sm:text-lg text-[color:var(--muted-foreground)] dark:text-gray-400">
           Got any question? We respond you here.

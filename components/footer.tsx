@@ -114,7 +114,7 @@ export function Footer() {
             <ul className="space-y-2 sm:space-y-3">
               <li>
                 <Link
-                  href="/faqs"
+                  href="/FAQ,s"
                   className="text-gray-400 hover:text-white text-sm"
                 >
                   FAQs
@@ -194,7 +194,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="border-t border-gray-800 pt-8">
           <p className="text-center text-gray-400 text-xs sm:text-sm">
-            ©2025 Event Core. All rights reserved.
+            ©2026 Event Core. All rights reserved.
           </p>
         </div>
       </div>

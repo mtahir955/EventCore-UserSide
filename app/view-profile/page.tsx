@@ -35,7 +35,7 @@ export default function Page() {
 
   return (
     <main className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1425px] min-h-[2010px] bg-background">
+      <div className="mx-auto w-full max-w-[1425px] min-h-[1520px] bg-background">
         <Header />
 
         <div className="px-4 sm:px-8 md:px-10">
