@@ -137,7 +137,7 @@ export function PopularEvents({
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-black dark:text-white mb-3">
-            Popular <span className="text-[#89FC00] italic">Events</span>
+            Popular <span className="text-[#89FC00] italic font-passionate">Events</span>
           </h2>
           <p className="text-gray-600 dark:text-gray-300">
             Discover the most talked-about events happening this week

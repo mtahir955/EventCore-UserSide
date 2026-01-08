@@ -35,7 +35,7 @@ export default function PrivacyPolicyPage() {
         {/* Page Title */}
         <div className="mb-10 sm:mb-12 text-left">
           <h1 className="text-3xl sm:text-4xl md:text-[40px] font-bold leading-tight mb-3 sm:mb-4">
-            <span className="text-[#89FC00] italic font-serif">Privacy</span>{" "}
+            <span className="text-[#89FC00] font-passionate font-serif">Privacy</span>{" "}
             <span className="text-black dark:text-white">Policy</span>
           </h1>
 

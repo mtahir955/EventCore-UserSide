@@ -371,7 +371,7 @@ export default function PaymentSuccessPage() {
 
       <section className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 md:px-8 py-10 md:py-20">
         <div className="text-center mb-10 sm:mb-14">
-          <h1 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold text-[#89FC00] italic">
+          <h1 className="text-[24px] sm:text-[30px] md:text-[40px] font-semibold font-passionate text-[#89FC00] italic">
             Payment Successful!
           </h1>
           <p className="mt-2 text-[14px] sm:text-[16px] text-gray-700 dark:text-gray-300">

@@ -84,7 +84,7 @@ export default function TrainersPage() {
         {/* Hero Section */}
         <div className="mb-16">
           <h1 className="text-5xl font-bold text-black dark:text-white mb-4">
-            Meet Our <span className="text-[#0077F7]">Trainers</span>
+            Meet Our <span className="font-passionate text-[#89FD00]">Trainers</span>
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl">
             Meet our trainers and get inspired by the experts who lead with

@@ -16,7 +16,7 @@ export default function Page() {
         <section className="mx-auto grid w-full grid-cols-1 gap-12 px-4 sm:px-6 md:px-20 pb-20 pt-10 md:grid-cols-[1fr_350px]">
           {/* LEFT — TEXT CONTENT ONLY */}
           <div className="max-w-[700px] leading-relaxed space-y-6">
-            <h1 className="text-[28px] sm:text-[34px] md:text-[42px] font-semibold leading-tight">
+            <h1 className="text-[28px] sm:text-[34px] md:text-[42px] font-passionate text-[#89FD00] font-semibold leading-tight">
               Contact Us
             </h1>
 

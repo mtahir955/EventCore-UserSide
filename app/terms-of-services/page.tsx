@@ -40,7 +40,7 @@ export default function TermsOfService() {
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl md:text-[40px] font-bold mb-2 leading-tight">
               Terms of{" "}
-              <span className="text-[#89FC00] italic font-serif">Service</span>
+              <span className="text-[#89FC00] font-passionate font-serif">Service</span>
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base mb-8 ml-1">
               Last Updated: {new Date().toLocaleDateString()}

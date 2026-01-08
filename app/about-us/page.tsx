@@ -69,9 +69,12 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           {/* ABOUT TEXT SECTION */}
           <div className="order-2 md:order-1">
-            {/* ONLY TITLE (NO HIGHLIGHT SPLIT) */}
+            {/* TITLE */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
-              {about?.title}
+              <span className="mr-2">About</span>
+              <span className="font-passionate text-[#89FD00]">
+                {about?.title}
+              </span>
             </h2>
 
             {/* PARAGRAPHS ONLY */}
@@ -90,7 +93,7 @@ export default function AboutPage() {
               </p>
             )}
 
-            {/* CTA BUTTON (IF CTA EXISTS) */}
+            {/* CTA BUTTON */}
             {about?.ctaText && about?.ctaLink && (
               <Link href={about?.ctaLink}>
                 <Button className="bg-[#0077F7] hover:bg-[#0066DD] text-white px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg rounded-full">
