@@ -99,12 +99,12 @@ export function MyEventsCard({
           </button>
 
           {/* Delete */}
-          <button
+          {/* <button
             onClick={handleDelete}
             className="h-7 w-7 rounded-full bg-white grid place-items-center shadow hover:scale-105 transition"
           >
             <Trash2 color="#D19537" className="h-4 w-4"/>
-          </button>
+          </button> */}
 
           {/* 🔥 3-DOT MENU */}
           <div className="relative" ref={menuRef}>
