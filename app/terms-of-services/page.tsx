@@ -36,7 +36,7 @@ export default function TermsOfService() {
 
       <main className="flex-1">
         <div className="max-w-[1440px] mx-auto px-5 sm:px-8 md:px-12 lg:px-24 py-10 sm:py-14 md:py-16">
-          <div className="max-w-4xl mx-auto text-left text-black dark:text-gray-100">
+          <div className="max-w-7xl mx-auto text-left text-black dark:text-gray-100">
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl md:text-[40px] font-bold mb-2 leading-tight">
               Terms of{" "}

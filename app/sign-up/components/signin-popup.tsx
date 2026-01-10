@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 
 type AuthView = "signup" | "signin" | "forgot-password" | "reset-password";
 
@@ -96,36 +97,36 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
   // -------------------------------
   // 🚀 GOOGLE LOGIN
   // -------------------------------
-  const googleLogin = useGoogleLogin({
-    flow: "implicit",
-    onSuccess: async (tokenResponse) => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/auth/social/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-          body: JSON.stringify({
-            provider: "google",
-            idToken: tokenResponse.access_token, // ✔ USE access_token
-          }),
-        });
+  // const googleLogin = useGoogleLogin({
+  //   flow: "implicit",
+  //   onSuccess: async (tokenResponse) => {
+  //     try {
+  //       const response = await fetch(`${API_BASE_URL}/auth/social/login`, {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //         body: JSON.stringify({
+  //           provider: "google",
+  //           idToken: tokenResponse.access_token, // ✔ USE access_token
+  //         }),
+  //       });
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
+  //       const data = await response.json();
+  //       if (!response.ok) throw new Error(data.message);
 
-        localStorage.setItem("buyerToken", data.data.access_token);
-        localStorage.setItem("userData", JSON.stringify(data.data.user));
+  //       localStorage.setItem("buyerToken", data.data.access_token);
+  //       localStorage.setItem("userData", JSON.stringify(data.data.user));
 
-        toast.success("Logged in with Google!");
-        window.location.href = "/#";
-      } catch (err: any) {
-        toast.error(err.message || "Google login failed");
-      }
-    },
-    onError: () => toast.error("Google login failed"),
-  });
+  //       toast.success("Logged in with Google!");
+  //       window.location.href = "/#";
+  //     } catch (err: any) {
+  //       toast.error(err.message || "Google login failed");
+  //     }
+  //   },
+  //   onError: () => toast.error("Google login failed"),
+  // });
 
   // -------------------------------
   // 🚀 APPLE LOGIN
@@ -187,7 +188,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       </div>
 
       <div className="space-y-3 sm:space-y-4 mb-2">
-        <button
+        {/* <button
           onClick={() => googleLogin()}
           className="w-full h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center justify-center gap-3 transition-colors"
         >
@@ -200,7 +201,57 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
           <span className="text-black dark:text-white font-medium text-sm sm:text-base">
             Sign In with Google
           </span>
-        </button>
+        </button> */}
+
+        {/* Social Login */}
+        <div className="space-y-3 sm:space-y-4 mb-3">
+          <GoogleLogin
+            theme="outline"
+            size="large"
+            width="100%"
+            text="signup_with"
+            onSuccess={async (credentialResponse) => {
+              try {
+                // ✅ ID TOKEN (JWT)
+                const idToken = credentialResponse.credential;
+
+                if (!idToken) {
+                  throw new Error("Google ID token missing");
+                }
+
+                const response = await fetch(
+                  `${API_BASE_URL}/auth/social/login`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-Tenant-ID": HOST_Tenant_ID,
+                    },
+                    body: JSON.stringify({
+                      provider: "google",
+                      idToken,
+                    }),
+                  }
+                );
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                localStorage.setItem("buyerToken", data.data.access_token);
+                localStorage.setItem(
+                  "userData",
+                  JSON.stringify(data.data.user)
+                );
+
+                toast.success("Signed up with Google!");
+                window.location.href = "/#";
+              } catch (err: any) {
+                toast.error(err.message || "Google signup failed");
+              }
+            }}
+            onError={() => toast.error("Google Sign-In failed")}
+          />
+        </div>
 
         {/* <button
           onClick={appleLogin}

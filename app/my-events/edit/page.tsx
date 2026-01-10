@@ -15,6 +15,15 @@ import { API_BASE_URL } from "@/config/apiConfig";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
+const getFileUrl = (path?: string | null) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+  // If API_BASE_URL is like https://domain.com/api, strip trailing /api
+  const base = API_BASE_URL.replace(/\/api\/?$/i, "");
+  return `${base}${path}`;
+};
+
 export default function EditEventPage() {
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -214,8 +223,11 @@ export default function EditEventPage() {
       setStartTime(data.startTime?.slice(0, 5) || "");
       setEndTime(data.endTime?.slice(0, 5) || "");
 
+      // if (data?.bannerImage) {
+      //   setPreviewImage(data.bannerImage);
+      // }
       if (data?.bannerImage) {
-        setPreviewImage(data.bannerImage);
+        setPreviewImage(getFileUrl(data.bannerImage));
       }
     } catch (err) {
       console.error("Failed to load event", err);
@@ -406,14 +418,14 @@ export default function EditEventPage() {
                     alt="notification"
                     className="h-4 w-4"
                   /> */}
-                  {/* Counter badge */}
-                  {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
                 </button> */}
 
-                {/* Notification popup */}
-                {/* {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
@@ -548,10 +560,20 @@ export default function EditEventPage() {
           {/* Hero Image (Editable) */}
           <div className="relative rounded-2xl overflow-hidden mb-6 h-[180px] sm:h-[200px]">
             {/* Event Banner */}
+            {/* <img
+              src={previewImage || "/images/event-hero-banner.png"}
+              alt="Event banner"
+              className="h-full w-full object-cover transition-all duration-300"
+            />  */}
             <img
               src={previewImage || "/images/event-hero-banner.png"}
               alt="Event banner"
               className="h-full w-full object-cover transition-all duration-300"
+              onError={(e) => {
+                // fallback if image fails to load
+                (e.currentTarget as HTMLImageElement).src =
+                  "/images/event-hero-banner.png";
+              }}
             />
 
             {/* Edit Button */}
