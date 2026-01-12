@@ -24,6 +24,7 @@ export default function ProfileHeader({ profilePhoto }: any) {
             height={112}
             alt="Profile"
             className="object-cover h-full w-full"
+            sizes="112px"
           />
         </div>
       </div>

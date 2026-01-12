@@ -12,9 +12,10 @@ import { cn } from "@/lib/utils";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function Page() {
   const [faqData, setFaqData] = useState<any>(null);
@@ -33,19 +34,35 @@ export default function Page() {
   };
 
   // ⭐ Fetch FAQs from backend
+  // useEffect(() => {
+  //   axios
+  //     .get(`${API_BASE_URL}/tenants/public/about`, {
+  //       headers: { "X-Tenant-ID": HOST_Tenant_ID },
+  //     })
+  //     .then((res) => {
+  //       setFaqData(res.data.data?.faqs || []);
+  //     })
+  //     .catch((err) => {
+  //       console.error("FAQ Error:", err);
+  //       setFaqData([]);
+  //     })
+  //     .finally(() => setLoading(false));
+  // }, []);
+
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/tenants/public/about`, {
-        headers: { "X-Tenant-ID": HOST_Tenant_ID },
-      })
-      .then((res) => {
-        setFaqData(res.data.data?.faqs || []);
-      })
-      .catch((err) => {
+    const loadFaqs = async () => {
+      try {
+        const res = await apiClient.get("/tenants/public/about");
+        setFaqData(res.data?.data?.faqs || []);
+      } catch (err) {
         console.error("FAQ Error:", err);
         setFaqData([]);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFaqs();
   }, []);
 
   return (

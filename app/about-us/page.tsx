@@ -6,26 +6,42 @@ import { Star } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
-import axios from "axios";
+// import axios from "axios";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function AboutPage() {
   const [aboutData, setAboutData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch About Page Data
+  // useEffect(() => {
+  //   axios
+  //     .get(`${API_BASE_URL}/tenants/public/about`, {
+  //       headers: { "X-Tenant-ID": HOST_Tenant_ID },
+  //     })
+  //     .then((res) => {
+  //       setAboutData(res.data.data);
+  //     })
+  //     .catch((err) => console.error("❌ Error loading about page:", err))
+  //     .finally(() => setLoading(false));
+  // }, []);
+
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/tenants/public/about`, {
-        headers: { "X-Tenant-ID": HOST_Tenant_ID },
-      })
-      .then((res) => {
+    const load = async () => {
+      try {
+        const res = await apiClient.get("/tenants/public/about");
         setAboutData(res.data.data);
-      })
-      .catch((err) => console.error("❌ Error loading about page:", err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error("❌ Error loading about page:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, []);
 
   const hero = aboutData?.hero;

@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X } from "lucide-react";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { TransferSuccessModal } from "../components/transfer-success-modal";
 import { useToast } from "@/components/ui/use-toast";
+import { apiClient } from "@/lib/apiClient";
 
 type TransferTicketModalProps = {
   open: boolean;
@@ -92,7 +93,6 @@ export function TransferTicketModal({
 
     const token = getToken();
     if (!token) {
-
       toast({
         variant: "destructive",
         title: "Authentication required",
@@ -112,7 +112,7 @@ export function TransferTicketModal({
     }
 
     if (!ticket.purchaseId) {
-       toast({
+      toast({
         variant: "destructive",
         title: "Missing purchase ID",
         description: "Please refresh the page and try again.",
@@ -125,28 +125,39 @@ export function TransferTicketModal({
 
       // ✅ Backend requirement:
       // request field is named "ticketId" but it must contain purchaseId
-      await axios.post(
-        `${API_BASE_URL}/users/tickets/transfer`,
-        {
-          ticketId: ticket.purchaseId,
-          quantity: ticketCount,
-          transferTo: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            email: formData.email,
-            message: formData.message,
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      // await axios.post(
+      //   `${API_BASE_URL}/users/tickets/transfer`,
+      //   {
+      //     ticketId: ticket.purchaseId,
+      //     quantity: ticketCount,
+      //     transferTo: {
+      //       fullName: formData.fullName,
+      //       phone: formData.phone,
+      //       email: formData.email,
+      //       message: formData.message,
+      //     },
+      //   },
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   }
+      // );
 
-       toast({
+      await apiClient.post(`/users/tickets/transfer`, {
+        ticketId: ticket.purchaseId,
+        quantity: ticketCount,
+        transferTo: {
+          fullName: formData.fullName,
+          phone: formData.phone,
+          email: formData.email,
+          message: formData.message,
+        },
+      });
+
+      toast({
         title: "Ticket transferred",
         description: "Your ticket has been transferred successfully.",
       });

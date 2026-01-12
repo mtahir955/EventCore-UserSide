@@ -4,22 +4,24 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import axios from "axios";
+// import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export function HeroSection() {
-  const [heroImage, setHeroImage] = useState<string>("/images/bg-hero.png");
+  const [heroImage, setHeroImage] = useState();
 
   useEffect(() => {
     const fetchHero = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/tenants/public/about`, {
-          headers: { "X-Tenant-ID": HOST_Tenant_ID },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/tenants/public/about`, {
+        //   headers: { "X-Tenant-ID": HOST_Tenant_ID },
+        // });
+        const res = await apiClient.get("/tenants/public/about");
 
         const banner =
-          res.data?.data?.bannerUrl || res.data?.data?.hero?.backgroundImage;
+          res.data?.data?.bannerUrl
 
         // ✅ normalize banner safely
         if (typeof banner === "string" && banner.trim()) {
@@ -44,7 +46,7 @@ export function HeroSection() {
     <section className="relative w-full h-[500px] overflow-hidden bg-white dark:bg-[#212121] transition-colors duration-300">
       <div className="absolute inset-0">
         <Image
-          src={heroImage}
+          src={heroImage || "null"}
           alt="Hero banner"
           fill
           className="object-cover transition-all duration-500"

@@ -10,7 +10,20 @@ import { useTheme } from "next-themes";
 import { useTicketsStore } from "@/store/ticketsStore";
 import { useNotificationsStore } from "@/store/notificationsStore";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
+
+const safeUrl = (url?: string | null) => {
+  if (!url) return null;
+
+  // already absolute
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+
+  // relative
+  const base = (API_BASE_URL || "").replace(/\/$/, "");
+  if (url.startsWith("/")) return `${base}${url}`;
+  return `${base}/${url}`;
+};
 
 export function Header() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -70,17 +83,26 @@ export function Header() {
 
         const token = raw.startsWith("{") ? JSON.parse(raw)?.token : raw;
 
-        const res = await fetch(`${API_BASE_URL}/users/buyer/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        // const res = await fetch(`${API_BASE_URL}/users/buyer/profile`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
 
-        const json = await res.json();
+        // const json = await res.json();
+
+        // // if (json?.success && json?.data?.profilePhoto) {
+        // //   setProfilePhoto(json.data.profilePhoto);
+        // // }
+        // if (json?.success && json?.data?.profilePhoto) {
+        //   setProfilePhoto(safeUrl(json.data.profilePhoto));
+        // }
+        const res = await apiClient.get("/users/buyer/profile");
+        const json = res.data;
 
         if (json?.success && json?.data?.profilePhoto) {
-          setProfilePhoto(json.data.profilePhoto);
+          setProfilePhoto(safeUrl(json.data.profilePhoto));
         }
       } catch (err) {
         console.error("Failed to load profile photo", err);
@@ -93,21 +115,31 @@ export function Header() {
   useEffect(() => {
     const fetchTenantLogo = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/tenants/public/about`, {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        // const res = await fetch(`${API_BASE_URL}/tenants/public/about`, {
+        //   headers: {
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
 
-        const json = await res.json();
+        // const json = await res.json();
+
+        // // if (json?.success && json?.data?.logoUrl) {
+        // //   // Build full URL if backend returns relative path
+        // //   const logo = json.data.logoUrl.startsWith("http")
+        // //     ? json.data.logoUrl
+        // //     : `${API_BASE_URL}${json.data.logoUrl}`;
+
+        // //   setTenantLogo(logo);
+        // // }
+        // if (json?.success && json?.data?.logoUrl) {
+        //   setTenantLogo(safeUrl(json.data.logoUrl));
+        // }
+
+        const res = await apiClient.get("/tenants/public/about");
+        const json = res.data;
 
         if (json?.success && json?.data?.logoUrl) {
-          // Build full URL if backend returns relative path
-          const logo = json.data.logoUrl.startsWith("http")
-            ? json.data.logoUrl
-            : `${API_BASE_URL}${json.data.logoUrl}`;
-
-          setTenantLogo(logo);
+          setTenantLogo(safeUrl(json.data.logoUrl));
         }
       } catch (err) {
         console.error("Failed to load tenant logo", err);
@@ -177,14 +209,7 @@ export function Header() {
       <header className="w-full bg-white border-b border-gray-200 dark:bg-[#101010] dark:border-[#333] dark:text-gray-100 transition-colors duration-300">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between py-3 px-2 sm:px-6 md:px-8">
           {/* Logo */}
-          <Link href="/#" className="flex items-center flex-shrink-0">
-            {/* <Image
-              src="/images/header-logo.png"
-              alt="Good Life Trainings"
-              width={160}
-              height={50}
-              className="h-10 sm:h-12 w-auto sm:ml-8 transition-all"
-            /> */}
+          {/* <Link href="/#" className="flex items-center flex-shrink-0">
             <Image
               src={tenantLogo || "/images/header-logo.png"}
               alt="Tenant Logo"
@@ -192,7 +217,20 @@ export function Header() {
               height={50}
               priority
               className="h-10 sm:h-12 w-auto sm:ml-8 transition-all object-contain"
+              sizes="160px"
             />
+          </Link> */}
+          <Link href="/#" className="flex items-center flex-shrink-0">
+            <div className="relative h-10 sm:h-12 w-[170px] sm:w-[220px] overflow-hidden">
+              <Image
+                src={tenantLogo || "null"}
+                alt="Tenant Logo"
+                fill
+                priority
+                sizes="220px"
+                className="object-contain object-left"
+              />
+            </div>
           </Link>
 
           {/* Desktop Menu */}
@@ -236,6 +274,7 @@ export function Header() {
                   width={28}
                   height={28}
                   className="rounded-full object-cover"
+                  sizes="28px"
                 />
 
                 <svg
@@ -306,6 +345,7 @@ export function Header() {
                       width={44}
                       height={44}
                       className="rounded-full object-cover"
+                      sizes="44px"
                     />
 
                     <div>

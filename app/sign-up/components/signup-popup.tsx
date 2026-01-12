@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 // import { useGoogleLogin } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
+import { apiClient } from "@/lib/apiClient";
 
 type AuthView = "signup" | "signin" | "forgot-password" | "reset-password";
 
@@ -72,16 +73,18 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
         confirmPassword: formData.confirmPassword,
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/buyer/signup`,
-        payload,
-        {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // const response = await axios.post(
+      //   `${API_BASE_URL}/auth/buyer/signup`,
+      //   payload,
+      //   {
+      //     headers: {
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+
+      const response = await apiClient.post(`/auth/buyer/signup`, payload);
 
       const data = response.data?.data;
 
@@ -253,42 +256,68 @@ export default function SignupPopup({ onNavigate }: SignupPopupProps) {
             width="100%"
             text="signup_with"
             onSuccess={async (credentialResponse) => {
+              // try {
+              //   // ✅ ID TOKEN (JWT)
+              //   const idToken = credentialResponse.credential;
+
+              //   if (!idToken) {
+              //     throw new Error("Google ID token missing");
+              //   }
+
+              //   const response = await fetch(
+              //     `${API_BASE_URL}/auth/social/login`,
+              //     {
+              //       method: "POST",
+              //       headers: {
+              //         "Content-Type": "application/json",
+              //         "X-Tenant-ID": HOST_Tenant_ID,
+              //       },
+              //       body: JSON.stringify({
+              //         provider: "google",
+              //         idToken,
+              //       }),
+              //     }
+              //   );
+
+              //   const data = await response.json();
+              //   if (!response.ok) throw new Error(data.message);
+
+              //   localStorage.setItem("buyerToken", data.data.access_token);
+              //   localStorage.setItem(
+              //     "userData",
+              //     JSON.stringify(data.data.user)
+              //   );
+
+              //   toast.success("Signed up with Google!");
+              //   window.location.href = "/#";
+              // } catch (err: any) {
+              //   toast.error(err.message || "Google signup failed");
+              // }
               try {
-                // ✅ ID TOKEN (JWT)
                 const idToken = credentialResponse.credential;
 
                 if (!idToken) {
                   throw new Error("Google ID token missing");
                 }
 
-                const response = await fetch(
-                  `${API_BASE_URL}/auth/social/login`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "X-Tenant-ID": HOST_Tenant_ID,
-                    },
-                    body: JSON.stringify({
-                      provider: "google",
-                      idToken,
-                    }),
-                  }
-                );
+                const res = await apiClient.post(`/auth/social/login`, {
+                  provider: "google",
+                  idToken,
+                });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
+                const data = res.data?.data; // backend shape: { success, data: {...} }
 
-                localStorage.setItem("buyerToken", data.data.access_token);
-                localStorage.setItem(
-                  "userData",
-                  JSON.stringify(data.data.user)
-                );
+                localStorage.setItem("buyerToken", data.access_token);
+                localStorage.setItem("userData", JSON.stringify(data.user));
 
                 toast.success("Signed up with Google!");
                 window.location.href = "/#";
               } catch (err: any) {
-                toast.error(err.message || "Google signup failed");
+                toast.error(
+                  err?.response?.data?.message ||
+                    err?.message ||
+                    "Google signup failed"
+                );
               }
             }}
             onError={() => toast.error("Google Sign-In failed")}

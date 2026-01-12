@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -191,16 +192,18 @@ export function CalendarModal({
           eventId,
         };
 
-        const res = await axios.post(
-          `${API_BASE_URL}/users/calendar`,
-          payload,
-          {
-            headers: {
-              "X-Tenant-ID": HOST_Tenant_ID,
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // const res = await axios.post(
+        //   `${API_BASE_URL}/users/calendar`,
+        //   payload,
+        //   {
+        //     headers: {
+        //       "X-Tenant-ID": HOST_Tenant_ID,
+        //       Authorization: `Bearer ${token}`,
+        //     },
+        //   }
+        // );
+
+        const res = await apiClient.post(`/users/calendar`, payload);
 
         const newId = res?.data?.data?.id ?? null;
         setIsPinned(true);
@@ -221,12 +224,14 @@ export function CalendarModal({
           throw new Error("Missing calendarId for delete.");
         }
 
-        await axios.delete(`${API_BASE_URL}/users/calendar/${calendarId}`, {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // await axios.delete(`${API_BASE_URL}/users/calendar/${calendarId}`, {
+        //   headers: {
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //     Authorization: `Bearer ${token}`,
+        //   },
+        // });
+
+        await apiClient.delete(`/users/calendar/${calendarId}`);
 
         setIsPinned(false);
         setCalendarId(null);
@@ -255,16 +260,18 @@ export function CalendarModal({
           color: "red",
         };
 
-        await axios.put(
-          `${API_BASE_URL}/users/calendar/${calendarId}`,
-          payload,
-          {
-            headers: {
-              "X-Tenant-ID": HOST_Tenant_ID,
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // await axios.put(
+        //   `${API_BASE_URL}/users/calendar/${calendarId}`,
+        //   payload,
+        //   {
+        //     headers: {
+        //       "X-Tenant-ID": HOST_Tenant_ID,
+        //       Authorization: `Bearer ${token}`,
+        //     },
+        //   }
+        // );
+
+        await apiClient.put(`/users/calendar/${calendarId}`, payload);
 
         setInitialPinnedDateState(new Date(formatSelectedDate(selectedDate)));
 

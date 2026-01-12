@@ -14,9 +14,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePathname } from "next/navigation";
 import { Header } from "../../components/header";
 import { Footer } from "../../components/footer";
-import axios from "axios";
+// import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
+
+const safeImage = (img?: string) => {
+  if (!img) return "/placeholder.svg";
+
+  if (img.startsWith("http://") || img.startsWith("https://")) return img;
+
+  const base = (API_BASE_URL || "").replace(/\/$/, "");
+  if (img.startsWith("/")) return `${base}${img}`;
+  return `${base}/${img}`;
+};
 
 export default function TrainersPage() {
   const pathname = usePathname();
@@ -47,14 +58,18 @@ export default function TrainersPage() {
   // 💥 Fetch Trainers From Backend
   const fetchTrainers = async () => {
     try {
-      const res = await axios.get(
-        `${API_BASE_URL}/events/trainers?page=1&limit=20`,
-        {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      // const res = await axios.get(
+      //   `${API_BASE_URL}/events/trainers?page=1&limit=20`,
+      //   {
+      //     headers: {
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   }
+      // );
+
+      const res = await apiClient.get("/events/trainers", {
+        params: { page: 1, limit: 20 },
+      });
 
       const data = res.data;
 
@@ -84,7 +99,8 @@ export default function TrainersPage() {
         {/* Hero Section */}
         <div className="mb-16">
           <h1 className="text-5xl font-bold text-black dark:text-white mb-4">
-            Meet Our <span className="font-passionate text-[#89FD00]">Trainers</span>
+            Meet Our{" "}
+            <span className="font-passionate text-[#89FD00]">Trainers</span>
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl">
             Meet our trainers and get inspired by the experts who lead with
@@ -117,10 +133,11 @@ export default function TrainersPage() {
               <div className="flex flex-col sm:flex-row">
                 <div className="w-full sm:w-48 h-64 relative flex-shrink-0">
                   <Image
-                    src={`${API_BASE_URL}${trainer.image}`}
-                    alt={trainer.name}
+                    src={safeImage(trainer.image)}
+                    alt={trainer.name || "trainer"}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 640px) 100vw, 192px"
                   />
                 </div>
 

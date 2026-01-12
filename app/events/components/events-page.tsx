@@ -4,11 +4,12 @@ import { useState, useMemo, useEffect } from "react";
 import { Header } from "../../../components/header";
 import { EventCard } from "../components/event-card";
 import { Footer } from "../../../components/footer";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 import {
   Select,
@@ -453,18 +454,36 @@ export function EventsPage() {
 
       const token = getToken();
 
-      const res = await axios.get(`${API_BASE_URL}/events/upcoming`, {
+      // const res = await axios.get(`${API_BASE_URL}/events/upcoming`, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //   },
+      // });
+      const res = await apiClient.get("/events/upcoming", {
         headers: {
           Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
+          // "X-Tenant-ID": HOST_Tenant_ID,
+          // "Cache-Control": "no-cache",
+          // Pragma: "no-cache",
         },
       });
 
       const events =
-        res?.data?.data?.events?.map((ev: any) => ({
-          ...ev,
-          image: ev.image ? `${API_BASE_URL}${ev.image}` : "/placeholder.svg",
-        })) || [];
+        res?.data?.data?.events?.map((ev: any) => {
+          const img = ev?.image;
+
+          const image =
+            typeof img === "string" && img.length > 0
+              ? img.startsWith("http://") || img.startsWith("https://")
+                ? img // ✅ already absolute (your case)
+                : img.startsWith("/")
+                ? `${API_BASE_URL}${img}` // ✅ backend gave relative path
+                : `${API_BASE_URL}/${img}` // ✅ backend gave "files/.."
+              : "/placeholder.svg";
+
+          return { ...ev, image };
+        }) || [];
 
       setApiEvents(events);
     } catch (err: any) {
@@ -496,10 +515,12 @@ export function EventsPage() {
     escape: "trips",
 
     fun: "fun",
+    traincations: "fun", // ✅ add
 
     past: "past",
 
     training_room_blocks: "blocks",
+    roomblocks: "blocks",
     blocks: "blocks",
   };
 

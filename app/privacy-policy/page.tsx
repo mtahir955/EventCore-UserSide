@@ -5,26 +5,42 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { TableOfContents } from "./components/table-of-contents";
 import Link from "next/link";
-import axios from "axios";
+// import axios from "axios";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function PrivacyPolicyPage() {
   const [policies, setPolicies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // ⭐ Fetch privacy policies
+  // useEffect(() => {
+  //   axios
+  //     .get(`${API_BASE_URL}/tenants/public/about`, {
+  //       headers: { "X-Tenant-ID": HOST_Tenant_ID },
+  //     })
+  //     .then((res) => {
+  //       setPolicies(res.data.data?.privacyPolicies || []);
+  //     })
+  //     .catch((err) => console.error("❌ Privacy Policy Error:", err))
+  //     .finally(() => setLoading(false));
+  // }, []);
+
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/tenants/public/about`, {
-        headers: { "X-Tenant-ID": HOST_Tenant_ID },
-      })
-      .then((res) => {
-        setPolicies(res.data.data?.privacyPolicies || []);
-      })
-      .catch((err) => console.error("❌ Privacy Policy Error:", err))
-      .finally(() => setLoading(false));
+    const loadPolicies = async () => {
+      try {
+        const res = await apiClient.get("/tenants/public/about");
+        setPolicies(res.data?.data?.privacyPolicies || []);
+      } catch (err) {
+        console.error("❌ Privacy Policy Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPolicies();
   }, []);
 
   return (
@@ -35,7 +51,9 @@ export default function PrivacyPolicyPage() {
         {/* Page Title */}
         <div className="mb-10 sm:mb-12 text-left">
           <h1 className="text-3xl sm:text-4xl md:text-[40px] font-bold leading-tight mb-3 sm:mb-4">
-            <span className="text-[#89FC00] font-passionate font-serif">Privacy</span>{" "}
+            <span className="text-[#89FC00] font-passionate font-serif">
+              Privacy
+            </span>{" "}
             <span className="text-black dark:text-white">Policy</span>
           </h1>
 

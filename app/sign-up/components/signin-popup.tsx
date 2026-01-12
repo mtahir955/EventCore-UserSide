@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-hot-toast";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
-import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
 import { useGoogleLogin } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
+import { apiClient } from "@/lib/apiClient";
 
 type AuthView = "signup" | "signin" | "forgot-password" | "reset-password";
 
@@ -45,47 +46,73 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       return;
     }
 
+    // try {
+    //   const response = await axios.post(
+    //     `${API_BASE_URL}/auth/login`,
+    //     {
+    //       email: formData.email,
+    //       password: formData.password,
+    //     },
+    //     {
+    //       headers: {
+    //         "x-tenant-id": HOST_Tenant_ID,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }
+    //   );
+
+    //   toast.success("Login Successful! 🎉");
+
+    //   console.log("Login Response:", response.data);
+
+    //   const token = response?.data?.data?.access_token;
+    //   const userObj = response?.data?.data?.user;
+
+    //   if (!token) {
+    //     toast.error("No token received from server");
+    //     return;
+    //   }
+
+    //   // ----------------------------------------------------
+    //   // ⭐ SAVE TOKEN FOR AUTHENTICATION
+    //   // ----------------------------------------------------
+    //   localStorage.setItem("buyerToken", token);
+
+    //   // ----------------------------------------------------
+    //   // ⭐ SAVE USER DATA FOR HEADER (IMPORTANT)
+    //   //     Header reads: localStorage.getItem("userData")
+    //   // ----------------------------------------------------
+    //   localStorage.setItem("userData", JSON.stringify(userObj));
+
+    //   // ----------------------------------------------------
+    //   // Redirect to home page
+    //   // ----------------------------------------------------
+    //   window.location.href = "/#";
+    // } catch (error: any) {
+    //   console.error("Login Error:", error);
+    //   toast.error(error?.response?.data?.message || "Invalid credentials");
+    //   setErrors({ email: true, password: true });
+    // }
+
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/login`,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: {
-            "x-tenant-id": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const res = await apiClient.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
 
       toast.success("Login Successful! 🎉");
 
-      console.log("Login Response:", response.data);
-
-      const token = response?.data?.data?.access_token;
-      const userObj = response?.data?.data?.user;
+      const token = res?.data?.data?.access_token;
+      const userObj = res?.data?.data?.user;
 
       if (!token) {
         toast.error("No token received from server");
         return;
       }
 
-      // ----------------------------------------------------
-      // ⭐ SAVE TOKEN FOR AUTHENTICATION
-      // ----------------------------------------------------
       localStorage.setItem("buyerToken", token);
-
-      // ----------------------------------------------------
-      // ⭐ SAVE USER DATA FOR HEADER (IMPORTANT)
-      //     Header reads: localStorage.getItem("userData")
-      // ----------------------------------------------------
       localStorage.setItem("userData", JSON.stringify(userObj));
 
-      // ----------------------------------------------------
-      // Redirect to home page
-      // ----------------------------------------------------
       window.location.href = "/#";
     } catch (error: any) {
       console.error("Login Error:", error);
@@ -211,42 +238,69 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
             width="100%"
             text="signup_with"
             onSuccess={async (credentialResponse) => {
+              // try {
+              //   // ✅ ID TOKEN (JWT)
+              //   const idToken = credentialResponse.credential;
+
+              //   if (!idToken) {
+              //     throw new Error("Google ID token missing");
+              //   }
+
+              //   const response = await fetch(
+              //     `${API_BASE_URL}/auth/social/login`,
+              //     {
+              //       method: "POST",
+              //       headers: {
+              //         "Content-Type": "application/json",
+              //         "X-Tenant-ID": HOST_Tenant_ID,
+              //       },
+              //       body: JSON.stringify({
+              //         provider: "google",
+              //         idToken,
+              //       }),
+              //     }
+              //   );
+
+              //   const data = await response.json();
+              //   if (!response.ok) throw new Error(data.message);
+
+              //   localStorage.setItem("buyerToken", data.data.access_token);
+              //   localStorage.setItem(
+              //     "userData",
+              //     JSON.stringify(data.data.user)
+              //   );
+
+              //   toast.success("Signed up with Google!");
+              //   window.location.href = "/#";
+              // } catch (err: any) {
+              //   toast.error(err.message || "Google signup failed");
+              // }
+
               try {
-                // ✅ ID TOKEN (JWT)
                 const idToken = credentialResponse.credential;
 
                 if (!idToken) {
                   throw new Error("Google ID token missing");
                 }
 
-                const response = await fetch(
-                  `${API_BASE_URL}/auth/social/login`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "X-Tenant-ID": HOST_Tenant_ID,
-                    },
-                    body: JSON.stringify({
-                      provider: "google",
-                      idToken,
-                    }),
-                  }
-                );
+                const res = await apiClient.post("/auth/social/login", {
+                  provider: "google",
+                  idToken,
+                });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
+                const data = res.data?.data;
 
-                localStorage.setItem("buyerToken", data.data.access_token);
-                localStorage.setItem(
-                  "userData",
-                  JSON.stringify(data.data.user)
-                );
+                localStorage.setItem("buyerToken", data.access_token);
+                localStorage.setItem("userData", JSON.stringify(data.user));
 
-                toast.success("Signed up with Google!");
+                toast.success("Logged in with Google!");
                 window.location.href = "/#";
               } catch (err: any) {
-                toast.error(err.message || "Google signup failed");
+                toast.error(
+                  err?.response?.data?.message ||
+                    err?.message ||
+                    "Google login failed"
+                );
               }
             }}
             onError={() => toast.error("Google Sign-In failed")}

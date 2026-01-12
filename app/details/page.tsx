@@ -11,10 +11,20 @@ import { Footer } from "../../components/footer";
 import { CalendarModal } from "./components/calendar-modal";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import axios from "axios";
+// import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
+import { apiClient } from "@/lib/apiClient";
+
+const safeUrl = (url?: string | null) => {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+
+  const base = (API_BASE_URL || "").replace(/\/$/, "");
+  if (url.startsWith("/")) return `${base}${url}`;
+  return `${base}/${url}`;
+};
 
 export default function EventDetailPage() {
   const searchParams = useSearchParams();
@@ -30,36 +40,29 @@ export default function EventDetailPage() {
 
   const defaultDate = new Date("2025-06-13T20:00:00");
 
-  const getToken = () => {
-    if (typeof window === "undefined") return null;
+  // const getToken = () => {
+  //   if (typeof window === "undefined") return null;
 
-    let raw =
-      localStorage.getItem("buyerToken") ||
-      localStorage.getItem("staffToken") ||
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("token");
+  //   let raw =
+  //     localStorage.getItem("buyerToken") ||
+  //     localStorage.getItem("staffToken") ||
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("token");
 
-    try {
-      const parsed = JSON.parse(raw || "{}");
-      return parsed?.token || parsed;
-    } catch {
-      return raw;
-    }
-  };
+  //   try {
+  //     const parsed = JSON.parse(raw || "{}");
+  //     return parsed?.token || parsed;
+  //   } catch {
+  //     return raw;
+  //   }
+  // };
 
   // ⭐ Fetch Event Details
   useEffect(() => {
     if (!eventId) return;
 
-    const token = getToken();
-
-    axios
-      .get(`${API_BASE_URL}/events/public/${eventId}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      })
+    apiClient
+      .get(`/events/public/${eventId}`)
       .then((res) => {
         setEventData(res.data.data);
       })
@@ -73,18 +76,22 @@ export default function EventDetailPage() {
   // ⭐ Fetch calendar entry ONLY for THIS event
   useEffect(() => {
     if (!eventId) return;
-    const token = getToken();
-    if (!token) return;
+    // const token = getToken();
+    // if (!token) return;
 
+    // setCalendarLoading(true);
+
+    // axios
+    //   .get(`${API_BASE_URL}/users/calendar/event/${eventId}`, {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //       "X-Tenant-ID": HOST_Tenant_ID,
+    //     },
+    //   })
     setCalendarLoading(true);
 
-    axios
-      .get(`${API_BASE_URL}/users/calendar/event/${eventId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      })
+    apiClient
+      .get(`/users/calendar/event/${eventId}`)
       .then((res) => {
         // Case 1: backend returns valid entry
         if (res.data?.success && res.data?.data) {
@@ -129,11 +136,7 @@ export default function EventDetailPage() {
         <section className="relative max-w-[1440px] mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-8">
           <div className="relative h-[220px] sm:h-[300px] md:h-[400px] rounded-2xl overflow-hidden">
             <Image
-              src={
-                eventData?.bannerImage
-                  ? `${API_BASE_URL}${eventData.bannerImage}`
-                  : "/images/hero-image.png"
-              }
+              src={safeUrl(eventData?.bannerImage) || "/images/hero-image.png"}
               alt={eventData?.title || "Event Banner"}
               fill
               className="object-cover"
@@ -254,7 +257,7 @@ export default function EventDetailPage() {
                       className="bg-white dark:bg-[#191919] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5 text-center hover:-translate-y-1 hover:shadow-md transition"
                     >
                       <img
-                        src={`${API_BASE_URL}${trainer.image}`}
+                        src={safeUrl(trainer.image) || "/placeholder.svg"}
                         className="h-12 w-12 rounded-full mx-auto mb-3 object-cover"
                         alt={trainer.name}
                       />
@@ -346,7 +349,7 @@ export default function EventDetailPage() {
         </section>
 
         {/* Explore More */}
-          <ExploreEvents />
+        <ExploreEvents />
       </main>
 
       <Footer />
@@ -362,9 +365,7 @@ export default function EventDetailPage() {
             "Event description not available."
           }
           eventImage={
-            eventData.bannerImage
-              ? `${API_BASE_URL}/${eventData.bannerImage}`
-              : "/images/hero-image.png"
+            safeUrl(eventData?.bannerImage) || "/images/hero-image.png"
           }
           eventId={safeEventId}
           initialDate={eventActualDate} // ⭐ Actual event date (for blue highlight)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import PageTitle from "../upcoming-events/components/page-title";
@@ -10,26 +10,27 @@ import Tabs from "../upcoming-events/components/tabs";
 import EventsGrid from "../upcoming-events/components/events-grid";
 import Explore from "../upcoming-events/components/explore";
 
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 // 🔥 TOKEN HELPER
-function getAuthToken() {
-  let raw =
-    localStorage.getItem("buyerToken") ||
-    localStorage.getItem("userToken") ||
-    localStorage.getItem("hostToken");
+// function getAuthToken() {
+//   let raw =
+//     localStorage.getItem("buyerToken") ||
+//     localStorage.getItem("userToken") ||
+//     localStorage.getItem("hostToken");
 
-  if (!raw) return null;
+//   if (!raw) return null;
 
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed?.token) return parsed.token;
-    return raw;
-  } catch {
-    return raw;
-  }
-}
+//   try {
+//     const parsed = JSON.parse(raw);
+//     if (parsed?.token) return parsed.token;
+//     return raw;
+//   } catch {
+//     return raw;
+//   }
+// }
 
 export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState<"upcoming" | "previous">(
@@ -54,15 +55,17 @@ export default function CalendarPage() {
   // -----------------------------------------------------
   const fetchEvents = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      // const token = getAuthToken();
+      // if (!token) return;
 
-      const res = await axios.get(`${API_BASE_URL}/users/events/mine`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": HOST_Tenant_ID,
-        },
-      });
+      // const res = await axios.get(`${API_BASE_URL}/users/events/mine`, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "x-tenant-id": HOST_Tenant_ID,
+      //   },
+      // });
+
+      const res = await apiClient.get("/users/events/mine");
 
       const data = res.data?.data;
 
@@ -83,15 +86,17 @@ export default function CalendarPage() {
   // -----------------------------------------------------
   const fetchPinnedCalendar = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      // const token = getAuthToken();
+      // if (!token) return;
 
-      const res = await axios.get(`${API_BASE_URL}/users/calendar`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": HOST_Tenant_ID,
-        },
-      });
+      // const res = await axios.get(`${API_BASE_URL}/users/calendar`, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "x-tenant-id": HOST_Tenant_ID,
+      //   },
+      // });
+
+      const res = await apiClient.get("/users/calendar");
 
       const entries = res.data?.data?.entries || [];
       const formatted: any = {};

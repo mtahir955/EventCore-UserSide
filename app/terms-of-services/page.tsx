@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function TermsOfService() {
   const [terms, setTerms] = useState<any[]>([]);
@@ -14,9 +15,10 @@ export default function TermsOfService() {
   useEffect(() => {
     const fetchTerms = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/tenants/public/about`, {
-          headers: { "X-Tenant-ID": HOST_Tenant_ID },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/tenants/public/about`, {
+        //   headers: { "X-Tenant-ID": HOST_Tenant_ID },
+        // });
+        const res = await apiClient.get("/tenants/public/about");
 
         const data = res?.data?.data?.termsAndConditions || [];
         setTerms(data);
@@ -40,7 +42,9 @@ export default function TermsOfService() {
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl md:text-[40px] font-bold mb-2 leading-tight">
               Terms of{" "}
-              <span className="text-[#89FC00] font-passionate font-serif">Service</span>
+              <span className="text-[#89FC00] font-passionate font-serif">
+                Service
+              </span>
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base mb-8 ml-1">
               Last Updated: {new Date().toLocaleDateString()}
@@ -48,9 +52,8 @@ export default function TermsOfService() {
 
             {/* Intro */}
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-8 text-sm sm:text-base">
-              Welcome, By accessing or using our
-              application, or services, you agree to comply with the following
-              Terms of Service.
+              Welcome, By accessing or using our application, or services, you
+              agree to comply with the following Terms of Service.
             </p>
 
             {/* ==============================

@@ -6,12 +6,13 @@ import { EventCard } from "../tickets/components/event-card";
 import { Footer } from "../../components/footer";
 import { useState, useEffect, useMemo } from "react";
 import { useTicketsStore } from "@/store/ticketsStore";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { apiClient } from "@/lib/apiClient"; // use your real path
 
 type TicketCardUI = {
   eventId: string;
@@ -159,12 +160,14 @@ export default function Page() {
           return;
         }
 
-        const res = await axios.get(`${API_BASE_URL}/users/tickets/mine`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/users/tickets/mine`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
+
+        const res = await apiClient.get(`/users/tickets/mine`);
 
         const ownedTickets = res.data?.data?.ownedTickets || [];
         const transferredTickets = res.data?.data?.transferredTickets || [];
@@ -316,12 +319,14 @@ export default function Page() {
           return;
         }
 
-        const res = await axios.get(`${API_BASE_URL}/tickets/refund-requests`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/tickets/refund-requests`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
+
+        const res = await apiClient.get(`/tickets/refund-requests`);
 
         const list = res.data?.data;
         if (Array.isArray(list) && list.length) {

@@ -5,9 +5,10 @@ import Image from "next/image";
 import { MapPin, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface EventItem {
   id: string;
@@ -59,11 +60,12 @@ export function PopularEvents({
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/events/this-week`, {
-          headers: {
-            "x-tenant-id": HOST_Tenant_ID,
-          },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/events/this-week`, {
+        //   headers: {
+        //     "x-tenant-id": HOST_Tenant_ID,
+        //   },
+        // });
+        const res = await apiClient.get("/events/this-week");
 
         const apiEvents = res.data?.data?.events || [];
 
@@ -137,7 +139,10 @@ export function PopularEvents({
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-black dark:text-white mb-3">
-            Popular <span className="text-[#89FC00] italic font-passionate">Events</span>
+            Popular{" "}
+            <span className="text-[#89FC00] italic font-passionate">
+              Events
+            </span>
           </h2>
           <p className="text-gray-600 dark:text-gray-300">
             Discover the most talked-about events happening this week

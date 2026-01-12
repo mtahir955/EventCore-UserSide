@@ -7,13 +7,14 @@ import { Footer } from "../../../components/footer";
 import { CalendarModal } from "../components/calendar-modal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import Link from "next/link";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import QRCode from "qrcode";
+import { apiClient } from "@/lib/apiClient";
 
 type TicketQR = {
   ticketId: string;
@@ -193,15 +194,16 @@ export default function PaymentSuccessPage() {
         const list: TicketQR[] = [];
 
         for (const issued of paymentData.issuedTickets) {
-          const res = await axios.get(
-            `${API_BASE_URL}/tickets/${issued.id}/qr`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "X-Tenant-ID": HOST_Tenant_ID,
-              },
-            }
-          );
+          // const res = await axios.get(
+          //   `${API_BASE_URL}/tickets/${issued.id}/qr`,
+          //   {
+          //     headers: {
+          //       Authorization: `Bearer ${token}`,
+          //       "X-Tenant-ID": HOST_Tenant_ID,
+          //     },
+          //   }
+          // );
+          const res = await apiClient.get(`/tickets/${issued.id}/qr`);
 
           list.push({
             ticketId: issued.id,
@@ -243,15 +245,17 @@ export default function PaymentSuccessPage() {
       // ✅ IMPORTANT: Use Promise.all to ensure ALL QR PNGs are generated BEFORE zipping
       await Promise.all(
         paymentData.issuedTickets.map(async (issued: any) => {
-          const res = await axios.get(
-            `${API_BASE_URL}/tickets/${issued.id}/qr`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "X-Tenant-ID": HOST_Tenant_ID,
-              },
-            }
-          );
+          // const res = await axios.get(
+          //   `${API_BASE_URL}/tickets/${issued.id}/qr`,
+          //   {
+          //     headers: {
+          //       Authorization: `Bearer ${token}`,
+          //       "X-Tenant-ID": HOST_Tenant_ID,
+          //     },
+          //   }
+          // );
+
+          const res = await apiClient.get(`/tickets/${issued.id}/qr`);
 
           const qrCodeUrl = res.data?.data?.qrCode; // ✅ correct path (from your JSON)
           if (!qrCodeUrl) {
@@ -326,16 +330,20 @@ export default function PaymentSuccessPage() {
         return;
       }
 
-      const res = await axios.post(
-        `${API_BASE_URL}/payments/confirm`,
-        { paymentIntentId }, // ✅ ONLY this for BNPL
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      // const res = await axios.post(
+      //   `${API_BASE_URL}/payments/confirm`,
+      //   { paymentIntentId }, // ✅ ONLY this for BNPL
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   }
+      // );
+
+      const res = await apiClient.post(`/payments/confirm`, {
+        paymentIntentId,
+      });
 
       localStorage.setItem("confirmedPurchase", JSON.stringify(res.data));
       setPaymentData(res.data.data);

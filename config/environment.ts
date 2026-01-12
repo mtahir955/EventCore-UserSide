@@ -33,5 +33,5 @@ export const IS_PRODUCTION = APP_ENV === 'production';
 export const IS_DEVELOPMENT = APP_ENV === 'development';
 
 // Development
+// ✅ This is subdomain name for localhost testing (e.g. "demo")
 export const DEV_TENANT = process.env.NEXT_PUBLIC_DEV_TENANT || null;
-

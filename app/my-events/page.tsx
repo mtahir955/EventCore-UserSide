@@ -25,6 +25,18 @@ type Props = {
   time: string;
 };
 
+const safeImage = (img?: string) => {
+  if (!img) return "/images/event-1.png";
+
+  // already absolute url
+  if (img.startsWith("http://") || img.startsWith("https://")) return img;
+
+  // relative path from backend
+  const base = (API_BASE_URL || "").replace(/\/$/, "");
+  if (img.startsWith("/")) return `${base}${img}`;
+  return `${base}/${img}`;
+};
+
 export default function MyEventsPage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -186,9 +198,7 @@ export default function MyEventsPage() {
       const mapped = response.data?.data?.map((ev: any) => ({
         id: ev.id, // ⭐ IMPORTANT
         // imageSrc: ev.bannerImage || "/images/event-1.png",
-        imageSrc: ev.bannerImage
-          ? `${API_BASE_URL}${ev.bannerImage}`
-          : "/images/event-1.png",
+        imageSrc: safeImage(ev.bannerImage), // ✅ fixed
 
         // price: ev.tickets?.[0]?.price || "0",
         // price: ev.minTicketPrice ?? ev.ticketPrice ?? "0",
@@ -306,14 +316,14 @@ export default function MyEventsPage() {
                     alt="notification"
                     className="h-4 w-4"
                   /> */}
-                  {/* Counter badge */}
-                  {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
                 </button> */}
 
-                {/* Notification popup */}
-                {/* {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications

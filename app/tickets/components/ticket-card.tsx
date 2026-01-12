@@ -5,13 +5,14 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { TransferTicketModal } from "../components/transfer-ticket-modal";
 import { RefundRequestModal } from "../components/refund-request-modal";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { useToast } from "@/components/ui/use-toast";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import QRCode from "qrcode";
+import { apiClient } from "@/lib/apiClient";
 
 type TicketProps = {
   eventId: string;
@@ -145,17 +146,19 @@ export function TicketCard({
         requestedAt: data.requestedAt,
       };
 
-      const res = await axios.post(
-        `${API_BASE_URL}/tickets/refund-request`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // const res = await axios.post(
+      //   `${API_BASE_URL}/tickets/refund-request`,
+      //   payload,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+
+      const res = await apiClient.post(`/tickets/refund-request`, payload);
 
       toast({
         title: "Refund request submitted",
@@ -199,15 +202,17 @@ export function TicketCard({
 
       const token = raw.startsWith("{") ? JSON.parse(raw)?.token : raw;
 
-      const res = await axios.get(
-        `${API_BASE_URL}/tickets/event/${eventId}/qr`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      // const res = await axios.get(
+      //   `${API_BASE_URL}/tickets/event/${eventId}/qr`,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   }
+      // );
+
+      const res = await apiClient.get(`/tickets/event/${eventId}/qr`);
 
       const tickets = Array.isArray(res.data?.data) ? res.data.data : [];
       if (!tickets.length) {

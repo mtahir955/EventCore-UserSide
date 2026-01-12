@@ -4,10 +4,11 @@ import Image from "next/image";
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 // Stripe
 import { loadStripe } from "@stripe/stripe-js";
@@ -197,16 +198,19 @@ function StripeUnifiedPaymentForm({
         }
 
         try {
-          const confirmResponse = await axios.post(
-            `${API_BASE_URL}/payments/confirm`,
-            { paymentIntentId: paymentIntent.id },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "X-Tenant-ID": HOST_Tenant_ID,
-              },
-            }
-          );
+          // const confirmResponse = await axios.post(
+          //   `${API_BASE_URL}/payments/confirm`,
+          //   { paymentIntentId: paymentIntent.id },
+          //   {
+          //     headers: {
+          //       Authorization: `Bearer ${token}`,
+          //       "X-Tenant-ID": HOST_Tenant_ID,
+          //     },
+          //   }
+          // );
+          await apiClient.post(`/payments/confirm`, {
+            paymentIntentId: paymentIntent.id,
+          });
 
           // Store confirmed purchase for success page
           localStorage.setItem(
@@ -363,16 +367,9 @@ function StripeInstallmentPaymentForm({
         return;
       }
 
-      await axios.post(
-        `${API_BASE_URL}/payments/installments/purchase/${installmentPurchaseId}/confirm`,
-        { stripePaymentIntentId: paymentIntent.id },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
+      await apiClient.post(
+        `/payments/installments/purchase/${installmentPurchaseId}/confirm`,
+        { stripePaymentIntentId: paymentIntent.id }
       );
 
       // 3) Save card for auto-pay (optional) using SetupIntent
@@ -550,12 +547,14 @@ export default function OrderSummary() {
       try {
         setLoadingCredits(true);
 
-        const res = await axios.get(`${API_BASE_URL}/users/buyer/credits`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/users/buyer/credits`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
+
+        const res = await apiClient.get(`/users/buyer/credits`);
 
         const data = res?.data?.data;
 
@@ -581,15 +580,18 @@ export default function OrderSummary() {
   useEffect(() => {
     if (!eventId) return;
 
-    const token = getToken();
+    // const token = getToken();
 
-    axios
-      .get(`${API_BASE_URL}/events/public/${eventId}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      })
+    // axios
+    //   .get(`${API_BASE_URL}/events/public/${eventId}`, {
+    //     headers: {
+    //       Authorization: token ? `Bearer ${token}` : "",
+    //       "X-Tenant-ID": HOST_Tenant_ID,
+    //     },
+    //   })
+    apiClient
+      .get(`/events/public/${eventId}`)
+
       .then((res) => setEventData(res.data.data))
       .catch(() => toast.error("Failed to load event"))
       .finally(() => setLoadingEvent(false));
@@ -598,15 +600,18 @@ export default function OrderSummary() {
   /* ─────────────── FETCH TICKETS ───────────────*/
   useEffect(() => {
     if (!eventId) return;
-    const token = getToken();
+    // const token = getToken();
 
-    axios
-      .get(`${API_BASE_URL}/tickets/event/${eventId}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      })
+    // axios
+    //   .get(`${API_BASE_URL}/tickets/event/${eventId}`, {
+    //     headers: {
+    //       Authorization: token ? `Bearer ${token}` : "",
+    //       "X-Tenant-ID": HOST_Tenant_ID,
+    //     },
+    //   })
+    apiClient
+      .get(`/tickets/event/${eventId}`)
+
       .then((res) => {
         if (res.data?.data?.tickets) setTickets(res.data.data.tickets);
       })
@@ -629,15 +634,20 @@ export default function OrderSummary() {
       userCountry
     );
 
-    axios
-      .get(
-        `${API_BASE_URL}/payments/available-methods?amount=${total}&country=${userCountry}`,
-        {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      )
+    // axios
+    //   .get(
+    //     `${API_BASE_URL}/payments/available-methods?amount=${total}&country=${userCountry}`,
+    //     {
+    //       headers: {
+    //         "X-Tenant-ID": HOST_Tenant_ID,
+    //       },
+    //     }
+    //   )
+    apiClient
+      .get(`/payments/available-methods`, {
+        params: { amount: total, country: userCountry },
+      })
+
       .then((res) => {
         const methods =
           res.data?.data?.paymentMethods || res.data?.paymentMethods || [];
@@ -744,12 +754,13 @@ export default function OrderSummary() {
       setInitiatingPayment(true);
 
       // 1) Get Stripe publishable key
-      const pubRes = await axios.get(
-        `${API_BASE_URL}/payments/config/publishable-key`,
-        {
-          headers: { "X-Tenant-ID": HOST_Tenant_ID },
-        }
-      );
+      // const pubRes = await axios.get(
+      //   `${API_BASE_URL}/payments/config/publishable-key`,
+      //   {
+      //     headers: { "X-Tenant-ID": HOST_Tenant_ID },
+      //   }
+      // );
+      const pubRes = await apiClient.get(`/payments/config/publishable-key`);
 
       const publishableKey = pubRes.data?.data?.publishableKey;
 
@@ -797,13 +808,14 @@ export default function OrderSummary() {
       // setClientSecret(secret);
       // toast.success("Payment session created");
 
-      const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-      });
+      // const res = await axios.post(`${API_BASE_URL}/payments/initiate`, body, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+      const res = await apiClient.post(`/payments/initiate`, body);
 
       const responseData = res.data?.data;
 

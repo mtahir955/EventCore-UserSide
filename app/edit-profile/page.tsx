@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -12,8 +12,9 @@ import ContactDetails from "./components/profile/contact-details";
 import PaymentDetails from "./components/profile/payment-details";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function Page() {
   const [showToast, setShowToast] = useState(false);
@@ -26,31 +27,44 @@ export default function Page() {
   const profileHeaderRef = useRef<any>(null);
 
   // ⭐ Fetch existing profile data for autofill
+  // useEffect(() => {
+  //   const token = localStorage.getItem("buyerToken");
+  //   if (!token) return;
+
+  //   const saved = localStorage.getItem("buyerProfile");
+  //   if (saved) {
+  //     setProfileData(JSON.parse(saved));
+  //   }
+
+  //   axios
+  //     .get(`${API_BASE_URL}/users/buyer/profile`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "x-tenant-id": HOST_Tenant_ID,
+  //       },
+  //     })
+  //     .then((res) => {
+  //       setProfileData(res.data.data);
+
+  //       // ⭐ Save profile in local storage for frontend usage
+  //       localStorage.setItem("buyerProfile", JSON.stringify(res.data.data));
+  //     })
+  //     .catch((err) => {
+  //       console.error("Error fetching buyer profile:", err);
+  //     });
+  // }, []);
   useEffect(() => {
-    const token = localStorage.getItem("buyerToken");
-    if (!token) return;
-
-    const saved = localStorage.getItem("buyerProfile");
-    if (saved) {
-      setProfileData(JSON.parse(saved));
-    }
-
-    axios
-      .get(`${API_BASE_URL}/users/buyer/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": HOST_Tenant_ID,
-        },
-      })
-      .then((res) => {
+    const loadProfile = async () => {
+      try {
+        const res = await apiClient.get("/users/buyer/profile");
         setProfileData(res.data.data);
-
-        // ⭐ Save profile in local storage for frontend usage
         localStorage.setItem("buyerProfile", JSON.stringify(res.data.data));
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error fetching buyer profile:", err);
-      });
+      }
+    };
+
+    loadProfile();
   }, []);
 
   const handleSave = async () => {
@@ -60,11 +74,11 @@ export default function Page() {
       const paymentDetails = paymentDetailsRef.current?.getValues();
       const profileFile = profileHeaderRef.current?.getFile?.();
 
-      const token = localStorage.getItem("buyerToken");
-      if (!token) {
-        console.error("No buyer token found in localStorage");
-        return;
-      }
+      // const token = localStorage.getItem("buyerToken");
+      // if (!token) {
+      //   console.error("No buyer token found in localStorage");
+      //   return;
+      // }
 
       const payload = {
         basicInfo,
@@ -78,17 +92,18 @@ export default function Page() {
         formData.append("profilePhoto", profileFile);
       }
 
-      const response = await axios.put(
-        `${API_BASE_URL}/users/buyer/profile`,
-        formData,
-        {
-          headers: {
-            "x-tenant-id": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      // const response = await axios.put(
+      //   `${API_BASE_URL}/users/buyer/profile`,
+      //   formData,
+      //   {
+      //     headers: {
+      //       "x-tenant-id": HOST_Tenant_ID,
+      //       Authorization: `Bearer ${token}`,
+      //       "Content-Type": "multipart/form-data",
+      //     },
+      //   }
+      // );
+      const response = await apiClient.put("/users/buyer/profile", formData);
 
       // ⭐ UPDATE STATE WITH NEW PHOTO URL
       setProfileData(response.data.data);

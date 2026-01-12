@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 type SocialLinks = {
   facebook?: string;
@@ -20,13 +21,15 @@ export function Footer() {
   useEffect(() => {
     const fetchTenantData = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/tenants/public/about`, {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        // const res = await fetch(`${API_BASE_URL}/tenants/public/about`, {
+        //   headers: {
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
 
-        const json = await res.json();
+        // const json = await res.json();
+        const res = await apiClient.get("/tenants/public/about");
+        const json = res.data;
 
         if (json?.success && json?.data) {
           const logoUrl = json.data.logoUrl;
@@ -60,7 +63,7 @@ export function Footer() {
           {/* Logo */}
           <div className="flex flex-col items-start">
             <Image
-              src={tenantLogo || "/images/footer-logo.png"}
+              src={tenantLogo || "null"}
               alt="Tenant Logo"
               width={180}
               height={50}
