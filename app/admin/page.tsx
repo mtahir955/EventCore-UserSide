@@ -75,8 +75,39 @@ export default function DashboardPage() {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
 
+      // HARDCODED: Always use production API endpoint when on production domain
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+      const isProductionDomain = hostname.includes('eventcoresolutions.com') && !hostname.startsWith('api.');
+      
+      // HARDCODED API endpoint for production
+      const hardcodedApiUrl = isProductionDomain 
+        ? 'https://api.eventcoresolutions.com' 
+        : (API_BASE_URL || 'http://localhost:8080');
+      
+      // Construct the full URL - always use hardcoded URL in production
+      const fullUrl = `${hardcodedApiUrl.replace(/\/+$/, '')}/super-admin/events/dashboard/overview`;
+      
+      console.log('[Admin Page] HARDCODED API URL:', hardcodedApiUrl);
+      console.log('[Admin Page] Full URL will be:', fullUrl);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:93',message:'Making dashboard API call with HARDCODED URL',data:{apiBaseUrl:API_BASE_URL,hardcodedApiUrl:hardcodedApiUrl,fullUrl:fullUrl,isAbsolute:fullUrl.startsWith('http'),hasToken:!!token,currentOrigin:typeof window !== 'undefined' ? window.location.origin : 'SSR',hostname:hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+
+      // Validate URL is absolute before making request
+      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:99',message:'ERROR: URL is not absolute',data:{fullUrl:fullUrl,apiBaseUrl:API_BASE_URL,hardcodedApiUrl:hardcodedApiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        throw new Error(`Invalid API URL: ${fullUrl}. Hardcoded API URL was: ${hardcodedApiUrl}`);
+      }
+
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:98',message:'About to make fetch request',data:{url:fullUrl,method:'GET',headers:{hasAuth:!!token,hasTenantId:!!SAAS_Tenant_ID}},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+
       const res = await fetch(
-        `${API_BASE_URL}/super-admin/events/dashboard/overview`,
+        fullUrl,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -85,7 +116,16 @@ export default function DashboardPage() {
         }
       );
 
-      const json = await res.json();
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:95',message:'Fetch response received',data:{status:res.status,statusText:res.statusText,url:res.url,ok:res.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+
+      // #region agent log
+      const responseText = await res.text();
+      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:98',message:'Response text received',data:{status:res.status,responseText:responseText.substring(0,500)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+
+      const json = JSON.parse(responseText);
       const data = json?.data || {};
 
       setOverview({
@@ -96,7 +136,10 @@ export default function DashboardPage() {
         ticketSoldChart: data.charts?.ticketSold?.data ?? [],
         recentEvents: data.recentEvents ?? [],
       });
-    } catch (err) {
+    } catch (err: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:110',message:'Error in fetchAdminDashboardOverview',data:{error:err?.message,stack:err?.stack?.substring(0,500),apiBaseUrl:API_BASE_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       console.error("Failed to load super admin dashboard", err);
     }
   };

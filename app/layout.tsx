@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "react-hot-toast";
 import ThemeInitializer from "@/components/ThemeInitializer";
 import GoogleProviderWrapper from "@/components/GoogleProviderWrapper";
+import TenantProviderWrapper from "@/components/TenantProviderWrapper";
 
 // ✅ Load local font
 const feelingPassionate = localFont({
@@ -55,22 +56,24 @@ export default function RootLayout({
           }}
         />
 
-        <GoogleProviderWrapper>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="class"
-            enableSystem={false}
-            storageKey="theme"
-          >
-            <ThemeInitializer />
+        <TenantProviderWrapper>
+          <GoogleProviderWrapper>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="class"
+              enableSystem={false}
+              storageKey="theme"
+            >
+              <ThemeInitializer />
 
-            <Suspense fallback={<div>Loading...</div>}>
-              {children}
-              <Analytics />
-              <Toaster position="bottom-right" reverseOrder={false} />
-            </Suspense>
-          </ThemeProvider>
-        </GoogleProviderWrapper>
+              <Suspense fallback={<div>Loading...</div>}>
+                {children}
+                <Analytics />
+                <Toaster position="bottom-right" reverseOrder={false} />
+              </Suspense>
+            </ThemeProvider>
+          </GoogleProviderWrapper>
+        </TenantProviderWrapper>
       </body>
     </html>
   );

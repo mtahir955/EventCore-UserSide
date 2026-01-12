@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  eventcore-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
+        - NEXT_PUBLIC_ROOT_DOMAIN=${NEXT_PUBLIC_ROOT_DOMAIN:-eventcoresolutions.com}
+        - NEXT_PUBLIC_SAAS_TENANT_ID=${NEXT_PUBLIC_SAAS_TENANT_ID}
+        - NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV:-development}
+    image: eventcoresolutions/eventcore-frontend:dev
+    container_name: eventcore-frontend-dev
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    networks:
+      - eventcore-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  eventcore-network:
+    driver: bridge
+
