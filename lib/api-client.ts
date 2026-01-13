@@ -165,16 +165,29 @@ export function getStoredTenantId(): string | null {
 
 function createApiClient(): AxiosInstance {
   // HARDCODED: Ensure baseURL is always valid in production
-  let baseURL = API_BASE_URL;
+  let baseURL: string;
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     const isProductionDomain = hostname.includes('eventcoresolutions.com') && !hostname.startsWith('api.');
     
     // HARDCODED: Always use production API when on production domain
-    if (isProductionDomain && (!baseURL || baseURL === '/' || baseURL === '' || !baseURL.startsWith('http'))) {
+    if (isProductionDomain) {
       baseURL = 'https://api.eventcoresolutions.com';
+    } else {
+      baseURL = API_BASE_URL || 'http://localhost:8080';
     }
+  } else {
+    // SSR fallback
+    baseURL = API_BASE_URL || 'http://localhost:8080';
   }
+  
+  // Final validation - ensure baseURL is never empty or "/"
+  if (!baseURL || baseURL === '/' || baseURL === '' || (!baseURL.startsWith('http://') && !baseURL.startsWith('https://'))) {
+    baseURL = 'https://api.eventcoresolutions.com'; // Last resort hardcode
+    console.error('[API Client] CRITICAL: baseURL was invalid, using hardcoded fallback:', baseURL);
+  }
+  
+  console.log('[API Client] Creating Axios client with baseURL:', baseURL);
   
   const client = axios.create({
     baseURL: baseURL,
@@ -187,11 +200,45 @@ function createApiClient(): AxiosInstance {
   // REQUEST INTERCEPTOR
   client.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
+      // CRITICAL: Ensure baseURL is always valid
+      if (!config.baseURL || config.baseURL === '/' || config.baseURL === '') {
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+        const isProductionDomain = hostname.includes('eventcoresolutions.com') && !hostname.startsWith('api.');
+        config.baseURL = isProductionDomain ? 'https://api.eventcoresolutions.com' : (API_BASE_URL || 'http://localhost:8080');
+        console.warn('[API Client] baseURL was invalid, using fallback:', config.baseURL);
+      }
+      
+      // CRITICAL: Ensure URL is not empty or "/"
+      if (!config.url || config.url === '/' || config.url === '') {
+        console.error('[API Client] CRITICAL: Request URL is empty or "/"!', {
+          method: config.method,
+          url: config.url,
+          baseURL: config.baseURL
+        });
+        return Promise.reject(new Error('Invalid API request: URL cannot be empty or "/"'));
+      }
+      
       const tenant = getTenantFromHostname();
-      const fullUrl = `${config.baseURL || API_BASE_URL}${config.url || ''}`;
+      const fullUrl = `${config.baseURL}${config.url}`;
+      
+      // Validate full URL is absolute
+      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+        console.error('[API Client] CRITICAL: Full URL is not absolute!', {
+          baseURL: config.baseURL,
+          url: config.url,
+          fullUrl: fullUrl
+        });
+        return Promise.reject(new Error(`Invalid API URL: ${fullUrl}`));
+      }
       
       // Log all API requests
-      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api-client.ts:165',message:'API request interceptor',data:{method:config.method,url:config.url,baseURL:config.baseURL,fullUrl:fullUrl,tenant:tenant,apiBaseUrl:API_BASE_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      console.log('[API Client] Making request:', {
+        method: config.method,
+        url: config.url,
+        baseURL: config.baseURL,
+        fullUrl: fullUrl,
+        tenant: tenant
+      });
       
       // Inject X-Tenant-ID header
       if (tenant) {
@@ -209,15 +256,6 @@ function createApiClient(): AxiosInstance {
       const token = getAuthToken();
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // Debug in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, {
-          tenant,
-          tenantHeader: config.headers['X-Tenant-ID'],
-          hasToken: !!token,
-        });
       }
 
       return config;

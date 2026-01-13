@@ -89,22 +89,11 @@ export default function DashboardPage() {
       
       console.log('[Admin Page] HARDCODED API URL:', hardcodedApiUrl);
       console.log('[Admin Page] Full URL will be:', fullUrl);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:93',message:'Making dashboard API call with HARDCODED URL',data:{apiBaseUrl:API_BASE_URL,hardcodedApiUrl:hardcodedApiUrl,fullUrl:fullUrl,isAbsolute:fullUrl.startsWith('http'),hasToken:!!token,currentOrigin:typeof window !== 'undefined' ? window.location.origin : 'SSR',hostname:hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
 
       // Validate URL is absolute before making request
       if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:99',message:'ERROR: URL is not absolute',data:{fullUrl:fullUrl,apiBaseUrl:API_BASE_URL,hardcodedApiUrl:hardcodedApiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
         throw new Error(`Invalid API URL: ${fullUrl}. Hardcoded API URL was: ${hardcodedApiUrl}`);
       }
-
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/aa2d84d5-6e92-4459-b2f4-c84a33852b00',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/page.tsx:98',message:'About to make fetch request',data:{url:fullUrl,method:'GET',headers:{hasAuth:!!token,hasTenantId:!!SAAS_Tenant_ID}},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
 
       const res = await fetch(
         fullUrl,
