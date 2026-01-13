@@ -2,9 +2,10 @@
 
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 interface EventRevenueModalProps {
   isOpen: boolean;
@@ -30,15 +31,15 @@ export function EventRevenueModal({
         setError(null);
 
         // 🔐 Get admin token
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("adminToken")
-            : null;
+        // const token =
+        //   typeof window !== "undefined"
+        //     ? localStorage.getItem("adminToken")
+        //     : null;
 
-        if (!token) {
-          setError("Authentication token missing");
-          return;
-        }
+        // if (!token) {
+        //   setError("Authentication token missing");
+        //   return;
+        // }
 
         // 🏷️ Get selected tenantId (saved from HostManagementTable)
         const tenantId =
@@ -51,19 +52,22 @@ export function EventRevenueModal({
           return;
         }
 
-        const res = await axios.get(
-          `${API_BASE_URL}/events/${event.id}/revenue-summary`,
-          {
-            params: {
-              tenantId, // ✅ DYNAMIC TENANT ID
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "x-tenant-id": SAAS_Tenant_ID, // SaaS validation header
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        // const res = await axios.get(
+        //   `${API_BASE_URL}/events/${event.id}/revenue-summary`,
+        //   {
+        //     params: {
+        //       tenantId, // ✅ DYNAMIC TENANT ID
+        //     },
+        //     headers: {
+        //       Authorization: `Bearer ${token}`,
+        //       "x-tenant-id": SAAS_Tenant_ID, // SaaS validation header
+        //       "Content-Type": "application/json",
+        //     },
+        //   }
+        // );
+        const res = await apiClient.get(`/events/${event.id}/revenue-summary`, {
+          params: { tenantId }, // keep this (it’s NOT the SaaS tenant header)
+        });
 
         const apiData = res.data?.data;
 

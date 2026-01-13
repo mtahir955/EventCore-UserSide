@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface EditStaffModalProps {
   isOpen: boolean;
@@ -109,37 +110,38 @@ export function EditStaffModal({
     toast.success("Staff added from previous list");
   };
 
-  const getToken = () => {
-    let rawToken =
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("hostUser") ||
-      localStorage.getItem("token");
+  // const getToken = () => {
+  //   let rawToken =
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("hostUser") ||
+  //     localStorage.getItem("token");
 
-    try {
-      const parsed = JSON.parse(rawToken || "{}");
-      return parsed?.token || rawToken;
-    } catch {
-      return rawToken;
-    }
-  };
+  //   try {
+  //     const parsed = JSON.parse(rawToken || "{}");
+  //     return parsed?.token || rawToken;
+  //   } catch {
+  //     return rawToken;
+  //   }
+  // };
 
   // ⭐ FETCH PREVIOUS STAFF LIST FROM API
   const fetchPreviousStaff = async () => {
     try {
       setLoadingPreviousStaff(true);
 
-      const token = getToken();
-      if (!token) {
-        toast.error("Missing authentication token");
-        return;
-      }
+      // const token = getToken();
+      // if (!token) {
+      //   toast.error("Missing authentication token");
+      //   return;
+      // }
 
-      const res = await axios.get(`${API_BASE_URL}/users/staff/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      });
+      // const res = await axios.get(`${API_BASE_URL}/users/staff/list`, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //   },
+      // });
+      const res = await apiClient.get("/users/staff/list");
 
       const apiData = res.data?.data?.staff || [];
 
@@ -155,7 +157,7 @@ export function EditStaffModal({
       setPreviousStaffList(formatted);
     } catch (error: any) {
       console.error(error);
-      toast.error("Failed to load previous staff");
+      toast.error(error?.response?.data?.message || "Failed to load previous staff");
     } finally {
       setLoadingPreviousStaff(false);
     }
@@ -177,11 +179,11 @@ export function EditStaffModal({
         }
       }
 
-      const token = getToken();
-      if (!token) {
-        toast.error("Missing authentication token");
-        return;
-      }
+      // const token = getToken();
+      // if (!token) {
+      //   toast.error("Missing authentication token");
+      //   return;
+      // }
 
       const finalEventId =
         mode === "edit"
@@ -203,32 +205,41 @@ export function EditStaffModal({
 
       const payload = { staff: finalStaff };
 
-      if (mode === "create") {
-        await axios.post(`${API_BASE_URL}/users/staff/bulk`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+      // if (mode === "create") {
+      //   await axios.post(`${API_BASE_URL}/users/staff/bulk`, payload, {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   });
 
+      //   toast.success("Staff added successfully!");
+      // }
+      if (mode === "create") {
+        await apiClient.post("/users/staff/bulk", payload);
         toast.success("Staff added successfully!");
       }
 
+      // if (mode === "edit") {
+      //   await axios.put(
+      //     `${API_BASE_URL}/users/staff/bulk/${finalEventId}`,
+      //     payload,
+      //     {
+      //       headers: {
+      //         Authorization: `Bearer ${token}`,
+      //         "X-Tenant-ID": HOST_Tenant_ID,
+      //       },
+      //     }
+      //   );
+
+      //   toast.success("Staff updated successfully!");
+
+      //   if (onUpdated) onUpdated();
+      // }
       if (mode === "edit") {
-        await axios.put(
-          `${API_BASE_URL}/users/staff/bulk/${finalEventId}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-            },
-          }
-        );
-
+        await apiClient.put(`/users/staff/bulk/${finalEventId}`, payload);
         toast.success("Staff updated successfully!");
-
-        if (onUpdated) onUpdated();
+        onUpdated?.();
       }
 
       onClose();

@@ -13,10 +13,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { syncThemeWithBackend } from "@/utils/themeManager";
-import { API_BASE_URL } from "@/config/apiConfig";
+// import { API_BASE_URL } from "@/config/apiConfig";
 import HostDashboardHelpModal from "../help/HostDashboardHelpModal";
+import { apiClient } from "@/lib/apiClient";
 
 export default function Page() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -134,59 +135,88 @@ export default function Page() {
     }
   }, []);
 
-  const getAuthToken = () => {
-    const raw =
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("staffToken") ||
-      localStorage.getItem("token");
+  // const getAuthToken = () => {
+  //   const raw =
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("staffToken") ||
+  //     localStorage.getItem("token");
 
-    if (!raw) return null;
+  //   if (!raw) return null;
 
-    // If stored as JSON: { token: "..." }
-    if (raw.startsWith("{")) {
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed.token || null;
-      } catch {
-        return null;
-      }
-    }
+  //   // If stored as JSON: { token: "..." }
+  //   if (raw.startsWith("{")) {
+  //     try {
+  //       const parsed = JSON.parse(raw);
+  //       return parsed.token || null;
+  //     } catch {
+  //       return null;
+  //     }
+  //   }
 
-    // Otherwise already a JWT string
-    return raw;
-  };
+  //   // Otherwise already a JWT string
+  //   return raw;
+  // };
+
+  // const fetchDashboardOverview = async () => {
+  //   try {
+  //     const token = getAuthToken();
+  //     if (!token) return;
+
+  //     const res = await fetch(
+  //       `${API_BASE_URL}/admin/events/dashboard/overview`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //       }
+  //     );
+
+  //     const json = await res.json();
+  //     const data = json?.data || {};
+
+  //     setOverview({
+  //       // ───── Stats ─────
+  //       totalEvents: data.stats?.totalEvents?.count ?? 0,
+  //       ticketsSold: data.stats?.ticketsSold?.count ?? 0,
+  //       revenue: data.stats?.totalRevenue?.amount ?? 0,
+  //       upcomingEvents: data.stats?.upcomingEvents?.count ?? 0,
+
+  //       // ───── Donut Chart ─────
+  //       soldPercentage: data.analytics?.donutChart?.ticketSoldPercentage ?? 0,
+  //       transferredPercentage:
+  //         data.analytics?.donutChart?.ticketTransferredPercentage ?? 0,
+
+  //       // ───── Line Chart ─────
+  //       salesTrend:
+  //         data.reports?.lineChart?.data?.map((item: any) => ({
+  //           date: item.label,
+  //           value: item.value,
+  //         })) ?? [],
+  //     });
+  //   } catch (err) {
+  //     console.error("❌ Failed to load dashboard overview", err);
+  //   } finally {
+  //     setLoadingOverview(false);
+  //   }
+  // };
 
   const fetchDashboardOverview = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      const res = await apiClient.get("/admin/events/dashboard/overview");
 
-      const res = await fetch(
-        `${API_BASE_URL}/admin/events/dashboard/overview`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
-
-      const json = await res.json();
-      const data = json?.data || {};
+      const data = res.data?.data || {};
 
       setOverview({
-        // ───── Stats ─────
         totalEvents: data.stats?.totalEvents?.count ?? 0,
         ticketsSold: data.stats?.ticketsSold?.count ?? 0,
         revenue: data.stats?.totalRevenue?.amount ?? 0,
         upcomingEvents: data.stats?.upcomingEvents?.count ?? 0,
 
-        // ───── Donut Chart ─────
         soldPercentage: data.analytics?.donutChart?.ticketSoldPercentage ?? 0,
         transferredPercentage:
           data.analytics?.donutChart?.ticketTransferredPercentage ?? 0,
 
-        // ───── Line Chart ─────
         salesTrend:
           data.reports?.lineChart?.data?.map((item: any) => ({
             date: item.label,

@@ -103,8 +103,12 @@ export default function TrainersPage() {
             <span className="font-passionate text-[#89FD00]">Trainers</span>
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl">
-            Meet our trainers and get inspired by the experts who lead with
-            passion and experience.
+            “Our global international trainers are world class leaders, coaches,
+            and educators who bring real world experience to every stage.
+            Traveling the world to deliver high impact training, they combine
+            proven strategies, cultural insight, and practical execution to help
+            individuals and organizations perform at the highest level anywhere
+            in the world.”
           </p>
         </div>
 

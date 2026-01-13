@@ -4,8 +4,9 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../../../config/apiConfig";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { API_BASE_URL } from "../../../config/apiConfig";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 interface Host {
   id: string;
@@ -18,7 +19,7 @@ interface Host {
 }
 
 // 🔐 Tenant header value (change if needed)
-const TENANT_ID = "61b33c05-455f-43e6-89e4-e00a0f2a6c74";
+// const TENANT_ID = "61b33c05-455f-43e6-89e4-e00a0f2a6c74";
 
 interface HostManagementTableProps {
   searchQuery: string; // from parent
@@ -36,74 +37,136 @@ export function HostManagementTable({
   const [error, setError] = useState<string | null>(null);
 
   // 🔄 Fetch tenants whenever filters change
+  // useEffect(() => {
+  //   const fetchTenants = async () => {
+  //     try {
+  //       setLoading(true);
+  //       setError(null);
+
+  //       // 🔥 Get token safely on client
+  //       const token =
+  //         typeof window !== "undefined"
+  //           ? localStorage.getItem("adminToken")
+  //           : null;
+
+  //       if (!token) {
+  //         console.warn("No token found — user may be logged out");
+  //         setError("Authentication required");
+  //         return;
+  //       }
+
+  //       const url = new URL(`${API_BASE_URL}/admin/tenants`);
+
+  //       // Defaults
+  //       url.searchParams.set("limit", "50");
+  //       url.searchParams.set("page", "1");
+  //       url.searchParams.set("sortOrder", "ASC");
+  //       url.searchParams.set("sortBy", "name");
+
+  //       if (searchQuery.trim() !== "") {
+  //         url.searchParams.set("search", searchQuery.trim());
+  //       }
+
+  //       // Status mapping
+  //       let apiStatus;
+  //       if (statusFilter.toLowerCase() === "active") apiStatus = "ACTIVE";
+  //       if (statusFilter.toLowerCase() === "banned") apiStatus = "SUSPENDED";
+
+  //       if (apiStatus) {
+  //         url.searchParams.set("status", apiStatus);
+  //       }
+
+  //       // 🔥 NOW INCLUDING TOKEN
+  //       const res = await fetch(url.toString(), {
+  //         method: "GET",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "x-tenant-id": SAAS_Tenant_ID,
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+
+  //       if (!res.ok) {
+  //         throw new Error(`Request failed with status ${res.status}`);
+  //       }
+
+  //       const data = await res.json();
+  //       console.log("Tenants API response:", data);
+
+  //       // Handle different response shapes
+  //       let tenantsRaw = [];
+
+  //       if (Array.isArray(data)) tenantsRaw = data;
+  //       else if (Array.isArray(data.items)) tenantsRaw = data.items;
+  //       else if (Array.isArray(data.data)) tenantsRaw = data.data;
+  //       else if (data.data && Array.isArray(data.data.items))
+  //         tenantsRaw = data.data.items;
+
+  //       const mappedHosts = tenantsRaw.map((t) => {
+  //         const rawStatus = (t.status || "ACTIVE").toUpperCase();
+  //         const uiStatus = rawStatus === "ACTIVE" ? "Active" : "Banned";
+
+  //         return {
+  //           id: t.id || t.tenantId || "",
+  //           tenantName: t.name || t.tenantName || "Unnamed Tenant",
+  //           email: t.email || "N/A",
+  //           category: t.industry || "Event Organizer/Host",
+  //           subdomain: t.subDomain || "",
+  //           status: uiStatus,
+  //           avatar: t.logoUrl || "/avatars/avatar-1.png",
+  //         };
+  //       });
+
+  //       setHosts(mappedHosts);
+  //     } catch (err) {
+  //       console.error("Error fetching tenants:", err);
+  //       setError("Failed to load hosts");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchTenants();
+  // }, [searchQuery, statusFilter]);
+
   useEffect(() => {
     const fetchTenants = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 🔥 Get token safely on client
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("adminToken")
-            : null;
-
-        if (!token) {
-          console.warn("No token found — user may be logged out");
-          setError("Authentication required");
-          return;
-        }
-
-        const url = new URL(`${API_BASE_URL}/admin/tenants`);
-
-        // Defaults
-        url.searchParams.set("limit", "50");
-        url.searchParams.set("page", "1");
-        url.searchParams.set("sortOrder", "ASC");
-        url.searchParams.set("sortBy", "name");
+        const params: any = {
+          limit: 50,
+          page: 1,
+          sortOrder: "ASC",
+          sortBy: "name",
+        };
 
         if (searchQuery.trim() !== "") {
-          url.searchParams.set("search", searchQuery.trim());
+          params.search = searchQuery.trim();
         }
 
-        // Status mapping
-        let apiStatus;
-        if (statusFilter.toLowerCase() === "active") apiStatus = "ACTIVE";
-        if (statusFilter.toLowerCase() === "banned") apiStatus = "SUSPENDED";
-
-        if (apiStatus) {
-          url.searchParams.set("status", apiStatus);
+        if (statusFilter.toLowerCase() === "active") {
+          params.status = "ACTIVE";
+        } else if (statusFilter.toLowerCase() === "banned") {
+          params.status = "SUSPENDED";
         }
 
-        // 🔥 NOW INCLUDING TOKEN
-        const res = await fetch(url.toString(), {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "x-tenant-id": SAAS_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await apiClient.get("/admin/tenants", { params });
 
-        if (!res.ok) {
-          throw new Error(`Request failed with status ${res.status}`);
-        }
-
-        const data = await res.json();
+        const data = res.data;
         console.log("Tenants API response:", data);
 
-        // Handle different response shapes
-        let tenantsRaw = [];
+        // Normalize response shape
+        let tenantsRaw: any[] = [];
 
         if (Array.isArray(data)) tenantsRaw = data;
-        else if (Array.isArray(data.items)) tenantsRaw = data.items;
-        else if (Array.isArray(data.data)) tenantsRaw = data.data;
-        else if (data.data && Array.isArray(data.data.items))
-          tenantsRaw = data.data.items;
+        else if (Array.isArray(data?.items)) tenantsRaw = data.items;
+        else if (Array.isArray(data?.data)) tenantsRaw = data.data;
+        else if (Array.isArray(data?.data?.items)) tenantsRaw = data.data.items;
 
         const mappedHosts = tenantsRaw.map((t) => {
           const rawStatus = (t.status || "ACTIVE").toUpperCase();
-          const uiStatus = rawStatus === "ACTIVE" ? "Active" : "Banned";
 
           return {
             id: t.id || t.tenantId || "",
@@ -111,15 +174,21 @@ export function HostManagementTable({
             email: t.email || "N/A",
             category: t.industry || "Event Organizer/Host",
             subdomain: t.subDomain || "",
-            status: uiStatus,
+            status: rawStatus === "ACTIVE" ? "Active" : "Banned",
             avatar: t.logoUrl || "/avatars/avatar-1.png",
           };
         });
 
         setHosts(mappedHosts);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching tenants:", err);
-        setError("Failed to load hosts");
+
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to load hosts";
+
+        setError(msg);
       } finally {
         setLoading(false);
       }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { EditStaffModal } from "./edit-staff-modal";
+import { apiClient } from "@/lib/apiClient";
 
 interface StaffMember {
   fullName: string;
@@ -29,41 +30,60 @@ export function StaffInfoModal({
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const getToken = () => {
-    let rawToken =
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("hostUser") ||
-      localStorage.getItem("token");
+  // const getToken = () => {
+  //   let rawToken =
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("hostUser") ||
+  //     localStorage.getItem("token");
 
-    try {
-      const parsed = JSON.parse(rawToken || "{}");
-      return parsed?.token || parsed;
-    } catch {
-      return rawToken;
-    }
-  };
+  //   try {
+  //     const parsed = JSON.parse(rawToken || "{}");
+  //     return parsed?.token || parsed;
+  //   } catch {
+  //     return rawToken;
+  //   }
+  // };
+
+  // const fetchStaff = async () => {
+  //   if (!eventId) return;
+
+  //   try {
+  //     setLoading(true);
+  //     const token = getToken();
+
+  //     const response = await axios.get(
+  //       `${API_BASE_URL}/users/staff/event/${eventId}`,
+  //       {
+  //         headers: {
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+
+  //     // ⭐ Backend returns data as an array of staff
+  //     const staffList = response.data?.data || [];
+
+  //     setStaff(staffList);
+  //   } catch (error: any) {
+  //     console.error(error);
+  //     toast.error(error?.response?.data?.message || "Failed to load staff");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const fetchStaff = async () => {
     if (!eventId) return;
 
     try {
       setLoading(true);
-      const token = getToken();
 
-      const response = await axios.get(
-        `${API_BASE_URL}/users/staff/event/${eventId}`,
-        {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await apiClient.get(`/users/staff/event/${eventId}`);
 
-      // ⭐ Backend returns data as an array of staff
+      // Backend returns data as array
       const staffList = response.data?.data || [];
-
-      setStaff(staffList);
+      setStaff(Array.isArray(staffList) ? staffList : []);
     } catch (error: any) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Failed to load staff");

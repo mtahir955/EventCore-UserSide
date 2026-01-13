@@ -6,10 +6,11 @@ import { X, LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function TicketManager() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -47,19 +48,35 @@ export default function TicketManager() {
   const [allowTransfers, setAllowTransfers] = useState<boolean>(false);
 
   // ✅ NEW: fetch tenant features (allowTransfers)
+  // useEffect(() => {
+  //   const fetchFeatures = async () => {
+  //     try {
+  //       const token = localStorage.getItem("hostToken");
+  //       if (!token) return;
+
+  //       const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "x-tenant-id": HOST_Tenant_ID,
+  //         },
+  //       });
+
+  //       setAllowTransfers(
+  //         Boolean(res.data?.data?.features?.allowTransfers?.enabled)
+  //       );
+  //     } catch (err) {
+  //       console.error("Failed to fetch tenant features:", err);
+  //       setAllowTransfers(false);
+  //     }
+  //   };
+
+  //   fetchFeatures();
+  // }, []);
+
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
-        if (!token) return;
-
-        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-          },
-        });
-
+        const res = await apiClient.get(`/tenants/my/features`);
         setAllowTransfers(
           Boolean(res.data?.data?.features?.allowTransfers?.enabled)
         );
@@ -176,11 +193,11 @@ export default function TicketManager() {
       return;
     }
 
-    const token = localStorage.getItem("hostToken");
-    if (!token) {
-      toast.error("You are not logged in!");
-      return;
-    }
+    // const token = localStorage.getItem("hostToken");
+    // if (!token) {
+    //   toast.error("You are not logged in!");
+    //   return;
+    // }
 
     const payload = {
       name: ticketName,
@@ -197,17 +214,22 @@ export default function TicketManager() {
       maxOrder,
     };
 
+    // try {
+    //   const response = await axios.put(
+    //     `${API_BASE_URL}/tickets/${editingTicket}`,
+    //     payload,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "X-Tenant-ID": HOST_Tenant_ID,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }
+    //   );
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/tickets/${editingTicket}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
+      const response = await apiClient.put(
+        `/tickets/${editingTicket}`,
+        payload
       );
 
       console.log("UPDATE SUCCESS", response.data);
@@ -276,19 +298,20 @@ export default function TicketManager() {
   // 🔥 Fetch Tickets From API
   const fetchTickets = async () => {
     try {
-      const token = localStorage.getItem("hostToken");
+      // const token = localStorage.getItem("hostToken");
 
-      if (!token) {
-        toast.error("You are not logged in!");
-        return;
-      }
+      // if (!token) {
+      //   toast.error("You are not logged in!");
+      //   return;
+      // }
 
-      const response = await axios.get(`${API_BASE_URL}/tickets`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      });
+      // const response = await axios.get(`${API_BASE_URL}/tickets`, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //   },
+      // });
+      const response = await apiClient.get(`/tickets`);
 
       console.log("API Tickets:", response.data);
 
@@ -339,14 +362,14 @@ export default function TicketManager() {
                       alt="notification"
                       className="h-4 w-4"
                     /> */}
-                    {/* Counter badge */}
-                    {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                {/* Counter badge */}
+                {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                       {notifications.length}
                     </span>
                   </button> */}
 
-                  {/* Notification popup */}
-                  {/* {showNotifications && (
+                {/* Notification popup */}
+                {/* {showNotifications && (
                     <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                       <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                         Notifications

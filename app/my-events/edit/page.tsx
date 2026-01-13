@@ -9,19 +9,19 @@ import { X, LogOut, Moon, Sun, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import axios from "axios";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
-import { API_BASE_URL } from "@/config/apiConfig";
+// import axios from "axios";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { apiClient } from "@/lib/apiClient";
 
 const getFileUrl = (path?: string | null) => {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
 
-  // If API_BASE_URL is like https://domain.com/api, strip trailing /api
-  const base = API_BASE_URL.replace(/\/api\/?$/i, "");
-  return `${base}${path}`;
+  // if backend ever returns relative paths, keep them relative
+  return path.startsWith("/") ? path : `/${path}`;
 };
 
 export default function EditEventPage() {
@@ -175,19 +175,19 @@ export default function EditEventPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const getToken = () => {
-    let rawToken =
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("hostUser") ||
-      localStorage.getItem("token");
+  // const getToken = () => {
+  //   let rawToken =
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("hostUser") ||
+  //     localStorage.getItem("token");
 
-    try {
-      const parsed = JSON.parse(rawToken || "{}");
-      return parsed?.token || parsed;
-    } catch {
-      return rawToken;
-    }
-  };
+  //   try {
+  //     const parsed = JSON.parse(rawToken || "{}");
+  //     return parsed?.token || parsed;
+  //   } catch {
+  //     return rawToken;
+  //   }
+  // };
 
   const fetchEventDetails = async () => {
     if (!eventId) {
@@ -198,14 +198,15 @@ export default function EditEventPage() {
     try {
       setIsLoading(true);
 
-      const token = getToken();
+      // const token = getToken();
 
-      const response = await axios.get(`${API_BASE_URL}/events/${eventId}`, {
-        headers: {
-          "X-Tenant-ID": HOST_Tenant_ID,
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // const response = await axios.get(`${API_BASE_URL}/events/${eventId}`, {
+      //   headers: {
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // });
+      const response = await apiClient.get(`/events/${eventId}`);
 
       const data = response.data?.data || response.data;
 
@@ -248,7 +249,7 @@ export default function EditEventPage() {
     if (!eventId) return toast.error("Missing Event ID");
 
     try {
-      const token = getToken();
+      // const token = getToken();
 
       const formData = new FormData();
       formData.append("eventTitle", eventTitle);
@@ -262,16 +263,22 @@ export default function EditEventPage() {
         formData.append("bannerImage", selectedBannerFile);
       }
 
-      const response = await axios.put(
-        `${API_BASE_URL}/events/${eventId}`,
-        formData,
-        {
-          headers: {
-            "X-Tenant-ID": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // const response = await axios.put(
+      //   `${API_BASE_URL}/events/${eventId}`,
+      //   formData,
+      //   {
+      //     headers: {
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //   }
+      // );
+
+      const response = await apiClient.put(`/events/${eventId}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       console.log("UPDATED SUCCESS:", response.data);
       toast.success("Event updated successfully!");
@@ -287,24 +294,42 @@ export default function EditEventPage() {
     try {
       setCustomersLoading(true);
 
-      const token = getToken();
+      // const token = getToken();
 
-      const res = await axios.get(
-        `${API_BASE_URL}/events/${eventId}/customers`,
-        {
-          params: {
-            page: customersPage,
-            limit: customersLimit,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      // const res = await axios.get(
+      //   `${API_BASE_URL}/events/${eventId}/customers`,
+      //   {
+      //     params: {
+      //       page: customersPage,
+      //       limit: customersLimit,
+      //     },
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   }
+      // );
 
-      const normalizedCustomers = res.data.data.customers.map((c: any) => ({
-        id: `${c.customerId}-${c.ticketId}`, // ✅ UNIQUE KEY
+      const res = await apiClient.get(`/events/${eventId}/customers`, {
+        params: { page: customersPage, limit: customersLimit },
+      });
+
+      const customersRaw = res.data?.data?.customers ?? [];
+      const totalPages =
+        res.data?.data?.pagination?.totalPages ??
+        res.data?.pagination?.totalPages ??
+        1;
+
+      // const normalizedCustomers = res.data.data.customers.map((c: any) => ({
+      //   id: `${c.customerId}-${c.ticketId}`, // ✅ UNIQUE KEY
+      //   customerId: c.customerId,
+      //   name: c.fullName,
+      //   email: c.email,
+      //   ticketId: c.ticketId,
+      //   quantity: c.quantity,
+      // }));
+      const normalizedCustomers = customersRaw.map((c: any) => ({
+        id: `${c.customerId}-${c.ticketId}`,
         customerId: c.customerId,
         name: c.fullName,
         email: c.email,
@@ -313,8 +338,9 @@ export default function EditEventPage() {
       }));
 
       setCustomers(normalizedCustomers);
-      setCustomersTotalPages(res.data.pagination.totalPages);
-      setCustomersTotalPages(res.data.data.pagination.totalPages);
+      setCustomersTotalPages(totalPages);
+      // setCustomersTotalPages(res.data.pagination.totalPages);
+      // setCustomersTotalPages(res.data.data.pagination.totalPages);
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message || "Failed to load event customers"

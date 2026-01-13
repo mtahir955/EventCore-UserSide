@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import BasicInformationSection from "./sections/basic-information";
 import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
@@ -9,42 +9,69 @@ import OtherPagesDataSection from "./sections/other-pages-data";
 import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import HostDashboardHelpModal from "../../help/HostDashboardHelpModal";
+import { apiClient } from "@/lib/apiClient";
 
 export default function HostManagementForm() {
   const [hostData, setHostData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
 
+  // useEffect(() => {
+  //   const fetchHostData = async () => {
+  //     try {
+  //       let rawToken = localStorage.getItem("hostToken");
+  //       if (!rawToken) {
+  //         window.location.href = "/sign-in-host";
+  //         return;
+  //       }
+
+  //       let token = rawToken;
+  //       try {
+  //         const parsed = JSON.parse(rawToken);
+  //         if (parsed?.token) token = parsed.token;
+  //       } catch {}
+
+  //       const res = await axios.get(`${API_BASE_URL}/users/me`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "x-tenant-id": HOST_Tenant_ID,
+  //           "Content-Type": "application/json",
+  //         },
+  //       });
+
+  //       setHostData(res.data.data || res.data);
+  //     } catch (err: any) {
+  //       if (err.response?.status === 401) {
+  //         localStorage.removeItem("hostToken");
+  //         window.location.href = "/sign-in-host";
+  //       }
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchHostData();
+  // }, []);
+
   useEffect(() => {
     const fetchHostData = async () => {
       try {
-        let rawToken = localStorage.getItem("hostToken");
-        if (!rawToken) {
-          window.location.href = "/sign-in-host";
-          return;
-        }
+        const res = await apiClient.get("/users/me");
 
-        let token = rawToken;
-        try {
-          const parsed = JSON.parse(rawToken);
-          if (parsed?.token) token = parsed.token;
-        } catch {}
+        // axios response shape
+        const payload = res.data;
 
-        const res = await axios.get(`${API_BASE_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        });
-
-        setHostData(res.data.data || res.data);
+        // keep your existing fallback
+        setHostData(payload?.data || payload);
       } catch (err: any) {
-        if (err.response?.status === 401) {
+        const status = err?.response?.status;
+
+        if (status === 401) {
           localStorage.removeItem("hostToken");
+          localStorage.removeItem("token");
           window.location.href = "/sign-in-host";
         }
       } finally {

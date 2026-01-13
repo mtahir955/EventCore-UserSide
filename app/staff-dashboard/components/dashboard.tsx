@@ -5,10 +5,11 @@ import Sidebar from "./sidebar";
 import Header from "./header";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function Dashboard() {
   const [events, setEvents] = useState<any[]>([]);
@@ -26,43 +27,68 @@ export default function Dashboard() {
     ticketsChecked: 0,
   });
 
-  const getToken = () => {
-    let raw =
-      localStorage.getItem("staffToken") ||
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("token");
+  // const getToken = () => {
+  //   let raw =
+  //     localStorage.getItem("staffToken") ||
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("token");
 
-    try {
-      const p = JSON.parse(raw || "{}");
-      return p?.token || p;
-    } catch {
-      return raw;
-    }
-  };
+  //   try {
+  //     const p = JSON.parse(raw || "{}");
+  //     return p?.token || p;
+  //   } catch {
+  //     return raw;
+  //   }
+  // };
 
   // ============================================
   // 🔥 UPDATED API CALL
   // GET /users/me/dashboard/events
   // ============================================
+  // const fetchEventsList = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const token = getToken();
+
+  //     const response = await axios.get(
+  //       `${API_BASE_URL}/users/me/dashboard/events`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //       }
+  //     );
+
+  //     const data =
+  //       response.data?.events || response.data?.data || response.data || [];
+
+  //     // 🔄 Normalize backend → frontend keys
+  //     const formatted = data.map((e: any) => ({
+  //       name: e.eventName,
+  //       date: e.eventDate,
+  //       address: e.eventAddress,
+  //       status: e.status?.toUpperCase(),
+  //     }));
+
+  //     setEvents(formatted);
+  //   } catch (err: any) {
+  //     console.error("❌ Failed to fetch events:", err);
+  //     toast.error(err?.response?.data?.message || "Failed to load events");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchEventsList = async () => {
     try {
       setLoading(true);
-      const token = getToken();
 
-      const response = await axios.get(
-        `${API_BASE_URL}/users/me/dashboard/events`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      const response = await apiClient.get("/users/me/dashboard/events");
 
       const data =
         response.data?.events || response.data?.data || response.data || [];
 
-      // 🔄 Normalize backend → frontend keys
       const formatted = data.map((e: any) => ({
         name: e.eventName,
         date: e.eventDate,
@@ -82,16 +108,38 @@ export default function Dashboard() {
   // ============================================
   // 🔥 GET /events/dashboard/stats
   // ============================================
+  // const fetchDashboardStats = async () => {
+  //   try {
+  //     const token = getToken();
+
+  //     const res = await axios.get(
+  //       `${API_BASE_URL}/staff/events/dashboard/stats`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //       }
+  //     );
+
+  //     const data = res.data?.data || {};
+
+  //     setStats({
+  //       pendingEvents: data.pendingEvents?.count ?? 0,
+  //       completedEvents: data.completedEvents?.count ?? 0,
+  //       ticketsChecked: data.totalTicketsChecked?.count ?? 0,
+  //     });
+  //   } catch (err: any) {
+  //     console.error("❌ Failed to fetch dashboard stats", err);
+  //     toast.error(
+  //       err?.response?.data?.message || "Failed to load dashboard stats"
+  //     );
+  //   }
+  // };
+
   const fetchDashboardStats = async () => {
     try {
-      const token = getToken();
-
-      const res = await axios.get(`${API_BASE_URL}/staff/events/dashboard/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-      });
+      const res = await apiClient.get("/staff/events/dashboard/stats");
 
       const data = res.data?.data || {};
 

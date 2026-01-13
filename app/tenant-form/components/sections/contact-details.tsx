@@ -226,7 +226,7 @@ const ContactDetailsSection = forwardRef((props, ref) => {
         {/* Pincode */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Pincode <span className="text-red-500">*</span>
+            Postal Code <span className="text-red-500">*</span>
           </label>
           <input
             type="text"

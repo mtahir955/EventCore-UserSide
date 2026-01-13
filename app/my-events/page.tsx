@@ -8,12 +8,14 @@ import { Menu, X, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import toast from "react-hot-toast";
+import { apiClient } from "@/lib/apiClient";
 
 type Props = {
+  id: string;
   imageSrc: string;
   price: string;
   hostby: string;
@@ -27,14 +29,8 @@ type Props = {
 
 const safeImage = (img?: string) => {
   if (!img) return "/images/event-1.png";
-
-  // already absolute url
   if (img.startsWith("http://") || img.startsWith("https://")) return img;
-
-  // relative path from backend
-  const base = (API_BASE_URL || "").replace(/\/$/, "");
-  if (img.startsWith("/")) return `${base}${img}`;
-  return `${base}/${img}`;
+  return img.startsWith("/") ? img : `/${img}`;
 };
 
 export default function MyEventsPage() {
@@ -163,56 +159,83 @@ export default function MyEventsPage() {
 
   const [events, setEvents] = useState<Props[]>([]);
 
+  // const fetchEvents = async () => {
+  //   try {
+  //     let rawToken =
+  //       localStorage.getItem("hostToken") ||
+  //       localStorage.getItem("hostUser") ||
+  //       localStorage.getItem("token");
+
+  //     let token = null;
+
+  //     // Universal token cleaner
+  //     try {
+  //       const parsed = JSON.parse(rawToken || "{}");
+  //       token = parsed?.token || parsed;
+  //     } catch {
+  //       token = rawToken;
+  //     }
+
+  //     if (!token) {
+  //       toast.error("Missing authentication token");
+  //       return;
+  //     }
+
+  //     const response = await axios.get(`${API_BASE_URL}/events`, {
+  //       headers: {
+  //         "X-Tenant-ID": HOST_Tenant_ID,
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+
+  //     console.log("EVENTS FROM BACKEND:", response.data);
+
+  //     // REPLACE your mapped events array with this:
+  //     const mapped = response.data?.data?.map((ev: any) => ({
+  //       id: ev.id, // ⭐ IMPORTANT
+  //       // imageSrc: ev.bannerImage || "/images/event-1.png",
+  //       imageSrc: safeImage(ev.bannerImage), // ✅ fixed
+
+  //       // price: ev.tickets?.[0]?.price || "0",
+  //       // price: ev.minTicketPrice ?? ev.ticketPrice ?? "0",
+  //       hostby: ev.hostName || "Unknown",
+  //       title: ev.eventTitle,
+  //       description: ev.eventDescription,
+  //       location: ev.eventLocation,
+  //       date: ev.startDate,
+  //       time: ev.startTime,
+  //       audience: ev.audienceCount || 0,
+  //     }));
+
+  //     setEvents(mapped || []);
+  //     setFilteredEvents(mapped || []);
+  //   } catch (err) {
+  //     console.log("Failed to fetch events:", err);
+  //     toast.error("Failed to load events");
+  //   }
+  // };
+
   const fetchEvents = async () => {
     try {
-      let rawToken =
-        localStorage.getItem("hostToken") ||
-        localStorage.getItem("hostUser") ||
-        localStorage.getItem("token");
+      const response = await apiClient.get("/events");
 
-      let token = null;
+      const mapped =
+        response.data?.data?.map((ev: any) => ({
+          id: String(ev.id), // ✅ ensure string
+          imageSrc: safeImage(ev.bannerImage),
 
-      // Universal token cleaner
-      try {
-        const parsed = JSON.parse(rawToken || "{}");
-        token = parsed?.token || parsed;
-      } catch {
-        token = rawToken;
-      }
+          price: String(ev.minTicketPrice ?? ev.ticketPrice ?? "0"),
+          hostby: ev.hostName || "Unknown",
+          title: ev.eventTitle,
+          description: ev.eventDescription,
+          location: ev.eventLocation,
+          date: ev.startDate,
+          time: ev.startTime,
+          audience: ev.audienceCount || 0,
+        })) || [];
 
-      if (!token) {
-        toast.error("Missing authentication token");
-        return;
-      }
-
-      const response = await axios.get(`${API_BASE_URL}/events`, {
-        headers: {
-          "X-Tenant-ID": HOST_Tenant_ID,
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      console.log("EVENTS FROM BACKEND:", response.data);
-
-      // REPLACE your mapped events array with this:
-      const mapped = response.data?.data?.map((ev: any) => ({
-        id: ev.id, // ⭐ IMPORTANT
-        // imageSrc: ev.bannerImage || "/images/event-1.png",
-        imageSrc: safeImage(ev.bannerImage), // ✅ fixed
-
-        // price: ev.tickets?.[0]?.price || "0",
-        // price: ev.minTicketPrice ?? ev.ticketPrice ?? "0",
-        hostby: ev.hostName || "Unknown",
-        title: ev.eventTitle,
-        description: ev.eventDescription,
-        location: ev.eventLocation,
-        date: ev.startDate,
-        time: ev.startTime,
-        audience: ev.audienceCount || 0,
-      }));
-
-      setEvents(mapped || []);
-      setFilteredEvents(mapped || []);
+      setEvents(mapped);
+      setFilteredEvents(mapped);
     } catch (err) {
       console.log("Failed to fetch events:", err);
       toast.error("Failed to load events");
@@ -511,7 +534,8 @@ export default function MyEventsPage() {
           {currentEvents.length > 0 ? (
             currentEvents.map((event, index) => (
               <MyEventsCard
-                key={index}
+                // key={index}
+                key={event.id}
                 id={event.id} // ⭐ ADDED ID
                 imageSrc={event.imageSrc}
                 price={event.price}

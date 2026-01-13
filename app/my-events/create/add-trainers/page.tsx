@@ -268,14 +268,14 @@ export default function AddTrainersSection({
           {/* Social Media Links */}
           <div>
             <label className="block text-[14px] font-medium mb-2">
-              Facebook
+              TikTok
             </label>
             <input
               type="text"
               name="facebook"
               value={currentTrainer.facebook}
               onChange={handleChange}
-              placeholder="https://facebook.com/trainer"
+              placeholder="Add TikTok profile link"
               className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
             />
           </div>
@@ -288,7 +288,7 @@ export default function AddTrainersSection({
               name="instagram"
               value={currentTrainer.instagram}
               onChange={handleChange}
-              placeholder="https://instagram.com/trainer"
+              placeholder="Add Instagram profile link"
               className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
             />
           </div>
@@ -301,20 +301,20 @@ export default function AddTrainersSection({
               name="linkedin"
               value={currentTrainer.linkedin}
               onChange={handleChange}
-              placeholder="https://linkedin.com/in/trainer"
+              placeholder="Add LinkedIn profile link"
               className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
             />
           </div>
           <div>
             <label className="block text-[14px] font-medium mb-2">
-              Twitter
+              X
             </label>
             <input
               type="text"
               name="twitter"
               value={currentTrainer.twitter}
               onChange={handleChange}
-              placeholder="https://twitter.com/trainer"
+              placeholder="Add X profile link"
               className="w-full h-11 sm:h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E8E8E8]"
             />
           </div>

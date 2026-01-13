@@ -100,7 +100,7 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
           <input
             type="url"
             name="facebook"
-            placeholder="https://facebook.com/yourpage"
+            placeholder="Add Facebook page URL"
             value={links.facebook}
             onChange={handleChange}
             className={`w-full rounded-lg px-4 py-2 border ${
@@ -124,7 +124,7 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
           <input
             type="url"
             name="instagram"
-            placeholder="https://instagram.com/yourprofile"
+            placeholder="Add Instagram profile URL"
             value={links.instagram}
             onChange={handleChange}
             className={`w-full rounded-lg px-4 py-2 border ${
@@ -143,12 +143,12 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
         {/* Twitter */}
         <div>
           <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Twitter / X
+            X
           </label>
           <input
             type="url"
             name="twitter"
-            placeholder="https://twitter.com/yourhandle"
+            placeholder="Add X handle URL"
             value={links.twitter}
             onChange={handleChange}
             className={`w-full rounded-lg px-4 py-2 border ${
@@ -172,7 +172,7 @@ const SocialMediaLinksSection = forwardRef((props, ref) => {
           <input
             type="url"
             name="youtube"
-            placeholder="https://youtube.com/@yourchannel"
+            placeholder="Add YouTube channel URL"
             value={links.youtube}
             onChange={handleChange}
             className={`w-full rounded-lg px-4 py-2 border ${

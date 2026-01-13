@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "./sidebar";
 import Header from "./header";
 import Image from "next/image";
-import axios from "axios";
+// import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 const attendees = [
   {
@@ -172,26 +173,26 @@ export default function TicketCheck() {
 
   // ===================== HELPERS =====================
 
-  const getAuthToken = (): string | null => {
-    // Staff apps often store staffToken; fallback to token patterns used elsewhere
-    const raw =
-      localStorage.getItem("staffToken") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("staffUser") ||
-      localStorage.getItem("user");
+  // const getAuthToken = (): string | null => {
+  //   // Staff apps often store staffToken; fallback to token patterns used elsewhere
+  //   const raw =
+  //     localStorage.getItem("staffToken") ||
+  //     localStorage.getItem("token") ||
+  //     localStorage.getItem("staffUser") ||
+  //     localStorage.getItem("user");
 
-    if (!raw) return null;
+  //   if (!raw) return null;
 
-    try {
-      const parsed = JSON.parse(raw);
-      if (typeof parsed === "string") return parsed;
-      if (parsed?.token) return parsed.token;
-      if (parsed?.accessToken) return parsed.accessToken;
-      return null;
-    } catch {
-      return raw; // plain token string
-    }
-  };
+  //   try {
+  //     const parsed = JSON.parse(raw);
+  //     if (typeof parsed === "string") return parsed;
+  //     if (parsed?.token) return parsed.token;
+  //     if (parsed?.accessToken) return parsed.accessToken;
+  //     return null;
+  //   } catch {
+  //     return raw; // plain token string
+  //   }
+  // };
 
   const formatEventMeta = (ev: StaffEvent) => {
     // keeps UI simple; you can style later if you want
@@ -217,22 +218,23 @@ export default function TicketCheck() {
       setEventsError("");
 
       try {
-        const token = getAuthToken();
-        if (!token) {
-          setEventsError("Authentication token missing.");
-          setEvents([]);
-          return;
-        }
+        // const token = getAuthToken();
+        // if (!token) {
+        //   setEventsError("Authentication token missing.");
+        //   setEvents([]);
+        //   return;
+        // }
 
-        const res = await axios.get(
-          `${API_BASE_URL}/users/me/dashboard/events`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "x-tenant-id": HOST_Tenant_ID,
-            },
-          }
-        );
+        // const res = await axios.get(
+        //   `${API_BASE_URL}/users/me/dashboard/events`,
+        //   {
+        //     headers: {
+        //       Authorization: `Bearer ${token}`,
+        //       "x-tenant-id": HOST_Tenant_ID,
+        //     },
+        //   }
+        // );
+        const res = await apiClient.get("/users/me/dashboard/events");
 
         const list: StaffEvent[] = Array.isArray(res?.data?.data)
           ? res.data.data
@@ -296,31 +298,49 @@ export default function TicketCheck() {
       setIsScanning(true);
       setShowResult(false);
 
-      const token = getAuthToken();
+      // const token = getAuthToken();
 
-      if (!token) {
-        setResultType("invalid");
-        setVerificationMessage("Authentication token missing");
-        setShowResult(true);
-        return;
-      }
+      // if (!token) {
+      //   setResultType("invalid");
+      //   setVerificationMessage("Authentication token missing");
+      //   setShowResult(true);
+      //   return;
+      // }
 
-      const res = await fetch(`${API_BASE_URL}/tickets/admin/mark-used`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          eventId: selectedEvent.eventId,
-          fullTicketNumber: ticketId.trim(),
-        }),
+      // const res = await fetch(`${API_BASE_URL}/tickets/admin/mark-used`, {
+      //   method: "POST",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({
+      //     eventId: selectedEvent.eventId,
+      //     fullTicketNumber: ticketId.trim(),
+      //   }),
+      // });
+
+      // const json = await res.json();
+
+      // if (res.ok && json?.success) {
+      //   setResultType("success");
+      //   setVerificationMessage(
+      //     json.message || "Ticket checked in successfully"
+      //   );
+      // } else {
+      //   setResultType("invalid");
+      //   setVerificationMessage(json?.message || "Invalid ticket");
+      // }
+
+      // setShowResult(true);
+      const res = await apiClient.post("/tickets/admin/mark-used", {
+        eventId: selectedEvent.eventId,
+        fullTicketNumber: ticketId.trim(),
       });
 
-      const json = await res.json();
+      const json = res.data;
 
-      if (res.ok && json?.success) {
+      if (json?.success) {
         setResultType("success");
         setVerificationMessage(
           json.message || "Ticket checked in successfully"
@@ -345,26 +365,36 @@ export default function TicketCheck() {
     try {
       setSummaryLoading(true);
 
-      const token = getAuthToken();
-      if (!token) return;
+      // const token = getAuthToken();
+      // if (!token) return;
 
-      const res = await fetch(
-        `${API_BASE_URL}/tickets/staff/event/${eventId}/summary`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
+      // const res = await fetch(
+      //   `${API_BASE_URL}/tickets/staff/event/${eventId}/summary`,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+
+      // const json = await res.json();
+
+      // if (json?.success) {
+      //   setSummary(json.data.summary);
+      //   setAttendees(json.data.attendees || []);
+      //   setCurrentPage(1); // reset pagination
+      // }\
+      const res = await apiClient.get(
+        `/tickets/staff/event/${eventId}/summary`
       );
-
-      const json = await res.json();
+      const json = res.data;
 
       if (json?.success) {
         setSummary(json.data.summary);
         setAttendees(json.data.attendees || []);
-        setCurrentPage(1); // reset pagination
+        setCurrentPage(1);
       }
     } catch (err) {
       console.error("Failed to load event summary", err);

@@ -5,10 +5,28 @@ import Sidebar from "./sidebar";
 import Header from "./header";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
+
+const safeImageUrl = (url?: string) => {
+  if (!url || typeof url !== "string") return "/placeholder.svg";
+
+  const trimmed = url.trim();
+  if (!trimmed) return "/placeholder.svg";
+
+  // absolute from backend
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  // relative path from backend
+  if (trimmed.startsWith("/")) return `${API_BASE_URL}${trimmed}`;
+
+  return `${API_BASE_URL}/${trimmed}`;
+};
 
 export default function MyEvents() {
   const [allEvents, setAllEvents] = useState<any[]>([]);
@@ -19,39 +37,57 @@ export default function MyEvents() {
   const eventsPerPage = 4;
 
   // TOKEN FUNCTION
-  const getToken = () => {
-    let raw =
-      localStorage.getItem("staffToken") ||
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("token");
+  // const getToken = () => {
+  //   let raw =
+  //     localStorage.getItem("staffToken") ||
+  //     localStorage.getItem("hostToken") ||
+  //     localStorage.getItem("token");
 
-    try {
-      const parsed = JSON.parse(raw || "{}");
-      return parsed?.token || parsed;
-    } catch {
-      return raw;
-    }
-  };
+  //   try {
+  //     const parsed = JSON.parse(raw || "{}");
+  //     return parsed?.token || parsed;
+  //   } catch {
+  //     return raw;
+  //   }
+  // };
 
   // =====================================================
   // 🔥 UPDATED API: GET /users/me/events/cards
   // =====================================================
+  // const fetchStaffEvents = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const token = getToken();
+
+  //     const response = await axios.get(
+  //       `${API_BASE_URL}/users/me/events/cards`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //       }
+  //     );
+
+  //     // ✅ Correct path (matches your backend response)
+  //     const events =
+  //       response?.data?.data?.events || response?.data?.events || [];
+
+  //     setAllEvents(events);
+  //   } catch (err: any) {
+  //     console.error("❌ Error fetching staff events:", err);
+  //     toast.error(err?.response?.data?.message || "Failed to load events");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchStaffEvents = async () => {
     try {
       setLoading(true);
-      const token = getToken();
 
-      const response = await axios.get(
-        `${API_BASE_URL}/users/me/events/cards`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      const response = await apiClient.get("/users/me/events/cards");
 
-      // ✅ Correct path (matches your backend response)
       const events =
         response?.data?.data?.events || response?.data?.events || [];
 
@@ -155,7 +191,7 @@ export default function MyEvents() {
                   {/* Image */}
                   <div className="w-full sm:w-[220px] h-[200px] sm:h-[300px] overflow-hidden">
                     <Image
-                      src={`${API_BASE_URL}/${event.image}`}
+                      src={safeImageUrl(event.image)}
                       alt={event.title}
                       width={220}
                       height={200}

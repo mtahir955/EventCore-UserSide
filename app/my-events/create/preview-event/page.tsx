@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { EditStaffModal } from "../../../host-dashboard/components/edit-staff-modal";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
-import axios from "axios";
+// import axios from "axios";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import toast from "react-hot-toast";
+import { apiClient } from "@/lib/apiClient";
 
 type SetImagesPageProps = {
   setActivePage: React.Dispatch<React.SetStateAction<string>>;
@@ -126,30 +127,37 @@ export default function PreviewEventPage({
 
       formData.append("tickets", JSON.stringify(ticketsSanitized));
 
-      let rawToken =
-        localStorage.getItem("hostToken") ||
-        localStorage.getItem("hostUser") ||
-        localStorage.getItem("token");
+      // let rawToken =
+      //   localStorage.getItem("hostToken") ||
+      //   localStorage.getItem("hostUser") ||
+      //   localStorage.getItem("token");
 
-      let token: string | null = null;
+      // let token: string | null = null;
 
-      try {
-        const parsed = JSON.parse(rawToken || "{}");
-        if (parsed?.token) token = parsed.token;
-        else token = parsed;
-      } catch {
-        token = rawToken;
-      }
+      // try {
+      //   const parsed = JSON.parse(rawToken || "{}");
+      //   if (parsed?.token) token = parsed.token;
+      //   else token = parsed;
+      // } catch {
+      //   token = rawToken;
+      // }
 
-      if (!token) {
-        toast.error("Authentication token missing");
-        return;
-      }
+      // if (!token) {
+      //   toast.error("Authentication token missing");
+      //   return;
+      // }
 
-      const res = await axios.post(`${API_BASE_URL}/events`, formData, {
+      // const res = await axios.post(`${API_BASE_URL}/events`, formData, {
+      //   headers: {
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // });
+
+      const res = await apiClient.post(`/events`, formData, {
         headers: {
-          "X-Tenant-ID": HOST_Tenant_ID,
-          Authorization: `Bearer ${token}`,
+          // ✅ let browser set boundary automatically
+          // don't manually set "Content-Type" for FormData
         },
       });
 
@@ -319,7 +327,7 @@ export default function PreviewEventPage({
               </div>
 
               {/* Share */}
-              <div className="mb-6 mt-6 w-full break-words">
+              {/* <div className="mb-6 mt-6 w-full break-words">
                 <h3 className="text-[17px] sm:text-[18px] font-semibold mb-3">
                   Share with friends
                 </h3>
@@ -331,10 +339,10 @@ export default function PreviewEventPage({
                   <img src="/images/social/twitter.png" className="h-9 w-9" />
                   <img src="/images/icons/more-icon.png" className="h-9 w-9" />
                 </div>
-              </div>
+              </div> */}
 
               {/* Tickets */}
-              <div className="mb-6 w-full break-words">
+              <div className="mb-6 w-full break-words mt-10">
                 <h3 className="text-[17px] sm:text-[18px] font-semibold mb-4">
                   Price Per Ticket:
                 </h3>

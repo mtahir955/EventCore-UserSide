@@ -27,7 +27,7 @@ export default function ContactDetails({ data }: any) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm">Pincode:</label>
+          <label className="text-sm"> Postal Code:</label>
           <div className="h-12 flex items-center rounded-lg border px-4 bg-gray-50 dark:bg-[#181818]">
             {data.pincode}
           </div>
@@ -38,19 +38,6 @@ export default function ContactDetails({ data }: any) {
         <label className="text-sm">Address:</label>
         <div className="rounded-lg border p-4 bg-gray-50 dark:bg-[#181818]">
           {data.address}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm">Website:</label>
-        <div className="h-12 flex items-center rounded-lg border px-4 bg-gray-50 dark:bg-[#181818]">
-          <a
-            href={data.website}
-            target="_blank"
-            className="text-blue-600 hover:underline"
-          >
-            {data.website}
-          </a>
         </div>
       </div>
     </div>

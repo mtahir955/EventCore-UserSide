@@ -8,11 +8,12 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import AddCreditModal from "../host-dashboard/components/AddCreditModal";
-import axios from "axios";
+// import axios from "axios";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { createPortal } from "react-dom";
+import { apiClient } from "@/lib/apiClient";
 
 /* ─────────────────────────────────────────
    TYPES
@@ -80,18 +81,37 @@ export default function BuyersPage() {
     setHostName(user.userName || user.fullName || "Host");
   }, []);
 
+  // useEffect(() => {
+  //   const fetchTenantFeatures = async () => {
+  //     const token = getToken();
+  //     if (!token) return;
+
+  //     try {
+  //       const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //       });
+
+  //       const creditEnabled =
+  //         res?.data?.data?.features?.creditSystem?.enabled === true;
+
+  //       setIsCreditSystemEnabled(creditEnabled);
+  //     } catch (err) {
+  //       console.error("Failed to load tenant features", err);
+  //       // ❗ Fail-safe: hide credit actions if feature fetch fails
+  //       setIsCreditSystemEnabled(false);
+  //     }
+  //   };
+
+  //   fetchTenantFeatures();
+  // }, []);
+
   useEffect(() => {
     const fetchTenantFeatures = async () => {
-      const token = getToken();
-      if (!token) return;
-
       try {
-        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        });
+        const res = await apiClient.get(`/tenants/my/features`);
 
         const creditEnabled =
           res?.data?.data?.features?.creditSystem?.enabled === true;
@@ -99,8 +119,7 @@ export default function BuyersPage() {
         setIsCreditSystemEnabled(creditEnabled);
       } catch (err) {
         console.error("Failed to load tenant features", err);
-        // ❗ Fail-safe: hide credit actions if feature fetch fails
-        setIsCreditSystemEnabled(false);
+        setIsCreditSystemEnabled(false); // fail-safe
       }
     };
 
@@ -138,21 +157,29 @@ export default function BuyersPage() {
 
   useEffect(() => {
     const fetchCustomers = async () => {
-      const token = getToken();
-      if (!token) return;
+      // const token = getToken();
+      // if (!token) return;
 
       try {
         setLoading(true);
 
-        const res = await axios.get(`${API_BASE_URL}/users/customers`, {
+        // const res = await axios.get(`${API_BASE_URL}/users/customers`, {
+        //   params: {
+        //     page: currentPage,
+        //     limit: entriesPerPage,
+        //     search: searchQuery || undefined,
+        //   },
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //   },
+        // });
+
+        const res = await apiClient.get(`/users/customers`, {
           params: {
             page: currentPage,
             limit: entriesPerPage,
             search: searchQuery || undefined,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
           },
         });
 
@@ -205,31 +232,38 @@ export default function BuyersPage() {
       return;
     }
 
-    const token = getToken();
-    if (!token) {
-      toast.error("Unauthorized");
-      return;
-    }
+    // const token = getToken();
+    // if (!token) {
+    //   toast.error("Unauthorized");
+    //   return;
+    // }
 
     try {
       toast.loading("Adding credit...", { id: "add-credit" });
 
-      const res = await axios.post(
-        `${API_BASE_URL}/users/customers/credits`,
-        {
-          customerId: data.customerId,
-          amount: data.amount,
-          reason: data.reason,
-          expiresAt: data.expiresAt,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // const res = await axios.post(
+      //   `${API_BASE_URL}/users/customers/credits`,
+      //   {
+      //     customerId: data.customerId,
+      //     amount: data.amount,
+      //     reason: data.reason,
+      //     expiresAt: data.expiresAt,
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+
+      const res = await apiClient.post(`/users/customers/credits`, {
+        customerId: data.customerId,
+        amount: data.amount,
+        reason: data.reason,
+        expiresAt: data.expiresAt,
+      });
 
       toast.success("Credit added successfully", { id: "add-credit" });
 
@@ -259,22 +293,24 @@ export default function BuyersPage() {
     expiresAt: string;
     customerId: string;
   }) => {
-    const token = getToken();
-    if (!token) return toast.error("Unauthorized");
+    // const token = getToken();
+    // if (!token) return toast.error("Unauthorized");
 
     try {
       toast.loading("Updating credit...", { id: "update-credit" });
 
-      const res = await axios.put(
-        `${API_BASE_URL}/users/customers/credits`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-        }
-      );
+      // const res = await axios.put(
+      //   `${API_BASE_URL}/users/customers/credits`,
+      //   data,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": HOST_Tenant_ID,
+      //     },
+      //   }
+      // );
+
+      const res = await apiClient.put(`/users/customers/credits`, data);
 
       toast.success("Credit updated", { id: "update-credit" });
 
@@ -298,18 +334,22 @@ export default function BuyersPage() {
   };
 
   const handleRemoveCredit = async (customerId: string) => {
-    const token = getToken();
-    if (!token) return toast.error("Unauthorized");
+    // const token = getToken();
+    // if (!token) return toast.error("Unauthorized");
 
     try {
       toast.loading("Removing credit...", { id: "remove-credit" });
 
-      await axios.delete(`${API_BASE_URL}/users/customers/credits`, {
+      // await axios.delete(`${API_BASE_URL}/users/customers/credits`, {
+      //   data: { customerId },
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //     "X-Tenant-ID": HOST_Tenant_ID,
+      //   },
+      // });
+
+      await apiClient.delete(`/users/customers/credits`, {
         data: { customerId },
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
       });
 
       toast.success("Credit removed", { id: "remove-credit" });

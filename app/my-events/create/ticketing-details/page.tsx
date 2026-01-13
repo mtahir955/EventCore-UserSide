@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface Ticket {
   id: string;
@@ -36,18 +37,36 @@ export default function TicketingDetailsPage({
   const [allowTransfers, setAllowTransfers] = useState<boolean>(false);
 
   /* ================= FETCH FEATURES ================= */
+  // useEffect(() => {
+  //   const fetchFeatures = async () => {
+  //     try {
+  //       const token = localStorage.getItem("hostToken");
+  //       if (!token) return;
+
+  //       const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "x-tenant-id": HOST_Tenant_ID,
+  //         },
+  //       });
+
+  //       setAllowTransfers(
+  //         Boolean(res.data?.data?.features?.allowTransfers?.enabled)
+  //       );
+  //     } catch (err) {
+  //       console.error("Failed to load tenant features", err);
+  //       setAllowTransfers(false);
+  //     }
+  //   };
+
+  //   fetchFeatures();
+  // }, []);
+
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
-        if (!token) return;
-
-        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-          },
-        });
+        // ✅ apiClient auto adds Authorization + X-Tenant-ID
+        const res = await apiClient.get(`/tenants/my/features`);
 
         setAllowTransfers(
           Boolean(res.data?.data?.features?.allowTransfers?.enabled)

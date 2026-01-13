@@ -73,7 +73,7 @@ const EventcorePercentageSection = forwardRef<SectionRef>((_, ref) => {
         }`}
       >
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Percentage
+          Percentage <span className="text-red-500">*</span>
         </label>
 
         <div className="relative">

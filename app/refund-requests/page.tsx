@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { PaymentSuccessTable } from "../admin/components/payment-success-table";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import axios from "axios";
+// import axios from "axios";
 import type { RefundRequest } from "../admin/components/payment-withdrawal-table";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface WithdrawalRequest {
   id: string;
@@ -155,30 +156,52 @@ export default function PaymentWithdrawalPage() {
     }
   }, []);
 
+  // const fetchRefundRequests = async (status?: RefundTab) => {
+  //   try {
+  //     setLoading(true);
+
+  //     const token = localStorage.getItem("hostToken");
+  //     if (!token) {
+  //       console.error("Host token missing");
+  //       return;
+  //     }
+
+  //     const response = await axios.get(
+  //       `${API_BASE_URL}/tickets/admin/refund-requests`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //         },
+  //         params: {
+  //           page,
+  //           limit,
+  //           status,
+  //         },
+  //       }
+  //     );
+
+  //     setRefundRequests(response.data?.data?.items || []);
+  //   } catch (error: any) {
+  //     console.error(
+  //       "Failed to fetch refund requests",
+  //       error?.response?.data || error
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchRefundRequests = async (status?: RefundTab) => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("hostToken");
-      if (!token) {
-        console.error("Host token missing");
-        return;
-      }
-
-      const response = await axios.get(
-        `${API_BASE_URL}/tickets/admin/refund-requests`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-          },
-          params: {
-            page,
-            limit,
-            status,
-          },
-        }
-      );
+      const response = await apiClient.get(`/tickets/admin/refund-requests`, {
+        params: {
+          page,
+          limit,
+          status,
+        },
+      });
 
       setRefundRequests(response.data?.data?.items || []);
     } catch (error: any) {
@@ -272,14 +295,14 @@ export default function PaymentWithdrawalPage() {
                     alt="notification"
                     className="h-4 w-4"
                   /> */}
-                  {/* Counter badge */}
-                  {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
                 </button> */}
 
-                {/* Notification popup */}
-                {/* {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications

@@ -10,8 +10,9 @@ import SocialMediaLinksSection from "./sections/social-media-links";
 import EventcorePercentageSection from "./sections/eventcore-percentage";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../../../config/apiConfig";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { API_BASE_URL } from "../../../config/apiConfig";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 // ==============================
 // TYPES
@@ -208,22 +209,40 @@ export default function HostManagementForm() {
     // SEND API REQUEST
     // ==============================
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/tenants`, {
-        method: "POST",
-        headers: {
-          "x-tenant-id": SAAS_Tenant_ID,
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(trimmedPayload),
-      });
+      // const res = await fetch(`${API_BASE_URL}/admin/tenants`, {
+      //   method: "POST",
+      //   headers: {
+      //     "x-tenant-id": SAAS_Tenant_ID,
+      //     Authorization: `Bearer ${token}`,
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify(trimmedPayload),
+      // });
 
-      const result = await res.json();
+      // const result = await res.json();
 
-      if (res.ok) {
-        toast.success("Tenant created successfully 🎉");
-      } else {
-        toast.error(result.message || "Failed to create tenant.");
+      // if (res.ok) {
+      //   toast.success("Tenant created successfully 🎉");
+      // } else {
+      //   toast.error(result.message || "Failed to create tenant.");
+      // }
+      try {
+        const res = await apiClient.post("/admin/tenants", trimmedPayload);
+
+        const { success, message } = res.data || {};
+
+        if (success) {
+          toast.success(message || "Tenant created successfully 🎉");
+        } else {
+          toast.error(message || "Failed to create tenant.");
+        }
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "API request failed. Check server.";
+        console.error("API ERROR:", err);
+        toast.error(msg);
       }
     } catch (err) {
       console.error("FETCH ERROR:", err);

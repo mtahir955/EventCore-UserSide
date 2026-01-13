@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import AccountSettingsSection from "./sections/account-settings";
 import ContactDetailsSection from "./sections/contact-details";
 import OtherPagesDataSection from "./sections/other-pages-data";
 import SocialMediaLinksSection from "./sections/social-media-links";
 import { Button } from "@/components/ui/button";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { apiClient } from "@/lib/apiClient";
 
 export default function HostManagementForm() {
   const router = useRouter();
@@ -19,29 +20,44 @@ export default function HostManagementForm() {
   const [hostData, setHostData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const accountRef = useRef();
-  const contactRef = useRef();
-  const otherRef = useRef();
-  const socialRef = useRef();
+  const accountRef = useRef<any>(null);
+  const contactRef = useRef<any>(null);
+  const otherRef = useRef<any>(null);
+  const socialRef = useRef<any>(null);
+
+  // useEffect(() => {
+  //   const loadProfile = async () => {
+  //     try {
+  //       let token = localStorage.getItem("hostToken");
+
+  //       try {
+  //         const parsed = JSON.parse(token!);
+  //         if (parsed?.token) token = parsed.token;
+  //       } catch {}
+
+  //       const res = await axios.get(`${API_BASE_URL}/users/me`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "x-tenant-id": HOST_Tenant_ID,
+  //         },
+  //       });
+
+  //       setHostData(res.data.data);
+  //     } catch (err) {
+  //       console.log("❌ Fetch failed", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   loadProfile();
+  // }, []);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        let token = localStorage.getItem("hostToken");
-
-        try {
-          const parsed = JSON.parse(token!);
-          if (parsed?.token) token = parsed.token;
-        } catch {}
-
-        const res = await axios.get(`${API_BASE_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-          },
-        });
-
-        setHostData(res.data.data);
+        const res = await apiClient.get("/users/me");
+        setHostData(res.data?.data);
       } catch (err) {
         console.log("❌ Fetch failed", err);
       } finally {
@@ -70,17 +86,26 @@ export default function HostManagementForm() {
       if (parsed?.token) token = parsed.token;
     } catch {}
 
+    // try {
+    //   const res = await axios.put(`${API_BASE_URL}/users/me`, finalPayload, {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //       "x-tenant-id": HOST_Tenant_ID,
+    //       "Content-Type": "application/json",
+    //     },
+    //   });
+
+    //   toast.success("Updated successfully!");
+    //   setHostData(res.data.data);
+    // } catch (err) {
+    //   console.log(err);
+    //   toast.error("Update failed");
+    // }
     try {
-      const res = await axios.put(`${API_BASE_URL}/users/me`, finalPayload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": HOST_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await apiClient.put("/users/me", finalPayload);
 
       toast.success("Updated successfully!");
-      setHostData(res.data.data);
+      setHostData(res.data?.data);
     } catch (err) {
       console.log(err);
       toast.error("Update failed");

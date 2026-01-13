@@ -4,8 +4,9 @@ import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { HostRequestModal } from "./host-request-modal";
-import { API_BASE_URL } from "../../../config/apiConfig";
-import { SAAS_Tenant_ID } from "../../../config/sasTenantId";
+// import { API_BASE_URL } from "../../../config/apiConfig";
+// import { SAAS_Tenant_ID } from "../../../config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 export interface Host {
   id: string;
@@ -22,29 +23,29 @@ interface HostRequestTableProps {
   statusFilter: string;
 }
 // 🔥 UNIVERSAL FULL TOKEN CLEANER (Always works)
-function getCleanToken() {
-  if (typeof window === "undefined") return null;
+// function getCleanToken() {
+//   if (typeof window === "undefined") return null;
 
-  let rawToken = localStorage.getItem("adminToken");
-  if (!rawToken) return null;
+//   let rawToken = localStorage.getItem("adminToken");
+//   if (!rawToken) return null;
 
-  let token = rawToken;
+//   let token = rawToken;
 
-  // If token is a JSON object: { token: "..." }
-  try {
-    const parsed = JSON.parse(rawToken);
-    if (parsed?.token) {
-      token = parsed.token;
-    }
-  } catch (e) {
-    // not JSON → ignore
-  }
+//   // If token is a JSON object: { token: "..." }
+//   try {
+//     const parsed = JSON.parse(rawToken);
+//     if (parsed?.token) {
+//       token = parsed.token;
+//     }
+//   } catch (e) {
+//     // not JSON → ignore
+//   }
 
-  // Remove any random quotes added by backend or JSON.stringify
-  token = token.replace(/"/g, "").trim();
+//   // Remove any random quotes added by backend or JSON.stringify
+//   token = token.replace(/"/g, "").trim();
 
-  return token;
-}
+//   return token;
+// }
 
 export function HostRequestTable({
   searchQuery,
@@ -57,53 +58,102 @@ export function HostRequestTable({
   const [isHostRequestModalOpen, setIsHostRequestModalOpen] = useState(false);
   const [selectedHost, setSelectedHost] = useState<Host | null>(null);
 
-  const token = getCleanToken(); // 🔥 Full clean token always
+  // const token = getCleanToken(); // 🔥 Full clean token always
 
+  // const fetchTenants = useCallback(async () => {
+  //   if (!token) {
+  //     setError("Admin token missing. Please log in again.");
+  //     toast.error("Token missing.");
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+
+  //     const url = new URL(`${API_BASE_URL}/admin/tenants`);
+
+  //     url.searchParams.set("limit", "50");
+  //     url.searchParams.set("page", "1");
+  //     url.searchParams.set("sortOrder", "ASC");
+  //     url.searchParams.set("sortBy", "name");
+
+  //     if (searchQuery.trim() !== "") {
+  //       url.searchParams.set("search", searchQuery.trim());
+  //     }
+
+  //     let apiStatus: string | undefined;
+  //     const sf = statusFilter.toLowerCase();
+
+  //     if (sf === "active") apiStatus = "ACTIVE";
+  //     else if (sf === "banned") apiStatus = "INACTIVE";
+
+  //     if (apiStatus) url.searchParams.set("status", apiStatus);
+
+  //     console.log("TOKEN SENT =", token);
+
+  //     const res = await fetch(url.toString(), {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "x-tenant-id": SAAS_Tenant_ID,
+  //         "Content-Type": "application/json",
+  //       },
+  //     });
+
+  //     if (!res.ok) {
+  //       throw new Error(`Failed to fetch tenants (${res.status})`);
+  //     }
+
+  //     const json = await res.json();
+
+  //     console.log("RAW TENANTS:", json);
+
+  //     const tenantList: any[] = Array.isArray(json)
+  //       ? json
+  //       : json?.data || json?.items || [];
+
+  //     const mappedHosts: Host[] = tenantList.map((tenant: any) => ({
+  //       id: tenant.id || tenant.tenantId || "",
+  //       tenantName: tenant.name || tenant.tenantName || "Unnamed Tenant",
+  //       email: tenant.email || "—",
+  //       category: tenant.industry || "Event Organizer/Host",
+  //       subdomain:
+  //         tenant.subDomain || tenant.subdomain || tenant.sub_domain || "",
+  //       status: (tenant.status || "").toString(),
+  //       avatar: tenant.logoUrl || tenant.logo || "/avatars/avatar-1.png",
+  //     }));
+
+  //     setHosts(mappedHosts);
+  //   } catch (err: any) {
+  //     console.error("Error fetching tenants:", err);
+  //     setError(err.message || "Failed to fetch tenants");
+  //     toast.error("Failed to load tenants");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [searchQuery, statusFilter, token]);
   const fetchTenants = useCallback(async () => {
-    if (!token) {
-      setError("Admin token missing. Please log in again.");
-      toast.error("Token missing.");
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
-      const url = new URL(`${API_BASE_URL}/admin/tenants`);
-
-      url.searchParams.set("limit", "50");
-      url.searchParams.set("page", "1");
-      url.searchParams.set("sortOrder", "ASC");
-      url.searchParams.set("sortBy", "name");
+      const params: any = {
+        limit: 50,
+        page: 1,
+        sortOrder: "ASC",
+        sortBy: "name",
+      };
 
       if (searchQuery.trim() !== "") {
-        url.searchParams.set("search", searchQuery.trim());
+        params.search = searchQuery.trim();
       }
 
-      let apiStatus: string | undefined;
       const sf = statusFilter.toLowerCase();
+      if (sf === "active") params.status = "ACTIVE";
+      else if (sf === "banned") params.status = "INACTIVE";
 
-      if (sf === "active") apiStatus = "ACTIVE";
-      else if (sf === "banned") apiStatus = "INACTIVE";
-
-      if (apiStatus) url.searchParams.set("status", apiStatus);
-
-      console.log("TOKEN SENT =", token);
-
-      const res = await fetch(url.toString(), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": SAAS_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch tenants (${res.status})`);
-      }
-
-      const json = await res.json();
+      const res = await apiClient.get("/admin/tenants", { params });
+      const json = res.data;
 
       console.log("RAW TENANTS:", json);
 
@@ -125,12 +175,18 @@ export function HostRequestTable({
       setHosts(mappedHosts);
     } catch (err: any) {
       console.error("Error fetching tenants:", err);
-      setError(err.message || "Failed to fetch tenants");
-      toast.error("Failed to load tenants");
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to load tenants";
+
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, statusFilter, token]);
+  }, [searchQuery, statusFilter]);
 
   useEffect(() => {
     fetchTenants();
@@ -140,55 +196,85 @@ export function HostRequestTable({
     await fetchTenants();
   };
 
+  // const handleActivate = async (host: Host) => {
+  //   if (!token) {
+  //     toast.error("Token missing.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await fetch(`${API_BASE_URL}/tenants/${host.id}/activate`, {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "x-tenant-id": SAAS_Tenant_ID,
+  //         "Content-Type": "application/json",
+  //       },
+  //     });
+
+  //     if (!res.ok) throw new Error(`Failed to activate (${res.status})`);
+
+  //     toast.success("Tenant activated");
+  //     await refreshAfterAction();
+  //   } catch (err: any) {
+  //     console.error("Activate error:", err);
+  //     toast.error("Activation failed");
+  //   }
+  // };
   const handleActivate = async (host: Host) => {
-    if (!token) {
-      toast.error("Token missing.");
-      return;
-    }
-
     try {
-      const res = await fetch(`${API_BASE_URL}/tenants/${host.id}/activate`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": SAAS_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-      });
+      await apiClient.post(`/tenants/${host.id}/activate`);
 
-      if (!res.ok) throw new Error(`Failed to activate (${res.status})`);
-
-      toast.success("Tenant activated");
+      toast.success("Tenant activated successfully 🎉");
       await refreshAfterAction();
     } catch (err: any) {
       console.error("Activate error:", err);
-      toast.error("Activation failed");
+
+      const msg =
+        err?.response?.data?.message || err?.message || "Activation failed";
+
+      toast.error(msg);
     }
   };
 
+  // const handleDeactivate = async (host: Host) => {
+  //   if (!token) {
+  //     toast.error("Token missing.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await fetch(`${API_BASE_URL}/tenants/${host.id}/inactivate`, {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "x-tenant-id": SAAS_Tenant_ID,
+  //         "Content-Type": "application/json",
+  //       },
+  //     });
+
+  //     if (!res.ok) throw new Error(`Failed to deactivate (${res.status})`);
+
+  //     toast.success("Tenant deactivated");
+  //     await refreshAfterAction();
+  //   } catch (err: any) {
+  //     console.error("Deactivate error:", err);
+  //     toast.error("Deactivation failed");
+  //   }
+  // };
   const handleDeactivate = async (host: Host) => {
-    if (!token) {
-      toast.error("Token missing.");
-      return;
-    }
-
     try {
-      const res = await fetch(`${API_BASE_URL}/tenants/${host.id}/inactivate`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": SAAS_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-      });
+      await apiClient.post(`/tenants/${host.id}/inactivate`);
 
-      if (!res.ok) throw new Error(`Failed to deactivate (${res.status})`);
-
-      toast.success("Tenant deactivated");
+      toast.success("Tenant deactivated successfully 🎉");
       await refreshAfterAction();
     } catch (err: any) {
       console.error("Deactivate error:", err);
-      toast.error("Deactivation failed");
+
+      const msg =
+        err?.response?.data?.message || err?.message || "Deactivation failed";
+
+      toast.error(msg);
     }
   };
 

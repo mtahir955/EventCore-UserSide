@@ -30,7 +30,7 @@ export function PopularEvents({
   const [filteredEvents, setFilteredEvents] = useState<EventItem[]>([]);
   const [activeFilter, setActiveFilter] = useState("All Events");
 
-  const filters = ["All Events", "Today", "This week", "Tomorrow", "Online"];
+  const filters = ["All Events", "Today", "This Week", "Tomorrow", "Online"];
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollDir, setScrollDir] = useState(1);

@@ -8,9 +8,10 @@ import SocialMediaLinksSection from "./sections/social-media-links";
 import EventcorePercentageSection from "./sections/eventcore-percentage";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../../../../config/apiConfig";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { API_BASE_URL } from "../../../../config/apiConfig";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 import { useRouter, useSearchParams } from "next/navigation";
+import apiClient from "@/lib/apiClient";
 
 /* =====================================================
    TYPES
@@ -61,21 +62,24 @@ export default function HostManagementForm() {
     }
 
     const fetchTenant = async () => {
-      const token = localStorage.getItem("adminToken");
-      if (!token) return toast.error("Session expired");
+      // const token = localStorage.getItem("adminToken");
+      // if (!token) return toast.error("Session expired");
 
       try {
-        const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": SAAS_Tenant_ID,
-          },
-        });
+        // const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "x-tenant-id": SAAS_Tenant_ID,
+        //   },
+        // });
+        const res = await apiClient.get(`/admin/tenants/${tenantId}`);
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.message);
+        // const result = await res.json();
+        // if (!res.ok) throw new Error(result.message);
 
-        const data = result.data;
+        // const data = result.data;
+        const result = res.data;
+        const data = result?.data || result;
 
         // 🔥 HYDRATE ALL SECTIONS
         basicInfoRef.current?.setData?.(data);
@@ -186,24 +190,42 @@ export default function HostManagementForm() {
       socialLinks: social,
     });
 
+    // try {
+    //   const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
+    //     method: "PUT",
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //       "x-tenant-id": SAAS_Tenant_ID,
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify(payload),
+    //   });
+
+    //   const result = await res.json();
+    //   if (!res.ok) throw new Error(result.message);
+
+    //   toast.success("Tenant updated successfully 🎉");
+    //   router.back();
+    // } catch (err: any) {
+    //   toast.error(err.message || "Update failed");
+    // }
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-tenant-id": SAAS_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await apiClient.put(`/admin/tenants/${tenantId}`, payload);
+      const result = res.data;
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message);
+      // If backend explicitly says failure
+      if (result?.success === false) {
+        toast.error(result?.message || "Update failed");
+        return;
+      }
 
+      // ✅ Always show your custom success message
       toast.success("Tenant updated successfully 🎉");
       router.back();
     } catch (err: any) {
-      toast.error(err.message || "Update failed");
+      const msg =
+        err?.response?.data?.message || err?.message || "Update failed";
+      toast.error(msg);
     }
   };
 

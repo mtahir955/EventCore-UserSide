@@ -16,6 +16,8 @@ import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
+import { useRouter } from "next/navigation";
+import AuthRequiredModal from "@/components/modals/AuthRequiredModal";
 
 const safeUrl = (url?: string | null) => {
   if (!url) return null;
@@ -39,6 +41,34 @@ export default function EventDetailPage() {
   const [calendarLoading, setCalendarLoading] = useState(false);
 
   const defaultDate = new Date("2025-06-13T20:00:00");
+
+  const router = useRouter();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  const isLoggedIn = () => {
+    if (typeof window === "undefined") return false;
+
+    // match your header logic + checkout logic
+    const keys = [
+      "buyerToken",
+      "userToken",
+      "staffToken",
+      "hostToken",
+      "token",
+    ];
+    return keys.some((k) => !!localStorage.getItem(k));
+  };
+
+  const handleSaveMySpot = () => {
+    if (!eventId) return;
+
+    if (!isLoggedIn()) {
+      setAuthModalOpen(true);
+      return;
+    }
+
+    router.push(`/check-out?id=${eventId}`);
+  };
 
   // const getToken = () => {
   //   if (typeof window === "undefined") return null;
@@ -339,11 +369,19 @@ export default function EventDetailPage() {
               </div>
 
               {/* <Link href="/check-out"> */}
-              <Link href={`/check-out?id=${eventId}`}>
+              {/* <Link href={`/check-out?id=${eventId}`}>
                 <Button className="w-full sm:w-[180px] h-[44px] bg-[#0077F7] hover:bg-[#0066D6] text-white rounded-lg text-sm sm:text-base font-semibold">
                   Save my Spot
                 </Button>
-              </Link>
+              </Link> */}
+              {/* <Link href={`/check-out?id=${eventId}`}> */}
+              <Button
+                onClick={handleSaveMySpot}
+                className="w-full sm:w-[180px] h-[44px] bg-[#0077F7] hover:bg-[#0066D6] text-white rounded-lg text-sm sm:text-base font-semibold"
+              >
+                Lock me in!
+              </Button>
+              {/* </Link> */}
             </div>
           </div>
         </section>
@@ -389,6 +427,12 @@ export default function EventDetailPage() {
           }}
         />
       )}
+      <AuthRequiredModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        title="Login / Signup Required"
+        message="Please log in or create an account to purchase tickets."
+      />
     </div>
   );
 }

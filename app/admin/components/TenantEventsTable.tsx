@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 interface EventItem {
   id: string;
@@ -39,47 +40,82 @@ export function TenantEventsTable({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // useEffect(() => {
+  //   const fetchEvents = async () => {
+  //     try {
+  //       setLoading(true);
+  //       setError(null);
+
+  //       const token = localStorage.getItem("adminToken");
+  //       if (!token) {
+  //         setError("Authentication required");
+  //         return;
+  //       }
+
+  //       const res = await fetch(`${API_BASE_URL}/tenants/${tenantId}/events`, {
+  //         method: "GET",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "x-tenant-id": SAAS_Tenant_ID,
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+
+  //       if (!res.ok) {
+  //         throw new Error(`Failed with status ${res.status}`);
+  //       }
+
+  //       const json = await res.json();
+  //       const rawEvents = json.data || json.items || json || [];
+
+  //       const mapped = rawEvents.map((e: any) => ({
+  //         id: e.id,
+  //         name: e.name,
+  //         date: e.eventDate,
+  //         location: e.location,
+  //         ticketPrice: e.ticketPrice ?? 0,
+  //         status: e.status, // 🔥 TRUST BACKEND
+  //       }));
+
+  //       setEvents(mapped);
+  //     } catch (err) {
+  //       console.error(err);
+  //       setError("Failed to load events");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (tenantId) fetchEvents();
+  // }, [tenantId]);
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem("adminToken");
-        if (!token) {
-          setError("Authentication required");
-          return;
-        }
+        const res = await apiClient.get(`/tenants/${tenantId}/events`);
+        const json = res.data;
 
-        const res = await fetch(`${API_BASE_URL}/tenants/${tenantId}/events`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "x-tenant-id": SAAS_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed with status ${res.status}`);
-        }
-
-        const json = await res.json();
-        const rawEvents = json.data || json.items || json || [];
+        const rawEvents = json?.data || json?.items || json || [];
 
         const mapped = rawEvents.map((e: any) => ({
           id: e.id,
           name: e.name,
           date: e.eventDate,
           location: e.location,
-          ticketPrice: e.ticketPrice ?? 0,
-          status: e.status, // 🔥 TRUST BACKEND
+          status: e.status, // trust backend
         }));
 
         setEvents(mapped);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        setError("Failed to load events");
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to load events";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -96,10 +132,18 @@ export function TenantEventsTable({
             className="border-b border-border"
             style={{ background: "rgba(245, 237, 229, 1)" }}
           >
-            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Event Name</th>
-            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Date</th>
-            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Location</th>
-            <th className="px-6 py-4 text-sm font-semibold dark:text-black">Status</th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+              Event Name
+            </th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+              Date
+            </th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+              Location
+            </th>
+            <th className="px-6 py-4 text-sm font-semibold dark:text-black">
+              Status
+            </th>
           </tr>
         </thead>
 

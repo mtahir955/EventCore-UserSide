@@ -391,7 +391,7 @@ export default function Page() {
 
         {/* Tabs */}
         <div className="mt-6 flex flex-wrap justify-center sm:justify-start gap-2">
-          {["Active", "Used", "Ended", "Transferred", "Refunded Requests"].map(
+          {["Active", "Used Tickets", "Event Ended", "Transferred", "Refunded Requests"].map(
             (tab) => (
               <button
                 key={tab}

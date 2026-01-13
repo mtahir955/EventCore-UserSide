@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-hot-toast";
-import { API_BASE_URL } from "../../../config/apiConfig";
+// import { API_BASE_URL } from "../../../config/apiConfig";
 import { syncThemeWithBackend } from "@/utils/themeManager";
-import { HOST_Tenant_ID } from "../../../config/hostTenantId";
+// import { HOST_Tenant_ID } from "../../../config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 type AuthView = "signin";
 
@@ -40,19 +41,24 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
     }
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/login`,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: {
-            "x-tenant-id": HOST_Tenant_ID, // ✅ Host tenant
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // const response = await axios.post(
+      //   `${API_BASE_URL}/auth/login`,
+      //   {
+      //     email: formData.email,
+      //     password: formData.password,
+      //   },
+      //   {
+      //     headers: {
+      //       "x-tenant-id": HOST_Tenant_ID, // ✅ Host tenant
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+
+      const response = await apiClient.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
 
       // 🔥 LOG EVERYTHING
       console.log("LOGIN FULL RESPONSE:", response);
@@ -84,7 +90,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       localStorage.setItem("hostToken", token);
       localStorage.setItem("hostUser", JSON.stringify(user));
       localStorage.setItem("hostTheme", user.theme);
-      localStorage.setItem("hostTenantId", HOST_Tenant_ID);
+      localStorage.setItem("hostTenantId", user.tenantId);
 
       // Apply Theme
       syncThemeWithBackend(user);

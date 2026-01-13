@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { PaymentWithdrawalModal } from "./Payment-withdrawal-modal";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface PaymentWithdrawalTableProps {
   status: "PENDING" | "DECLINED";
@@ -67,23 +68,32 @@ export function PaymentWithdrawalTable({
     if (!selected) return null;
 
     try {
-      const token = localStorage.getItem("hostToken");
-      if (!token) return null;
+      // const token = localStorage.getItem("hostToken");
+      // if (!token) return null;
 
-      const res = await axios.post(
-        `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/credit`,
+      // const res = await axios.post(
+      //   `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/credit`,
+      //   {
+      //     refundRequestId: payload.refundRequestId,
+      //     amount: payload.amount,
+      //     reason: payload.reason,
+      //     expiryDate: payload.expiresAt,
+      //   },
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       "x-tenant-id": HOST_Tenant_ID,
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //   }
+      // );
+      const res = await apiClient.post(
+        `/tickets/admin/refunds/${payload.refundRequestId}/credit`,
         {
           refundRequestId: payload.refundRequestId,
           amount: payload.amount,
           reason: payload.reason,
           expiryDate: payload.expiresAt,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-tenant-id": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
@@ -110,8 +120,8 @@ export function PaymentWithdrawalTable({
     amount: number;
   }) => {
     try {
-      const token = localStorage.getItem("hostToken");
-      if (!token) return;
+      // const token = localStorage.getItem("hostToken");
+      // if (!token) return;
 
       const formData = new FormData();
       formData.append("refundRequestId", payload.refundRequestId);
@@ -122,13 +132,23 @@ export function PaymentWithdrawalTable({
         formData.append("receipt", payload.receiptFile);
       }
 
-      await axios.post(
-        `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/refund`,
+      // await axios.post(
+      //   `${API_BASE_URL}/tickets/admin/refunds/${payload.refundRequestId}/refund`,
+      //   formData,
+      //   {
+      //     headers: {
+      //       "x-tenant-id": HOST_Tenant_ID,
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //   }
+      // );
+      await apiClient.post(
+        `/tickets/admin/refunds/${payload.refundRequestId}/refund`,
         formData,
         {
           headers: {
-            "x-tenant-id": HOST_Tenant_ID,
-            Authorization: `Bearer ${token}`,
+            // ✅ important for FormData
+            "Content-Type": "multipart/form-data",
           },
         }
       );
@@ -140,15 +160,16 @@ export function PaymentWithdrawalTable({
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
-        if (!token) return;
+        // const token = localStorage.getItem("hostToken");
+        // if (!token) return;
 
-        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-          },
-        });
+        // const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "x-tenant-id": HOST_Tenant_ID,
+        //   },
+        // });
+        const res = await apiClient.get(`/tenants/my/features`);
 
         setIsCreditEnabled(
           Boolean(res.data?.data?.features?.creditSystem?.enabled)

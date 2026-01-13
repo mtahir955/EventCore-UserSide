@@ -8,9 +8,10 @@ import { MyEventsCard } from "../../admin/components/my-events-card";
 import Link from "next/link";
 import { Bell, X, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
-import { API_BASE_URL } from "../../../config/apiConfig";
+// import { API_BASE_URL } from "../../../config/apiConfig";
 import LogoutModal from "@/components/modals/LogoutModal";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 // -----------------------------------------
 // Skeleton Component
@@ -49,30 +50,56 @@ export default function HostDetailsPage() {
   // -----------------------------------------
   // FETCH TENANT DETAILS
   // -----------------------------------------
+  // useEffect(() => {
+  //   if (!tenantId) return;
+
+  //   const fetchTenant = async () => {
+  //     try {
+  //       setLoading(true);
+
+  //       const token = localStorage.getItem("adminToken");
+
+  //       const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
+  //         method: "GET",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //           "x-tenant-id": SAAS_Tenant_ID,
+  //         },
+  //       });
+
+  //       if (!res.ok) throw new Error("Failed to fetch tenant details");
+
+  //       const data = await res.json();
+  //       setTenant(data?.data || data);
+  //     } catch (err: any) {
+  //       setError(err.message);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchTenant();
+  // }, [tenantId]);
+
   useEffect(() => {
     if (!tenantId) return;
 
     const fetchTenant = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        const token = localStorage.getItem("adminToken");
+        const res = await apiClient.get(`/admin/tenants/${tenantId}`);
+        const data = res.data;
 
-        const res = await fetch(`${API_BASE_URL}/admin/tenants/${tenantId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": SAAS_Tenant_ID,
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch tenant details");
-
-        const data = await res.json();
         setTenant(data?.data || data);
       } catch (err: any) {
-        setError(err.message);
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to fetch tenant details";
+        setError(msg);
       } finally {
         setLoading(false);
       }

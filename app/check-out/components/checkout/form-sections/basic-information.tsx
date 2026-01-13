@@ -80,7 +80,7 @@ export default function BasicInformation() {
         </div>
 
         {/* Gender */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <label className="text-sm text-gray-700 dark:text-gray-200">
             Gender:
           </label>
@@ -99,7 +99,7 @@ export default function BasicInformation() {
             <option value="Male">Male</option>
             <option value="Female">Female</option>
           </select>
-        </div>
+        </div> */}
       </div>
     </SectionShell>
   );

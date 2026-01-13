@@ -12,7 +12,27 @@ import { useTheme } from "next-themes";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import { useSearchParams } from "next/navigation";
 import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
+
+const safeImageUrl = (url?: string) => {
+  if (!url || typeof url !== "string") return "/images/event-banner.png";
+
+  const trimmed = url.trim();
+  if (!trimmed) return "/images/event-banner.png";
+
+  // ✅ backend already returns absolute URL
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  // ✅ backend returns relative path like "/files/..."
+  if (trimmed.startsWith("/")) {
+    return `${API_BASE_URL}${trimmed}`;
+  }
+
+  return trimmed;
+};
 
 export default function EditEventPage() {
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
@@ -22,6 +42,8 @@ export default function EditEventPage() {
   const [loading, setLoading] = useState(true);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const [attendees, setAttendees] = useState<any[]>([]);
 
   // Dropdowns
   const [showNotifications, setShowNotifications] = useState(false);
@@ -83,28 +105,60 @@ export default function EditEventPage() {
   const searchParams = useSearchParams();
   const eventId = searchParams.get("id");
 
+  // useEffect(() => {
+  //   if (!eventId) return;
+
+  //   const fetchEventDetails = async () => {
+  //     try {
+  //       const token = localStorage.getItem("hostToken");
+
+  //       const res = await fetch(`${API_BASE_URL}/events/${eventId}/details`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //           "Content-Type": "application/json",
+  //         },
+  //       });
+
+  //       const json = await res.json();
+
+  //       if (json?.success) {
+  //         setEvent(json.data?.event || null);
+  //         setAttendees(json.data?.attendees?.items || []);
+  //       }
+  //     } catch (err) {
+  //       console.error("Failed to load event details", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchEventDetails();
+  // }, [eventId]);
+
   useEffect(() => {
     if (!eventId) return;
 
     const fetchEventDetails = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
+        setLoading(true);
 
-        const res = await fetch(`${API_BASE_URL}/events/${eventId}/details`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        });
+        const res = await apiClient.get(`/events/${eventId}/details`);
 
-        const json = await res.json();
+        // axios response shape: res.data
+        const payload = res.data;
 
-        if (json?.success) {
-          setEvent(json.data);
+        if (payload?.success) {
+          setEvent(payload.data?.event || null);
+          setAttendees(payload.data?.attendees?.items || []);
+        } else {
+          setEvent(null);
+          setAttendees([]);
         }
       } catch (err) {
         console.error("Failed to load event details", err);
+        setEvent(null);
+        setAttendees([]);
       } finally {
         setLoading(false);
       }
@@ -130,8 +184,6 @@ export default function EditEventPage() {
   }
 
   /* ================= SAFE DATA ================= */
-
-  const attendees = Array.isArray(event.attendees) ? event.attendees : [];
 
   /* ================= PAGINATION ================= */
 
@@ -207,14 +259,14 @@ export default function EditEventPage() {
                     alt="notification"
                     className="h-4 w-4"
                   /> */}
-                  {/* Counter badge */}
-                  {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
                 </button> */}
 
-                {/* Notification popup */}
-                {/* {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
@@ -329,9 +381,7 @@ export default function EditEventPage() {
           <div className="relative rounded-2xl overflow-hidden mb-6 h-[180px] sm:h-[200px]">
             {/* Event Banner */}
             <img
-              src={
-                previewImage || event.bannerImage || "/images/event-banner.png"
-              }
+              src={previewImage || safeImageUrl(event?.bannerImage)}
               alt="Event banner"
               className="h-full w-full object-cover"
             />
@@ -377,6 +427,7 @@ export default function EditEventPage() {
               <input
                 type="text"
                 value={event.title}
+                readOnly
                 className="w-full px-4 py-3 rounded-lg border"
               />
             </div>
@@ -389,6 +440,7 @@ export default function EditEventPage() {
                 <input
                   type="text"
                   value={event.location}
+                  readOnly
                   className="w-full px-4 py-3 rounded-lg border"
                 />
               </div>
@@ -396,7 +448,12 @@ export default function EditEventPage() {
                 <label className="block text-sm font-medium mb-2">Date</label>
                 <input
                   type="text"
-                  value={event.startDate}
+                  value={
+                    event.date
+                      ? new Date(event.date).toISOString().slice(0, 10)
+                      : ""
+                  }
+                  readOnly
                   className="w-full px-4 py-3 rounded-lg border"
                 />
               </div>
@@ -410,6 +467,7 @@ export default function EditEventPage() {
                 <input
                   type="text"
                   value={event.startTime}
+                  readOnly
                   className="w-full px-4 py-3 rounded-lg border"
                 />
               </div>
@@ -419,7 +477,8 @@ export default function EditEventPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="08:00 PM"
+                  value={event.endTime || ""}
+                  readOnly
                   className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
                 />
               </div>

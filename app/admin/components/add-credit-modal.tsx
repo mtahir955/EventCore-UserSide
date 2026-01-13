@@ -20,7 +20,8 @@ interface AddCreditModalProps {
   }) => void;
 }
 
-const POINT_TO_DOLLAR_RATE = 5 / 1000; // 1000 points = $5
+// const POINT_TO_DOLLAR_RATE = 5 / 1000; // 1000 points = $5
+const POINT_TO_DOLLAR_RATE = 1; // 1 point = $1
 
 export function AddCreditModal({
   isOpen,
@@ -85,7 +86,8 @@ export function AddCreditModal({
 
         {/* POINTS INFO */}
         <div className="mt-4 mb-5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-2 text-sm text-blue-700 dark:text-blue-300 text-center">
-          ⭐ <span className="font-medium">1000 points = $5</span>
+          {/* ⭐ <span className="font-medium">1000 points = $5</span> */}⭐{" "}
+          <span className="font-medium">1 point = $1</span>
         </div>
 
         {/* FORM */}

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-hot-toast";
-import { API_BASE_URL } from "../../../config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "../../../config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 type AuthView = "signin" | "signup" | "forgot-password" | "reset-password";
 
@@ -25,6 +26,73 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
   });
 
   // ⭐ FULL STAFF BACKEND LOGIN (same as Admin + Host)
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   const newErrors = {
+  //     email: formData.email.trim() === "",
+  //     password: formData.password.trim() === "",
+  //   };
+  //   setErrors(newErrors);
+
+  //   if (newErrors.email || newErrors.password) {
+  //     toast.error("Please fill all required fields");
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/auth/login`,
+  //       {
+  //         email: formData.email,
+  //         password: formData.password,
+  //       },
+  //       {
+  //         headers: {
+  //           "x-tenant-id": HOST_Tenant_ID,
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+
+  //     toast.success("Login Successful! 🎉");
+
+  //     console.log("Staff Login Response:", response.data);
+
+  //     // ⭐ FIX TOKEN KEY (backend returns access_token)
+  //     // ⭐ FIX TOKEN KEY (backend returns access_token)
+  //     const token = response?.data?.data?.access_token;
+
+  //     if (!token) {
+  //       console.error("Token Debug:", response.data);
+  //       toast.error("No token received from server");
+  //       return;
+  //     }
+
+  //     // ⭐ Save token everywhere your app expects it
+  //     localStorage.setItem("staffToken", token);
+  //     localStorage.setItem("token", token);
+  //     localStorage.setItem("hostToken", JSON.stringify({ token }));
+  //     localStorage.setItem("hostUser", JSON.stringify({ token }));
+  //     localStorage.setItem(
+  //       "staffUser",
+  //       JSON.stringify(response.data.data.user)
+  //     );
+
+  //     // ⭐ redirect
+  //     window.location.href = "/staff-dashboard";
+  //   } catch (error: any) {
+  //     console.error("Staff Login Error:", error);
+
+  //     toast.error(error?.response?.data?.message || "Invalid credentials");
+
+  //     setErrors({
+  //       email: true,
+  //       password: true,
+  //     });
+  //   }
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -40,49 +108,29 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
     }
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/login`,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: {
-            "x-tenant-id": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await apiClient.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
 
-      toast.success("Login Successful! 🎉");
-
-      console.log("Staff Login Response:", response.data);
-
-      // ⭐ FIX TOKEN KEY (backend returns access_token)
-      // ⭐ FIX TOKEN KEY (backend returns access_token)
       const token = response?.data?.data?.access_token;
+      const user = response?.data?.data?.user;
 
       if (!token) {
-        console.error("Token Debug:", response.data);
         toast.error("No token received from server");
         return;
       }
 
-      // ⭐ Save token everywhere your app expects it
-      localStorage.setItem("staffToken", token);
-      localStorage.setItem("token", token);
-      localStorage.setItem("hostToken", JSON.stringify({ token }));
-      localStorage.setItem("hostUser", JSON.stringify({ token }));
-      localStorage.setItem(
-        "staffUser",
-        JSON.stringify(response.data.data.user)
-      );
+      toast.success("Login Successful! 🎉");
 
-      // ⭐ redirect
+      // ✅ Save staff session ONLY
+      localStorage.setItem("staffToken", token);
+      localStorage.setItem("token", token); // keep only if other screens depend on it
+      if (user) localStorage.setItem("staffUser", JSON.stringify(user));
+
       window.location.href = "/staff-dashboard";
     } catch (error: any) {
       console.error("Staff Login Error:", error);
-
       toast.error(error?.response?.data?.message || "Invalid credentials");
 
       setErrors({

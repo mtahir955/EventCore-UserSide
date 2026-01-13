@@ -8,11 +8,12 @@ import { useTheme } from "next-themes";
 import { toast } from "react-hot-toast";
 import LogoutModal from "@/components/modals/LogoutModal";
 import ChangePasswordModal from "@/components/modals/ChangePasswordModal";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiConfig"; // ADD THIS IMPORT
+// import axios from "axios";
+// import { API_BASE_URL } from "../../config/apiConfig"; // ADD THIS IMPORT
 import { setThemeGlobal } from "@/utils/themeManager";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 import useAuthInterceptor from "@/utils/useAuthInterceptor";
+import apiClient from "@/lib/apiClient";
 
 export default function SystemSettingsPage() {
   // STATES
@@ -41,7 +42,7 @@ export default function SystemSettingsPage() {
 
   const { setTheme } = useTheme();
 
-  const TENANT_ID = "5448a824-4d14-4727-88a8-846f8a92f23a";
+  // const TENANT_ID = "5448a824-4d14-4727-88a8-846f8a92f23a";
 
   // APPLY THEME ON CHANGE
 
@@ -81,34 +82,39 @@ export default function SystemSettingsPage() {
     confirmPassword: string;
   }) => {
     try {
-      const token = localStorage.getItem("adminToken");
+      // const token = localStorage.getItem("adminToken");
 
-      if (!token) {
-        toast.error("No admin token found. Please log in again.", {
-          style: {
-            background: "#101010",
-            color: "#fff",
-            border: "1px solid #D19537",
-          },
-        });
-        return;
-      }
+      // if (!token) {
+      //   toast.error("No admin token found. Please log in again.", {
+      //     style: {
+      //       background: "#101010",
+      //       color: "#fff",
+      //       border: "1px solid #D19537",
+      //     },
+      //   });
+      //   return;
+      // }
 
-      await axios.put(
-        `${API_BASE_URL}/auth/change-password`,
-        {
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-          confirmPassword: data.confirmPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": SAAS_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // await axios.put(
+      //   `${API_BASE_URL}/auth/change-password`,
+      //   {
+      //     currentPassword: data.currentPassword,
+      //     newPassword: data.newPassword,
+      //     confirmPassword: data.confirmPassword,
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "x-tenant-id": SAAS_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+      await apiClient.put("/auth/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+        confirmPassword: data.confirmPassword,
+      });
 
       toast.success("Password updated successfully!", {
         style: {
@@ -137,33 +143,34 @@ export default function SystemSettingsPage() {
   };
 
   const handleThemeChange = async (selectedTheme: string) => {
-    const token = localStorage.getItem("adminToken");
+    // const token = localStorage.getItem("adminToken");
 
-    if (!token) {
-      toast.error("No admin token found. Please login again.", {
-        style: {
-          background: "#101010",
-          color: "#fff",
-          border: "1px solid red",
-        },
-      });
-      return;
-    }
+    // if (!token) {
+    //   toast.error("No admin token found. Please login again.", {
+    //     style: {
+    //       background: "#101010",
+    //       color: "#fff",
+    //       border: "1px solid red",
+    //     },
+    //   });
+    //   return;
+    // }
 
     const themeToSend = selectedTheme === "Dark Theme" ? "dark" : "light";
 
     try {
-      await axios.put(
-        `${API_BASE_URL}/users/me/theme`,
-        { theme: themeToSend },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": SAAS_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // await axios.put(
+      //   `${API_BASE_URL}/users/me/theme`,
+      //   { theme: themeToSend },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "x-tenant-id": SAAS_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+      await apiClient.put("/users/me/theme", { theme: themeToSend });
 
       // APPLY theme instantly
       setAdminTheme(selectedTheme);
@@ -200,7 +207,9 @@ export default function SystemSettingsPage() {
       <div className="flex-1 overflow-auto md:ml-[250px]">
         {/* HEADER */}
         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
-          <h1 className="text-3xl font-semibold text-foreground">System Settings</h1>
+          <h1 className="text-3xl font-semibold text-foreground">
+            System Settings
+          </h1>
 
           <div className="flex items-center gap-4">
             {/* Light/Dark toggle */}

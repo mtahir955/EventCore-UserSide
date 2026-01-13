@@ -12,11 +12,12 @@ import Image from "next/image";
 import { PushNotificationModal } from "../admin/components/push-notification-modal";
 import { useTheme } from "next-themes";
 import LogoutModal from "@/components/modals/LogoutModal";
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-hot-toast";
 
-import { API_BASE_URL } from "@/config/apiConfig";
-import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { SAAS_Tenant_ID } from "@/config/sasTenantId";
+import apiClient from "@/lib/apiClient";
 
 interface BroadcastEmail {
   id: string;
@@ -74,35 +75,57 @@ export default function PushNotificationPage() {
   }, []);
 
   // ✅ FETCH BROADCAST EMAILS
+  // const fetchBroadcastEmails = async () => {
+  //   try {
+  //     setLoadingList(true);
+
+  //     const token = localStorage.getItem("adminToken");
+  //     if (!token) {
+  //       toast.error("Super admin token missing");
+  //       return;
+  //     }
+
+  //     const res = await axios.get(
+  //       `${API_BASE_URL}/super-admin/broadcast-emails?page=${page}&limit=${limit}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "x-tenant-id": SAAS_Tenant_ID,
+  //         },
+  //       }
+  //     );
+
+  //     // ✅ EXACT mapping based on backend response
+  //     const broadcasts = res?.data?.data?.broadcasts;
+
+  //     setNotifications(Array.isArray(broadcasts) ? broadcasts : []);
+  //   } catch (err: any) {
+  //     toast.error(
+  //       err?.response?.data?.error?.message ||
+  //         "Failed to load broadcast notifications"
+  //     );
+  //   } finally {
+  //     setLoadingList(false);
+  //   }
+  // };
   const fetchBroadcastEmails = async () => {
     try {
       setLoadingList(true);
 
-      const token = localStorage.getItem("adminToken");
-      if (!token) {
-        toast.error("Super admin token missing");
-        return;
-      }
+      const res = await apiClient.get("/super-admin/broadcast-emails", {
+        params: { page, limit },
+      });
 
-      const res = await axios.get(
-        `${API_BASE_URL}/super-admin/broadcast-emails?page=${page}&limit=${limit}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": SAAS_Tenant_ID,
-          },
-        }
-      );
-
-      // ✅ EXACT mapping based on backend response
       const broadcasts = res?.data?.data?.broadcasts;
-
       setNotifications(Array.isArray(broadcasts) ? broadcasts : []);
     } catch (err: any) {
-      toast.error(
+      const msg =
+        err?.response?.data?.message ||
         err?.response?.data?.error?.message ||
-          "Failed to load broadcast notifications"
-      );
+        err?.message ||
+        "Failed to load broadcast notifications";
+
+      toast.error(msg);
     } finally {
       setLoadingList(false);
     }
@@ -123,26 +146,31 @@ export default function PushNotificationPage() {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("adminToken");
-      if (!token) {
-        toast.error("Authentication token missing");
-        return;
-      }
+      // const token = localStorage.getItem("adminToken");
+      // if (!token) {
+      //   toast.error("Authentication token missing");
+      //   return;
+      // }
 
       const payload: any = { subject: title, message };
       if (scheduledAt) payload.scheduledAt = scheduledAt;
 
-      await axios.post(
-        `${API_BASE_URL}/super-admin/broadcast-emails`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": SAAS_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
+      // await axios.post(
+      //   `${API_BASE_URL}/super-admin/broadcast-emails`,
+      //   payload,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "X-Tenant-ID": SAAS_Tenant_ID,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+      const res = await apiClient.post(
+        "/super-admin/broadcast-emails",
+        payload
       );
+      const result = res.data;
 
       toast.success("Notification sent successfully");
 

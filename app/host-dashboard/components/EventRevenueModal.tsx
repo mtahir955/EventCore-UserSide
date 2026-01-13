@@ -2,9 +2,10 @@
 
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import axios from "axios";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 interface Props {
   isOpen: boolean;
@@ -14,6 +15,15 @@ interface Props {
   };
   onClose: () => void;
 }
+
+type RevenueSummary = {
+  ticketsSold: number;
+  totalRevenue: number;
+  platformPercent: number;
+  platformAmount: number;
+  organizerAmount: number;
+  currency: string;
+};
 
 export function EventRevenueModal({ isOpen, event, onClose }: Props) {
   const [loading, setLoading] = useState(false);
@@ -27,24 +37,26 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
       try {
         setLoading(true);
         setError(null);
+        setSummary(null);
 
-        const rawToken =
-          localStorage.getItem("hostToken") || localStorage.getItem("token");
+        // const rawToken =
+        //   localStorage.getItem("hostToken") || localStorage.getItem("token");
 
-        if (!rawToken) {
-          setError("Authentication required");
-          return;
-        }
+        // if (!rawToken) {
+        //   setError("Authentication required");
+        //   return;
+        // }
 
-        const res = await axios.get(
-          `${API_BASE_URL}/events/${event.id}/revenue-summary`,
-          {
-            headers: {
-              Authorization: `Bearer ${rawToken}`,
-              "X-Tenant-ID": HOST_Tenant_ID,
-            },
-          }
-        );
+        // const res = await axios.get(
+        //   `${API_BASE_URL}/events/${event.id}/revenue-summary`,
+        //   {
+        //     headers: {
+        //       Authorization: `Bearer ${rawToken}`,
+        //       "X-Tenant-ID": HOST_Tenant_ID,
+        //     },
+        //   }
+        // );
+        const res = await apiClient.get(`/events/${event.id}/revenue-summary`);
 
         const data = res.data?.data;
 
@@ -57,9 +69,15 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
           organizerAmount: data?.organizer?.amount ?? 0,
           currency: data?.currency ?? "USD",
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error("Revenue fetch failed:", err);
-        setError("Failed to load revenue summary");
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error?.message ||
+          err?.message ||
+          "Failed to load revenue summary";
+        // setError("Failed to load revenue summary");
+        setError(msg);
       } finally {
         setLoading(false);
       }

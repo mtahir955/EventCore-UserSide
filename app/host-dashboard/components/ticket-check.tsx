@@ -9,31 +9,9 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
-
-// const attendees = [
-//   {
-//     id: 1,
-//     name: "Daniel Carter",
-//     email: "Info@gmail.com",
-//     ticketId: "TCK-992134",
-//     address: "Washington DC, USA",
-//     quantity: 2,
-//     checkedInCount: 1,
-//     remainingCount: 1,
-//   },
-//   {
-//     id: 2,
-//     name: "Sarah Mitchell",
-//     email: "Info@gmail.com",
-//     ticketId: "TCK-992135",
-//     address: "Washington DC, USA",
-//     quantity: 4,
-//     checkedInCount: 4,
-//     remainingCount: 0,
-//   },
-// ];
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient";
 
 export default function TicketCheck() {
   const [ticketId, setTicketId] = useState("");
@@ -131,25 +109,42 @@ export default function TicketCheck() {
     null
   );
 
+  // useEffect(() => {
+  //   const fetchEvents = async () => {
+  //     try {
+  //       const token = localStorage.getItem("hostToken");
+
+  //       const res = await fetch(`${API_BASE_URL}/events/ongoing-upcoming`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-Tenant-ID": HOST_Tenant_ID,
+  //           "Content-Type": "application/json",
+  //         },
+  //       });
+
+  //       const json = await res.json();
+
+  //       if (json?.success) {
+  //         setEvents(json.data || []);
+  //         setSelectedEvent(json.data?.[0] || null); // auto-select first
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to load events", error);
+  //     }
+  //   };
+
+  //   fetchEvents();
+  // }, []);
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
+        const res = await apiClient.get(`/events/ongoing-upcoming`);
 
-        const res = await fetch(`${API_BASE_URL}/events/ongoing-upcoming`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        });
+        const data = res.data?.data || [];
 
-        const json = await res.json();
-
-        if (json?.success) {
-          setEvents(json.data || []);
-          setSelectedEvent(json.data?.[0] || null); // auto-select first
-        }
+        setEvents(data);
+        setSelectedEvent(data?.[0] || null); // auto-select first
       } catch (error) {
         console.error("Failed to load events", error);
       }
@@ -175,44 +170,82 @@ export default function TicketCheck() {
   const verifyTicket = async () => {
     if (!ticketId.trim()) return;
 
+    // try {
+    //   setIsVerifying(true);
+    //   setShowResult(false);
+
+    //   // const token = localStorage.getItem("hostToken");
+
+    //   const res = await fetch(`${API_BASE_URL}/tickets/admin/mark-used`, {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //       "X-Tenant-ID": HOST_Tenant_ID,
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({
+    //       eventId: selectedEvent?.id,
+    //       fullTicketNumber: ticketId.trim(),
+    //     }),
+    //   });
+
+    //   const json = await res.json();
+
+    //   if (res.ok && json?.success) {
+    //     setResultType("success");
+    //     setVerificationMessage(
+    //       json?.message || "Ticket verified & checked in successfully"
+    //     );
+    //   } else {
+    //     setResultType("invalid");
+    //     setVerificationMessage(
+    //       json?.message || "Invalid or already used ticket"
+    //     );
+    //   }
+
+    //   setShowResult(true);
+    // } catch (error) {
+    //   console.error("Ticket verification failed", error);
+    //   setResultType("invalid");
+    //   setVerificationMessage("Verification failed. Try again.");
+    //   setShowResult(true);
+    // } finally {
+    //   setIsVerifying(false);
+    //   setIsScanning(false);
+    // }
     try {
       setIsVerifying(true);
       setShowResult(false);
 
-      const token = localStorage.getItem("hostToken");
-
-      const res = await fetch(`${API_BASE_URL}/tickets/admin/mark-used`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Tenant-ID": HOST_Tenant_ID,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          eventId: selectedEvent?.id,
-          fullTicketNumber: ticketId.trim(),
-        }),
+      const res = await apiClient.post(`/tickets/admin/mark-used`, {
+        eventId: selectedEvent?.id,
+        fullTicketNumber: ticketId.trim(),
       });
 
-      const json = await res.json();
+      // if backend uses { success, message }
+      const ok = res.data?.success === true;
 
-      if (res.ok && json?.success) {
+      if (ok) {
         setResultType("success");
         setVerificationMessage(
-          json?.message || "Ticket verified & checked in successfully"
+          res.data?.message || "Ticket verified & checked in successfully"
         );
       } else {
         setResultType("invalid");
         setVerificationMessage(
-          json?.message || "Invalid or already used ticket"
+          res.data?.message || "Invalid or already used ticket"
         );
       }
 
       setShowResult(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Ticket verification failed", error);
+
       setResultType("invalid");
-      setVerificationMessage("Verification failed. Try again.");
+      setVerificationMessage(
+        error?.response?.data?.message || "Verification failed. Try again."
+      );
+
       setShowResult(true);
     } finally {
       setIsVerifying(false);
@@ -221,28 +254,47 @@ export default function TicketCheck() {
   };
 
   const fetchEventSummary = async (eventId: string) => {
+    // try {
+    //   setSummaryLoading(true);
+
+    //   const token = localStorage.getItem("hostToken");
+
+    //   const res = await fetch(
+    //     `${API_BASE_URL}/tickets/admin/event/${eventId}/summary`,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "X-Tenant-ID": HOST_Tenant_ID,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }
+    //   );
+
+    //   const json = await res.json();
+
+    //   if (json?.success) {
+    //     setSummary(json.data.summary);
+    //     setAttendees(json.data.attendees || []);
+    //     setCurrentPage(1); // reset pagination
+    //   }
+    // } catch (err) {
+    //   console.error("Failed to load event summary", err);
+    // } finally {
+    //   setSummaryLoading(false);
+    // }
     try {
       setSummaryLoading(true);
 
-      const token = localStorage.getItem("hostToken");
-
-      const res = await fetch(
-        `${API_BASE_URL}/tickets/admin/event/${eventId}/summary`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
+      const res = await apiClient.get(
+        `/tickets/admin/event/${eventId}/summary`
       );
 
-      const json = await res.json();
+      const ok = res.data?.success === true;
 
-      if (json?.success) {
-        setSummary(json.data.summary);
-        setAttendees(json.data.attendees || []);
-        setCurrentPage(1); // reset pagination
+      if (ok) {
+        setSummary(res.data?.data?.summary);
+        setAttendees(res.data?.data?.attendees || []);
+        setCurrentPage(1);
       }
     } catch (err) {
       console.error("Failed to load event summary", err);
@@ -317,14 +369,14 @@ export default function TicketCheck() {
                       alt="notification"
                       className="h-4 w-4"
                     /> */}
-                    {/* Counter badge */}
-                    {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                {/* Counter badge */}
+                {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                       {notifications.length}
                     </span>
                   </button> */}
 
-                  {/* Notification popup */}
-                  {/* {showNotifications && (
+                {/* Notification popup */}
+                {/* {showNotifications && (
                     <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                       <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                         Notifications

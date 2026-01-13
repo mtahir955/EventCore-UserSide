@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import Image from "next/image";
+import Autocomplete from "react-google-autocomplete";
 
 interface ContactDetailsData {
   phone?: string;
@@ -58,9 +59,9 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
 
     const countryCodes = [
       { flag: "/images/flag-us.png", code: "+1", country: "United States" },
-      { flag: "/images/flag-uk.png", code: "+44", country: "United Kingdom" },
-      { flag: "/images/flag-pk.png", code: "+92", country: "Pakistan" },
-      { flag: "/images/flag-in.png", code: "+91", country: "India" },
+      // { flag: "/images/flag-uk.png", code: "+44", country: "United Kingdom" },
+      // { flag: "/images/flag-pk.png", code: "+92", country: "Pakistan" },
+      // { flag: "/images/flag-in.png", code: "+91", country: "India" },
     ];
 
     return (
@@ -167,7 +168,7 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
           {/* Pincode */}
           <div className="space-y-2">
             <label className="text-sm text-gray-700 dark:text-gray-200">
-              Pincode:
+              Postal Code:
             </label>
             <input
               placeholder="Enter pincode"
@@ -182,7 +183,7 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
         </div>
 
         {/* Address */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <label className="text-sm text-gray-700 dark:text-gray-200">
             Address:
           </label>
@@ -196,22 +197,56 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
             className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 p-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
             aria-label="Address"
           />
-        </div>
-
-        {/* Website */}
+        </div> */}
+        {/* Address */}
         <div className="space-y-2">
           <label className="text-sm text-gray-700 dark:text-gray-200">
-            Website (Optional):
+            Address:
           </label>
-          <input
-            placeholder="Enter website URL"
-            value={form.website}
+
+          <Autocomplete
+            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            options={{
+              types: ["address"],
+              // componentRestrictions: { country: "us" }, // optional
+            }}
+            defaultValue={form.address}
+            onPlaceSelected={(place) => {
+              const formatted = place?.formatted_address || "";
+
+              // ✅ Extract city + postal code (optional)
+              const components = place?.address_components || [];
+              const get = (type: string) =>
+                components.find((c: any) => c.types.includes(type))
+                  ?.long_name || "";
+
+              const city =
+                get("locality") || get("administrative_area_level_2");
+              const pincode = get("postal_code");
+
+              setForm((prev) => ({
+                ...prev,
+                address: formatted,
+                city: city || prev.city,
+                pincode: pincode || prev.pincode,
+              }));
+            }}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, website: e.target.value }))
+              setForm((prev) => ({
+                ...prev,
+                address: (e.target as HTMLInputElement).value,
+              }))
             }
+            placeholder="Search address..."
             className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
-            aria-label="Website"
           />
+
+          {/* Optional: show selected full address below (like your old textarea UX) */}
+          {form.address ? (
+            <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#181818] p-4 text-sm">
+              {form.address}
+            </div>
+          ) : null}
         </div>
       </div>
     );

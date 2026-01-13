@@ -5,9 +5,10 @@ import { Sidebar } from "../host-dashboard/components/sidebar";
 import { MyCompEventsCard } from "../host-dashboard/components/my-comp-events-card";
 import { Menu } from "lucide-react";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "@/config/apiConfig";
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import Link from "next/link";
+import { apiClient } from "@/lib/apiClient";
 
 /* ✅ NORMALIZED UI TYPE */
 type CompletedEvent = {
@@ -19,6 +20,23 @@ type CompletedEvent = {
   time: string;
   imageSrc: string;
   price: string;
+};
+
+const safeImageUrl = (url?: string) => {
+  if (!url) return "/placeholder.svg";
+  if (typeof url !== "string") return "/placeholder.svg";
+
+  const trimmed = url.trim();
+  if (!trimmed) return "/placeholder.svg";
+
+  // ✅ if backend already returns https://... keep it
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  // ✅ if backend returns relative like "/files/..."
+  // keep it relative (or optionally prefix API_BASE_URL if your image component needs absolute)
+  return trimmed;
 };
 
 export default function CompletedEventsPage() {
@@ -95,37 +113,59 @@ export default function CompletedEventsPage() {
   useEffect(() => {
     const fetchCompletedEvents = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
+        // const token = localStorage.getItem("hostToken");
 
-        const res = await fetch(`${API_BASE_URL}/events?completed=true`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Tenant-ID": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
+        // const res = await fetch(`${API_BASE_URL}/events?completed=true`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //     "X-Tenant-ID": HOST_Tenant_ID,
+        //     "Content-Type": "application/json",
+        //   },
+        // });
+
+        // const json = await res.json();
+
+        // if (json?.success) {
+        //   const mapped: CompletedEvent[] = (json.data || []).map((e: any) => ({
+        //     id: e.id,
+        //     title: e.eventTitle,
+        //     description: e.eventDescription,
+        //     location: e.eventLocation,
+        //     date: e.startDate,
+        //     time: e.startTime,
+        //     // imageSrc: e.bannerImage || "/placeholder.svg",
+        //     imageSrc: e.bannerImage
+        //       ? `${API_BASE_URL}${e.bannerImage}`
+        //       : "/placeholder.svg",
+
+        //     price: "0",
+        //   }));
+
+        //   setEvents(mapped);
+        //   setFilteredEvents(mapped);
+        // }
+        const res = await apiClient.get(`/events`, {
+          params: { completed: true },
         });
 
-        const json = await res.json();
+        const list = res.data?.data || [];
 
-        if (json?.success) {
-          const mapped: CompletedEvent[] = (json.data || []).map((e: any) => ({
-            id: e.id,
-            title: e.eventTitle,
-            description: e.eventDescription,
-            location: e.eventLocation,
-            date: e.startDate,
-            time: e.startTime,
-            // imageSrc: e.bannerImage || "/placeholder.svg",
-            imageSrc: e.bannerImage
-              ? `${API_BASE_URL}${e.bannerImage}`
-              : "/placeholder.svg",
+        const mapped: CompletedEvent[] = list.map((e: any) => ({
+          id: e.id,
+          title: e.eventTitle,
+          description: e.eventDescription,
+          location: e.eventLocation,
+          date: e.startDate,
+          time: e.startTime,
 
-            price: "0",
-          }));
+          // ✅ backend returns FULL absolute URL sometimes, so don't prefix
+          imageSrc: safeImageUrl(e.bannerImage),
 
-          setEvents(mapped);
-          setFilteredEvents(mapped);
-        }
+          price: "0",
+        }));
+
+        setEvents(mapped);
+        setFilteredEvents(mapped);
       } catch (err) {
         console.error("Failed to load completed events", err);
       } finally {

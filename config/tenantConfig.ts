@@ -1,20 +1,37 @@
 /**
- * Tenant ID Storage + Resolution
+ * Tenant ID Storage + Resolution (User + Admin)
  */
 
-const TENANT_STORAGE_KEY = "tenantId";
+import { isAdminContext } from "@/config/isAdminContext";
+import { API_BASE_URL } from "@/config/apiConfig";
 
+const USER_TENANT_STORAGE_KEY = "tenantId";
+const ADMIN_TENANT_STORAGE_KEY = "adminTenantId";
+
+// -------------------- Storage --------------------
 export const saveTenantId = (tenantId: string) => {
   if (typeof window === "undefined") return;
   if (!tenantId) return;
-  localStorage.setItem(TENANT_STORAGE_KEY, tenantId);
+  localStorage.setItem(USER_TENANT_STORAGE_KEY, tenantId);
 };
 
 export const getSavedTenantId = (): string | null => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TENANT_STORAGE_KEY);
+  return localStorage.getItem(USER_TENANT_STORAGE_KEY);
 };
 
+export const saveAdminTenantId = (tenantId: string) => {
+  if (typeof window === "undefined") return;
+  if (!tenantId) return;
+  localStorage.setItem(ADMIN_TENANT_STORAGE_KEY, tenantId);
+};
+
+export const getSavedAdminTenantId = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ADMIN_TENANT_STORAGE_KEY);
+};
+
+// -------------------- Debug query param --------------------
 export const getTenantFromQuery = (): string | null => {
   if (typeof window === "undefined") return null;
   const url = new URL(window.location.href);
@@ -22,12 +39,92 @@ export const getTenantFromQuery = (): string | null => {
   return url.searchParams.get("tenant");
 };
 
+// -------------------- Dynamic admin tenant resolve --------------------
+let adminTenantCache: string | null = null;
+let adminTenantPromise: Promise<string> | null = null;
+
+async function fetchAdminTenantId(): Promise<string> {
+  if (adminTenantCache) return adminTenantCache;
+  const saved = getSavedAdminTenantId();
+  if (saved) {
+    adminTenantCache = saved;
+    return saved;
+  }
+  if (adminTenantPromise) return adminTenantPromise;
+
+  adminTenantPromise = fetch(
+    `${API_BASE_URL}/tenants/public/resolve?subdomain=admin`,
+    { method: "GET" }
+  )
+    .then((r) => r.json())
+    .then((json) => {
+      const id =
+        json?.data?.tenantId ??
+        json?.data?.id ??
+        json?.tenantId ??
+        json?.id;
+
+      if (!id) throw new Error("Admin tenant resolve: tenantId missing in response");
+      adminTenantCache = id;
+      saveAdminTenantId(id);
+      return id;
+    })
+    .finally(() => {
+      adminTenantPromise = null;
+    });
+
+  return adminTenantPromise;
+}
+
+// -------------------- Context-aware resolver --------------------
 /**
  * Resolve tenantId (UUID) for API headers.
- * Source priority:
+ * Source priority per context:
+ * Admin context:
+ * 1) localStorage adminTenantId
+ * 2) dynamic GET /tenants/public/resolve?subdomain=admin
+ * 3) ?tenant=<uuid> (debug)
+ *
+ * User context:
  * 1) localStorage tenantId
- * 2) ?tenant=<uuid> query (debug)
- * Otherwise null (Bootstrap will set it)
+ * 2) ?tenant=<uuid> (debug)
+ * Otherwise null (TenantProviderWrapper will bootstrap)
+ */
+export const resolveTenantIdForContext = async (
+  pathname?: string | null
+): Promise<string | null> => {
+  if (typeof window === "undefined") return null;
+
+  const adminMode = isAdminContext(pathname ?? window.location.pathname);
+
+  // 1) storage
+  if (adminMode) {
+    const savedAdmin = getSavedAdminTenantId();
+    if (savedAdmin) return savedAdmin;
+
+    // 2) dynamic fetch
+    try {
+      return await fetchAdminTenantId();
+    } catch (e) {
+      console.error("❌ Failed to fetch admin tenant id:", e);
+      // continue to debug query
+    }
+  } else {
+    const saved = getSavedTenantId();
+    if (saved) return saved;
+  }
+
+  // 3) debug query (both contexts)
+  const q = getTenantFromQuery();
+  if (q) return q;
+
+  return null;
+};
+
+// -------------------- Backward compatible export --------------------
+/**
+ * Old sync resolver (kept so existing code doesn't break).
+ * NOTE: For admin routes, prefer resolveTenantIdForContext() (async).
  */
 export const resolveTenantId = (): string | null => {
   const saved = getSavedTenantId();
@@ -39,6 +136,49 @@ export const resolveTenantId = (): string | null => {
   return null;
 };
 
+
+// /**
+//  * Tenant ID Storage + Resolution
+//  */
+
+// const TENANT_STORAGE_KEY = "tenantId";
+
+// export const saveTenantId = (tenantId: string) => {
+//   if (typeof window === "undefined") return;
+//   if (!tenantId) return;
+//   localStorage.setItem(TENANT_STORAGE_KEY, tenantId);
+// };
+
+// export const getSavedTenantId = (): string | null => {
+//   if (typeof window === "undefined") return null;
+//   return localStorage.getItem(TENANT_STORAGE_KEY);
+// };
+
+// export const getTenantFromQuery = (): string | null => {
+//   if (typeof window === "undefined") return null;
+//   const url = new URL(window.location.href);
+//   // optional debug: ?tenant=<TENANT_ID_UUID>
+//   return url.searchParams.get("tenant");
+// };
+
+// /**
+//  * Resolve tenantId (UUID) for API headers.
+//  * Source priority:
+//  * 1) localStorage tenantId
+//  * 2) ?tenant=<uuid> query (debug)
+//  * Otherwise null (Bootstrap will set it)
+//  */
+// export const resolveTenantId = (): string | null => {
+//   const saved = getSavedTenantId();
+//   if (saved) return saved;
+
+//   const q = getTenantFromQuery();
+//   if (q) return q;
+
+//   return null;
+// };
+
+//--------------------------------------------------------------
 
 // /**
 //  * Tenant ID Resolution (Multi-tenant)

@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "@/config/apiConfig";
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import { apiClient } from "@/lib/apiClient"; // adjust import path if needed
 
 /* ================= TYPES ================= */
 
@@ -47,19 +45,15 @@ export default function EventSettingsPageInline({
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        const token = localStorage.getItem("hostToken");
-        if (!token) return;
+        setLoading(true);
 
-        const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-          },
-        });
+        // ✅ apiClient will attach Authorization + X-Tenant-ID automatically
+        const res = await apiClient.get(`/tenants/my/features`);
 
         setFeatures(res.data?.data?.features || {});
       } catch (err) {
         console.error("Failed to load tenant features", err);
+        setFeatures({});
       } finally {
         setLoading(false);
       }
@@ -126,7 +120,7 @@ export default function EventSettingsPageInline({
 
       {/* Tabs */}
       <div className="flex gap-6 border-b pb-3 mb-6 dark:border-gray-700">
-        {["general", "payments"].map((tab) => (
+        {(["general", "payments"] as const).map((tab) => (
           <button
             key={tab}
             className={`pb-2 font-medium text-sm ${
@@ -134,7 +128,7 @@ export default function EventSettingsPageInline({
                 ? "border-b-2 border-black dark:border-white"
                 : "text-gray-500"
             }`}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab)}
           >
             {tab.toUpperCase()}
           </button>
@@ -149,7 +143,7 @@ export default function EventSettingsPageInline({
             enabled={features?.serviceFee?.enabled}
           />
 
-          {features?.serviceFee?.enabled &&
+          {/* {features?.serviceFee?.enabled &&
             features?.serviceFee?.defaultHandling && (
               <div className="ml-8 mt-2 space-y-2 text-sm text-gray-600 dark:text-gray-300">
                 {features.serviceFee.defaultHandling.passToBuyer && (
@@ -159,10 +153,10 @@ export default function EventSettingsPageInline({
                   <p>• Absorb service fee by host</p>
                 )}
               </div>
-            )}
+            )} */}
 
           <FeatureRow
-            label="Credit system"
+            label="Allow Credit"
             enabled={features?.creditSystem?.enabled}
           />
 
@@ -176,7 +170,7 @@ export default function EventSettingsPageInline({
             enabled={features?.allowTransfers?.enabled}
           />
 
-          <FeatureRow label="Login help" enabled={features?.showLoginHelp} />
+          {/* <FeatureRow label="Login help" enabled={features?.showLoginHelp} /> */}
         </div>
       )}
 
@@ -309,6 +303,318 @@ function SettingToggle({
     </label>
   );
 }
+
+// "use client";
+
+// import { useEffect, useState } from "react";
+// // import axios from "axios";
+// // import { API_BASE_URL } from "@/config/apiConfig";
+// // import { HOST_Tenant_ID } from "@/config/hostTenantId";
+
+// /* ================= TYPES ================= */
+
+// interface TenantFeatures {
+//   serviceFee?: {
+//     enabled: boolean;
+//     type: string;
+//     value: number;
+//     defaultHandling?: {
+//       passToBuyer: boolean;
+//       absorbByTenant: boolean;
+//     };
+//   };
+//   creditSystem?: { enabled: boolean };
+//   paymentPlans?: { enabled: boolean };
+//   allowTransfers?: { enabled: boolean };
+//   showLoginHelp?: boolean;
+// }
+
+// /* ================= COMPONENT ================= */
+
+// export default function EventSettingsPageInline({
+//   setActivePage,
+// }: {
+//   setActivePage: (page: string) => void;
+// }) {
+//   const [activeTab, setActiveTab] = useState<"general" | "payments">("general");
+
+//   /* ===== FEATURES (READ ONLY) ===== */
+//   const [features, setFeatures] = useState<TenantFeatures | null>(null);
+//   const [loading, setLoading] = useState(true);
+
+//   /* ===== PAYMENT SETTINGS (EVENT LEVEL) ===== */
+//   const [passFee, setPassFee] = useState(false);
+//   const [absorbFee, setAbsorbFee] = useState(false);
+
+//   const serviceFeeEnabled = features?.serviceFee?.enabled === true;
+
+//   /* ================= FETCH FEATURES ================= */
+
+//   useEffect(() => {
+//     const fetchFeatures = async () => {
+//       try {
+//         const token = localStorage.getItem("hostToken");
+//         if (!token) return;
+
+//         const res = await axios.get(`${API_BASE_URL}/tenants/my/features`, {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "x-tenant-id": HOST_Tenant_ID,
+//           },
+//         });
+
+//         setFeatures(res.data?.data?.features || {});
+//       } catch (err) {
+//         console.error("Failed to load tenant features", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchFeatures();
+//   }, []);
+
+//   /* ===== SAFETY: RESET OPTIONS IF SERVICE FEE DISABLED ===== */
+//   useEffect(() => {
+//     if (!serviceFeeEnabled) {
+//       setPassFee(false);
+//       setAbsorbFee(false);
+//     }
+//   }, [serviceFeeEnabled]);
+
+//   /* ================= NAVIGATION ================= */
+
+//   const handleGoBack = () => setActivePage("create");
+
+//   const handleSaveAndContinue = () => {
+//     try {
+//       const existing = JSON.parse(localStorage.getItem("eventDraft") || "{}");
+
+//       const updated = {
+//         ...existing,
+//         eventSettings: {
+//           serviceFee: {
+//             enabled: serviceFeeEnabled,
+//             handling: passFee
+//               ? "PASS_TO_BUYER"
+//               : absorbFee
+//               ? "ABSORB_TO_HOST"
+//               : null,
+//           },
+//         },
+//       };
+
+//       localStorage.setItem("eventDraft", JSON.stringify(updated));
+//     } catch (err) {
+//       console.error("Failed to save event payment settings", err);
+//     }
+
+//     setActivePage("set-ticketingdetailsT");
+//   };
+
+//   if (loading) {
+//     return (
+//       <div className="p-8 text-sm text-gray-500">
+//         Loading feature permissions…
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="px-4 sm:px-6 md:px-8 pb-12">
+//       {/* Header */}
+//       <div className="mb-8">
+//         <h2 className="text-[26px] font-semibold">Event Settings</h2>
+//         <p className="text-gray-600 dark:text-gray-300 text-sm">
+//           Configure rules, permissions, and payment preferences for your event.
+//         </p>
+//       </div>
+
+//       {/* Tabs */}
+//       <div className="flex gap-6 border-b pb-3 mb-6 dark:border-gray-700">
+//         {["general", "payments"].map((tab) => (
+//           <button
+//             key={tab}
+//             className={`pb-2 font-medium text-sm ${
+//               activeTab === tab
+//                 ? "border-b-2 border-black dark:border-white"
+//                 : "text-gray-500"
+//             }`}
+//             onClick={() => setActiveTab(tab as any)}
+//           >
+//             {tab.toUpperCase()}
+//           </button>
+//         ))}
+//       </div>
+
+//       {/* ================= GENERAL TAB (READ ONLY) ================= */}
+//       {activeTab === "general" && (
+//         <div className="space-y-5">
+//           <FeatureRow
+//             label="Service fee enabled"
+//             enabled={features?.serviceFee?.enabled}
+//           />
+
+//           {features?.serviceFee?.enabled &&
+//             features?.serviceFee?.defaultHandling && (
+//               <div className="ml-8 mt-2 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+//                 {features.serviceFee.defaultHandling.passToBuyer && (
+//                   <p>• Pass service fee to buyer</p>
+//                 )}
+//                 {features.serviceFee.defaultHandling.absorbByTenant && (
+//                   <p>• Absorb service fee by host</p>
+//                 )}
+//               </div>
+//             )}
+
+//           <FeatureRow
+//             label="Credit system"
+//             enabled={features?.creditSystem?.enabled}
+//           />
+
+//           <FeatureRow
+//             label="Payment plans"
+//             enabled={features?.paymentPlans?.enabled}
+//           />
+
+//           <FeatureRow
+//             label="Ticket transfers"
+//             enabled={features?.allowTransfers?.enabled}
+//           />
+
+//           <FeatureRow label="Login help" enabled={features?.showLoginHelp} />
+//         </div>
+//       )}
+
+//       {/* ================= PAYMENTS TAB ================= */}
+//       {activeTab === "payments" && (
+//         <div className="space-y-5">
+//           {!serviceFeeEnabled ? (
+//             <p className="text-sm text-gray-500">
+//               Service fee option is not enabled for your account.
+//             </p>
+//           ) : (
+//             <>
+//               <SettingToggle
+//                 label="Pass service fee to buyer"
+//                 checked={passFee}
+//                 onToggle={() => {
+//                   setPassFee(!passFee);
+//                   if (!passFee) setAbsorbFee(false);
+//                 }}
+//               />
+
+//               <SettingToggle
+//                 label="Absorb service fee from earnings"
+//                 checked={absorbFee}
+//                 onToggle={() => {
+//                   setAbsorbFee(!absorbFee);
+//                   if (!absorbFee) setPassFee(false);
+//                 }}
+//               />
+
+//               <p className="text-xs text-gray-500 ml-1">
+//                 Choose how the service fee is handled for this event.
+//               </p>
+//             </>
+//           )}
+//         </div>
+//       )}
+
+//       {/* Footer */}
+//       <div className="flex justify-end gap-4 pt-10">
+//         <button
+//           onClick={handleGoBack}
+//           className="h-11 px-6 rounded-xl bg-[#FFF5E6] text-[#D19537] font-semibold"
+//         >
+//           Go Back
+//         </button>
+
+//         <button
+//           onClick={handleSaveAndContinue}
+//           className="h-11 px-6 rounded-xl bg-[#D19537] text-white font-semibold"
+//         >
+//           Save & Continue
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
+// /* ================= UI HELPERS ================= */
+
+// function FeatureRow({ label, enabled }: { label: string; enabled?: boolean }) {
+//   return (
+//     <div className="flex items-center gap-3">
+//       <div
+//         className={`h-5 w-5 rounded-md border flex items-center justify-center
+//           ${
+//             enabled
+//               ? "bg-[#D19537] border-[#D19537]"
+//               : "border-gray-400 dark:border-gray-600"
+//           }
+//         `}
+//       >
+//         {enabled && (
+//           <svg width="14" height="14" viewBox="0 0 20 20">
+//             <path
+//               d="M5 10L8.5 13.5L15 7"
+//               stroke="white"
+//               strokeWidth="2"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//             />
+//           </svg>
+//         )}
+//       </div>
+
+//       <span className="text-[15px] text-gray-800 dark:text-gray-200">
+//         {label}
+//       </span>
+//     </div>
+//   );
+// }
+
+// function SettingToggle({
+//   label,
+//   checked,
+//   onToggle,
+// }: {
+//   label: string;
+//   checked: boolean;
+//   onToggle: () => void;
+// }) {
+//   return (
+//     <label className="flex items-center gap-3 cursor-pointer select-none">
+//       <div
+//         onClick={onToggle}
+//         className={`h-5 w-5 rounded-md border flex items-center justify-center
+//           ${
+//             checked
+//               ? "bg-[#D19537] border-[#D19537]"
+//               : "border-gray-400 dark:border-gray-600 bg-white dark:bg-[#181818]"
+//           }
+//         `}
+//       >
+//         {checked && (
+//           <svg width="14" height="14" viewBox="0 0 20 20">
+//             <path
+//               d="M5 10L8.5 13.5L15 7"
+//               stroke="white"
+//               strokeWidth="2"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//             />
+//           </svg>
+//         )}
+//       </div>
+
+//       <span className="text-[15px] text-gray-800 dark:text-gray-200">
+//         {label}
+//       </span>
+//     </label>
+//   );
+// }
 
 // "use client";
 
