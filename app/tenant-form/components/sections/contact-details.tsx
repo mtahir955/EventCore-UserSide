@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState, useMemo } from "react";
 import { MapPin, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { City } from "country-state-city";
@@ -15,7 +15,14 @@ const ContactDetailsSection = forwardRef((props, ref) => {
     nationalId: "",
   });
 
-  const usCities = City.getCitiesOfCountry("US") ?? [];
+  // const usCities = City.getCitiesOfCountry("US") ?? [];
+  const usCities = useMemo(() => {
+    const cities = City.getCitiesOfCountry("US") ?? [];
+
+    return Array.from(new Set(cities.map((c) => c.name))).sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, []);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -206,7 +213,7 @@ const ContactDetailsSection = forwardRef((props, ref) => {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             City / Town <span className="text-red-500">*</span>
           </label>
-          <select
+          {/* <select
             name="city"
             value={formData.city}
             onChange={handleChange}
@@ -218,6 +225,22 @@ const ContactDetailsSection = forwardRef((props, ref) => {
             {usCities.map((city) => (
               <option key={`${city.name}-${city.stateCode}`} value={city.name}>
                 {city.name}
+              </option>
+            ))}
+          </select> */}
+          <select
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D19537]
+    ${errors.city ? "border-red-500" : "border-gray-300 dark:border-gray-700"}
+    bg-white dark:bg-[#101010] text-gray-900 dark:text-white`}
+          >
+            <option value="">Select City</option>
+
+            {usCities.map((city) => (
+              <option key={city} value={city}>
+                {city}
               </option>
             ))}
           </select>
