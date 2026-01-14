@@ -77,10 +77,12 @@ const OtherPagesDataSection = forwardRef((props, ref) => {
     setData: (data: any) => {
       /* ---------------- ABOUT PAGE ---------------- */
       setFormData({
-        tenantName: data?.tenantName || "",
+        // tenantName: data?.tenantName || "",
+        tenantName: data?.name || "",
         email: data?.email || "",
         description: data?.aboutPage?.description || "",
-        subdomain: data?.subdomain || "",
+        // subdomain: data?.subdomain || "",
+        subdomain: data?.subDomain || "",
         logo: data?.logoUrl || "",
         banner: data?.bannerUrl || "",
         aboutTitle: data?.aboutPage?.title || "",

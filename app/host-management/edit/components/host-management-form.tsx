@@ -50,6 +50,7 @@ export default function HostManagementForm() {
   const searchParams = useSearchParams();
   const tenantId = searchParams.get("tenantId");
 
+  const [tenantData, setTenantData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   /* =====================================================
@@ -82,16 +83,17 @@ export default function HostManagementForm() {
         const data = result?.data || result;
 
         // 🔥 HYDRATE ALL SECTIONS
-        basicInfoRef.current?.setData?.(data);
-        contactDetailsRef.current?.setData?.(data);
-        otherPagesRef.current?.setData?.(data);
-        socialLinksRef.current?.setData?.(data);
+        // basicInfoRef.current?.setData?.(data);
+        // contactDetailsRef.current?.setData?.(data);
+        // otherPagesRef.current?.setData?.(data);
+        // socialLinksRef.current?.setData?.(data);
 
-        if (data.eventcorePercentage !== undefined) {
-          eventcorePercentageRef.current?.setData?.({
-            eventcorePercentage: data.eventcorePercentage,
-          });
-        }
+        // if (data.eventcorePercentage !== undefined) {
+        //   eventcorePercentageRef.current?.setData?.({
+        //     eventcorePercentage: data.eventcorePercentage,
+        //   });
+        // }
+        setTenantData(data); // ✅ store in state
       } catch (err: any) {
         toast.error(err.message || "Failed to load tenant");
       } finally {
@@ -101,6 +103,19 @@ export default function HostManagementForm() {
 
     fetchTenant();
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantData) return;
+
+    basicInfoRef.current?.setData?.(tenantData);
+    contactDetailsRef.current?.setData?.(tenantData);
+    otherPagesRef.current?.setData?.(tenantData);
+    socialLinksRef.current?.setData?.(tenantData);
+
+    eventcorePercentageRef.current?.setData?.({
+      eventcorePercentage: tenantData.eventcorePercentage,
+    });
+  }, [tenantData]);
 
   /* =====================================================
      UPDATE TENANT HANDLER (PUT)
