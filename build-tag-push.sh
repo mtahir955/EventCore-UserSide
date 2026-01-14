@@ -11,9 +11,9 @@ echo "========================================"
 
 imageName="eventcoresolutions/eventcore-frontend"
 
-# Step 1: Build image with dev tag using docker-compose
-echo "Building ${imageName}:dev"
-docker-compose build
+# Step 1: Build image with dev tag using docker-compose (no cache for fresh build)
+echo "Building ${imageName}:dev (fresh build, no cache)"
+docker-compose build --no-cache
 
 echo ""
 echo "========================================"

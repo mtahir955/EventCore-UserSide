@@ -7,9 +7,9 @@ Write-Host "========================================" -ForegroundColor Cyan
 
 $imageName = "eventcoresolutions/eventcore-frontend"
 
-# Step 1: Build image with dev tag using docker-compose
-Write-Host "Building $imageName:dev" -ForegroundColor Yellow
-docker-compose build
+# Step 1: Build image with dev tag using docker-compose (no cache for fresh build)
+Write-Host "Building $imageName:dev (fresh build, no cache)" -ForegroundColor Yellow
+docker-compose build --no-cache
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed!" -ForegroundColor Red
