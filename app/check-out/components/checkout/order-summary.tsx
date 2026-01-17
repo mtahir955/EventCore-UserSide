@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 // import axios from "axios";
@@ -160,9 +160,11 @@ const getAuthToken = () => {
 function StripeUnifiedPaymentForm({
   clientSecret,
   bnplMethods = [],
+  onPaymentMethodChange,
 }: {
   clientSecret: string;
   bnplMethods?: any[];
+  onPaymentMethodChange?: (method: string) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -175,6 +177,7 @@ function StripeUnifiedPaymentForm({
     setLoading(true);
 
     try {
+      // @ts-ignore - preserving original code pattern
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -208,7 +211,7 @@ function StripeUnifiedPaymentForm({
           //     },
           //   }
           // );
-          await apiClient.post(`/payments/confirm`, {
+          const confirmResponse = await apiClient.post(`/payments/confirm`, {
             paymentIntentId: paymentIntent.id,
           });
 
@@ -280,6 +283,26 @@ function StripeUnifiedPaymentForm({
               },
               // Show all available payment methods
               paymentMethodOrder: undefined, // Let Stripe decide based on availability
+            }}
+            onChange={(event) => {
+              // Track payment method changes for fee estimation
+              if (event.complete && event.value?.type) {
+                const methodType = event.value.type;
+                // Map Stripe payment method types to API method names
+                let apiMethod = "card";
+                if (methodType === "card") {
+                  apiMethod = "card";
+                } else if (methodType === "paypal") {
+                  apiMethod = "paypal";
+                } else if (methodType === "klarna") {
+                  apiMethod = "klarna";
+                } else if (methodType === "afterpay_clearpay") {
+                  apiMethod = "afterpay";
+                } else if (methodType === "affirm") {
+                  apiMethod = "affirm";
+                }
+                onPaymentMethodChange?.(apiMethod);
+              }
             }}
           />
         </div>
@@ -501,9 +524,95 @@ export default function OrderSummary() {
     return 0;
   }, [showServiceFee, serviceFeeConfig, price, qty]);
 
+  // ───────── PROCESSING FEE STATE (moved here for useCallback) ─────────
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("card");
+  const [estimatedProcessingFee, setEstimatedProcessingFee] =
+    useState<number>(0);
+  const [loadingProcessingFee, setLoadingProcessingFee] =
+    useState<boolean>(false);
+
+  // ───────── CALCULATE ORDER AMOUNT (for fee estimation) ─────────
+  const orderAmount = useMemo(() => {
+    return price * qty + calculatedServiceFee;
+  }, [price, qty, calculatedServiceFee]);
+
+  // ───────── FETCH ESTIMATED PROCESSING FEE ─────────
+  const fetchEstimatedProcessingFee = useCallback(
+    async (method: string, amount: number) => {
+      // Only call API when both order amount and payment method are known
+      if (!amount || amount <= 0 || !method) {
+        setEstimatedProcessingFee(0);
+        return;
+      }
+
+      try {
+        setLoadingProcessingFee(true);
+        const amountStr = amount.toFixed(2); // Amount in dollars (e.g., "100.00")
+
+        console.log("🔍 Fetching estimated processing fee:", {
+          method,
+          amount: amountStr,
+          currency: "usd",
+          url: `/checkout/estimate-fee?method=${method}&amount=${amountStr}&currency=usd`,
+        });
+
+        const response = await apiClient.get(`/checkout/estimate-fee`, {
+          params: {
+            method: method,
+            amount: amountStr,
+            currency: "usd",
+          },
+        });
+
+        console.log("✅ Processing fee API response:", response);
+        console.log("✅ Processing fee API response data:", response.data);
+        console.log(
+          "✅ Processing fee API response.data.data:",
+          response.data?.data
+        );
+
+        const feeData = response.data?.data || response.data;
+        console.log("✅ Extracted fee data:", feeData);
+
+        if (feeData?.estimatedFee) {
+          // Parse the fee string to number (e.g., "3.20" -> 3.20)
+          const feeAmount = parseFloat(feeData.estimatedFee) || 0;
+          console.log("✅ Processing fee amount (parsed):", feeAmount);
+          setEstimatedProcessingFee(feeAmount);
+        } else {
+          console.log("⚠️ No estimatedFee found in response, setting to 0");
+          setEstimatedProcessingFee(0);
+        }
+      } catch (error: any) {
+        console.error("❌ Failed to fetch estimated processing fee:", error);
+        console.error("❌ Error details:", {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status,
+          url: error?.config?.url,
+        });
+        // Fail silently - don't show fee if API fails
+        setEstimatedProcessingFee(0);
+      } finally {
+        setLoadingProcessingFee(false);
+      }
+    },
+    []
+  );
+
+  // ───────── CALL FEE API WHEN ORDER AMOUNT OR PAYMENT METHOD CHANGES ─────────
+  useEffect(() => {
+    if (orderAmount > 0 && selectedPaymentMethod) {
+      fetchEstimatedProcessingFee(selectedPaymentMethod, orderAmount);
+    } else {
+      setEstimatedProcessingFee(0);
+    }
+  }, [orderAmount, selectedPaymentMethod, fetchEstimatedProcessingFee]);
+
   const total = useMemo(
-    () => price * qty + calculatedServiceFee,
-    [price, qty, calculatedServiceFee]
+    () => price * qty + calculatedServiceFee + estimatedProcessingFee,
+    [price, qty, calculatedServiceFee, estimatedProcessingFee]
   );
 
   // ───────── BUYER CREDITS ─────────
@@ -1035,6 +1144,21 @@ export default function OrderSummary() {
             </p>
           )}
 
+          {/* PROCESSING FEE — FROM STRIPE API (Always show when order amount > 0) */}
+          {orderAmount > 0 && (
+            <p className="flex justify-between mt-1">
+              <span>
+                Processing Fee
+                {loadingProcessingFee ? "" : " (Est.)"}:
+              </span>
+              <span>
+                {loadingProcessingFee
+                  ? "Loading..."
+                  : formatter.format(estimatedProcessingFee)}
+              </span>
+            </p>
+          )}
+
           <hr className="my-2" />
 
           <p className="flex justify-between font-semibold">
@@ -1258,6 +1382,7 @@ export default function OrderSummary() {
         {/* ─────────────────────────────────────────
             INITIATE PAYMENT BUTTONS
         ────────────────────────────────────────── */}
+        {/* @ts-ignore - preserving existing code logic */}
         {!clientSecret && paymentMode !== "installment" && (
           <Button
             className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1323,6 +1448,7 @@ export default function OrderSummary() {
             <StripeUnifiedPaymentForm
               clientSecret={clientSecret}
               bnplMethods={bnplMethods}
+              onPaymentMethodChange={setSelectedPaymentMethod}
             />
           </Elements>
         )}
