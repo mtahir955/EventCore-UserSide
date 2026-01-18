@@ -286,21 +286,32 @@ function StripeUnifiedPaymentForm({
             }}
             onChange={(event) => {
               // Track payment method changes for fee estimation
-              if (event.complete && event.value?.type) {
+              // Call API when payment method is selected (even if not complete)
+              if (event.value?.type) {
                 const methodType = event.value.type;
                 // Map Stripe payment method types to API method names
                 let apiMethod = "card";
-                if (methodType === "card") {
-                  apiMethod = "card";
-                } else if (methodType === "paypal") {
-                  apiMethod = "paypal";
-                } else if (methodType === "klarna") {
-                  apiMethod = "klarna";
-                } else if (methodType === "afterpay_clearpay") {
-                  apiMethod = "afterpay";
-                } else if (methodType === "affirm") {
-                  apiMethod = "affirm";
+
+                switch (methodType) {
+                  case "card":
+                    apiMethod = "card";
+                    break;
+                  case "klarna":
+                    apiMethod = "klarna";
+                    break;
+                  case "afterpay_clearpay":
+                    apiMethod = "afterpay";
+                    break;
+                  case "affirm":
+                    apiMethod = "affirm";
+                    break;
+                  default:
+                    apiMethod = "card"; // Default to card
+                    break;
                 }
+
+                // Update payment method immediately when clicked/selected
+                // This will trigger the fee estimation API call
                 onPaymentMethodChange?.(apiMethod);
               }
             }}
