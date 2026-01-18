@@ -300,7 +300,7 @@ function StripeUnifiedPaymentForm({
                     apiMethod = "klarna";
                     break;
                   case "afterpay_clearpay":
-                    apiMethod = "afterpay";
+                    apiMethod = "afterpay_clearpay";
                     break;
                   case "affirm":
                     apiMethod = "affirm";
