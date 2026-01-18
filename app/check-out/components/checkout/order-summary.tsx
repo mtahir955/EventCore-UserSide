@@ -160,13 +160,82 @@ const getAuthToken = () => {
 function StripeUnifiedPaymentForm({
   clientSecret,
   bnplMethods = [],
+  onProcessingFeeChange,
+  totalAmount,
 }: {
   clientSecret: string;
   bnplMethods?: any[];
+  onProcessingFeeChange?: (fee: number) => void;
+  totalAmount?: number;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [lastCheckedPaymentMethod, setLastCheckedPaymentMethod] = useState<string | null>(null);
+
+  // Check processing fee when payment method changes
+  const handlePaymentMethodChange = async (event: any) => {
+    if (!stripe || !elements || !totalAmount || !onProcessingFeeChange) return;
+
+    // Only check for card payments when complete
+    if (event.value?.type === "card" && event.complete) {
+      try {
+        // Get payment method ID from the element
+        const { paymentMethod, error } = await stripe.createPaymentMethod({
+          elements,
+          params: {
+            type: "card",
+          },
+        });
+
+        if (error || !paymentMethod?.id) {
+          onProcessingFeeChange(0);
+          setLastCheckedPaymentMethod(null);
+          return;
+        }
+
+        // Avoid duplicate API calls for the same payment method
+        if (lastCheckedPaymentMethod === paymentMethod.id) {
+          return;
+        }
+
+        setLastCheckedPaymentMethod(paymentMethod.id);
+
+        // Call processing fee API
+        const token = getAuthToken();
+        if (!token) {
+          onProcessingFeeChange(0);
+          return;
+        }
+
+        try {
+          const res = await apiClient.post(`/foreign-transaction-fees/check`, {
+            paymentMethodId: paymentMethod.id,
+            amount: totalAmount,
+          });
+
+          const feeData = res.data?.data || res.data;
+          if (feeData?.fee?.amount) {
+            const feeAmount = parseFloat(feeData.fee.amount);
+            onProcessingFeeChange(feeAmount);
+          } else {
+            onProcessingFeeChange(0);
+          }
+        } catch (err) {
+          console.error("Failed to check processing fee:", err);
+          onProcessingFeeChange(0);
+        }
+      } catch (err) {
+        console.error("Failed to create payment method:", err);
+        onProcessingFeeChange(0);
+        setLastCheckedPaymentMethod(null);
+      }
+    } else {
+      // Reset fee if not a card payment or not complete
+      onProcessingFeeChange(0);
+      setLastCheckedPaymentMethod(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,7 +277,7 @@ function StripeUnifiedPaymentForm({
           //     },
           //   }
           // );
-          await apiClient.post(`/payments/confirm`, {
+          const confirmResponse = await apiClient.post(`/payments/confirm`, {
             paymentIntentId: paymentIntent.id,
           });
 
@@ -253,6 +322,7 @@ function StripeUnifiedPaymentForm({
     }
   };
 
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
       <div className="space-y-3">
@@ -262,6 +332,7 @@ function StripeUnifiedPaymentForm({
         </p>
         <div className="border rounded-lg p-4 bg-white dark:bg-[#1a1a1a]">
           <PaymentElement
+            onChange={handlePaymentMethodChange}
             options={{
               layout: "accordion", // Expandable accordion layout - shows more methods
               defaultValues: {
@@ -501,9 +572,12 @@ export default function OrderSummary() {
     return 0;
   }, [showServiceFee, serviceFeeConfig, price, qty]);
 
+  // ───────── PROCESSING FEE STATE ─────────
+  const [processingFee, setProcessingFee] = useState<number>(0);
+
   const total = useMemo(
-    () => price * qty + calculatedServiceFee,
-    [price, qty, calculatedServiceFee]
+    () => price * qty + calculatedServiceFee + processingFee,
+    [price, qty, calculatedServiceFee, processingFee]
   );
 
   // ───────── BUYER CREDITS ─────────
@@ -715,6 +789,7 @@ export default function OrderSummary() {
   // Reset payment state when user switches mode / ticket / qty
   useEffect(() => {
     setClientSecret("");
+    setProcessingFee(0); // Reset processing fee when order changes
   }, [paymentMode, type, qty]);
 
   const shouldSendServiceFee = showServiceFee && calculatedServiceFee > 0;
@@ -1035,6 +1110,14 @@ export default function OrderSummary() {
             </p>
           )}
 
+          {/* PROCESSING FEE — WHEN APPLICABLE */}
+          {processingFee > 0 && (
+            <p className="flex justify-between mt-1">
+              <span>Processing Fee:</span>
+              <span>{formatter.format(processingFee)}</span>
+            </p>
+          )}
+
           <hr className="my-2" />
 
           <p className="flex justify-between font-semibold">
@@ -1323,6 +1406,8 @@ export default function OrderSummary() {
             <StripeUnifiedPaymentForm
               clientSecret={clientSecret}
               bnplMethods={bnplMethods}
+              onProcessingFeeChange={setProcessingFee}
+              totalAmount={price * qty + calculatedServiceFee}
             />
           </Elements>
         )}
