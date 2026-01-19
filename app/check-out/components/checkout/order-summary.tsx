@@ -1134,49 +1134,7 @@ export default function OrderSummary() {
           </p>
         </div>
 
-        {/* Summary */}
-        <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4">
-          <p className="flex justify-between">
-            <span>Ticket Subtotal:</span>
-            <span>{formatter.format(price * qty)}</span>
-          </p>
-
-          {/* SERVICE FEE — ONLY WHEN PASS_TO_BUYER */}
-          {showServiceFee && (
-            <p className="flex justify-between mt-1">
-              <span>
-                Service Fee{" "}
-                {serviceFeeConfig?.type === "percentage"
-                  ? `(${serviceFeeConfig.value}%)`
-                  : ""}
-                :
-              </span>
-              <span>{formatter.format(calculatedServiceFee)}</span>
-            </p>
-          )}
-
-          {/* PROCESSING FEE — FROM STRIPE API (Always show when order amount > 0) */}
-          {orderAmount > 0 && (
-            <p className="flex justify-between mt-1">
-              <span>
-                Processing Fee
-                {loadingProcessingFee ? "" : " (Est.)"}:
-              </span>
-              <span>
-                {loadingProcessingFee
-                  ? "Loading..."
-                  : formatter.format(estimatedProcessingFee)}
-              </span>
-            </p>
-          )}
-
-          <hr className="my-2" />
-
-          <p className="flex justify-between font-semibold">
-            <span>Total:</span>
-            <span>{formatter.format(total)}</span>
-          </p>
-        </div>
+        
 
         {/* ─────────────────────────────────────────
             PAYMENT METHOD SELECTOR (NEW)
@@ -1431,21 +1389,6 @@ export default function OrderSummary() {
           </Button>
         )}
 
-        {/* ─────────────────────────────────────────
-            STRIPE FORMS
-        ────────────────────────────────────────── */}
-        {/* {clientSecret && stripePromise && paymentMode === "card" && (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <StripePaymentForm clientSecret={clientSecret} />
-          </Elements>
-        )}
-
-        {clientSecret && stripePromise && paymentMode === "bnpl" && (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <StripeBNPLPaymentForm clientSecret={clientSecret} />
-          </Elements>
-        )} */}
-
         {clientSecret && stripePromise && (
           <Elements
             stripe={stripePromise}
@@ -1463,6 +1406,67 @@ export default function OrderSummary() {
             />
           </Elements>
         )}
+
+        {/* Summary */}
+        <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4">
+          <p className="flex justify-between">
+            <span>Ticket Subtotal:</span>
+            <span>{formatter.format(price * qty)}</span>
+          </p>
+
+          {/* SERVICE FEE — ONLY WHEN PASS_TO_BUYER */}
+          {showServiceFee && (
+            <p className="flex justify-between mt-1">
+              <span>
+                Service Fee{" "}
+                {serviceFeeConfig?.type === "percentage"
+                  ? `(${serviceFeeConfig.value}%)`
+                  : ""}
+                :
+              </span>
+              <span>{formatter.format(calculatedServiceFee)}</span>
+            </p>
+          )}
+
+          {/* PROCESSING FEE — FROM STRIPE API (Always show when order amount > 0) */}
+          {orderAmount > 0 && (
+            <p className="flex justify-between mt-1">
+              <span>
+                Processing Fee
+                {loadingProcessingFee ? "" : " (Est.)"}:
+              </span>
+              <span>
+                {loadingProcessingFee
+                  ? "Loading..."
+                  : formatter.format(estimatedProcessingFee)}
+              </span>
+            </p>
+          )}
+
+          <hr className="my-2" />
+
+          <p className="flex justify-between font-semibold">
+            <span>Total:</span>
+            <span>{formatter.format(total)}</span>
+          </p>
+        </div>
+
+        {/* ─────────────────────────────────────────
+            STRIPE FORMS
+        ────────────────────────────────────────── */}
+        {/* {clientSecret && stripePromise && paymentMode === "card" && (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <StripePaymentForm clientSecret={clientSecret} />
+          </Elements>
+        )}
+
+        {clientSecret && stripePromise && paymentMode === "bnpl" && (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <StripeBNPLPaymentForm clientSecret={clientSecret} />
+          </Elements>
+        )} */}
+
+        
       </div>
     </div>
   );
