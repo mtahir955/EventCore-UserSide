@@ -47,7 +47,8 @@
 
 // export { API_BASE_URL };
 
-export const API_BASE_URL = "https://api.eventcoresolutions.com";
+// Using localhost backend for development
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8086";
 
 // export const API_BASE_URL = "http://localhost:8080";
 
