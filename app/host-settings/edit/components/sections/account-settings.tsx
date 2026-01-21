@@ -5,16 +5,16 @@ import { Settings2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { setThemeGlobal } from "@/utils/themeManager";
 import ChangePasswordModal from "@/components/modals/ChangePasswordModal";
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-hot-toast";
-import { API_BASE_URL } from "../../../../../config/apiConfig"; // ADD THIS IMPORT
-import { HOST_Tenant_ID } from "@/config/hostTenantId";
+// import { API_BASE_URL } from "../../../../../config/apiConfig"; // ADD THIS IMPORT
+// import { HOST_Tenant_ID } from "@/config/hostTenantId";
+import apiClient from "@/lib/apiClient";
 
 const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
   const { setTheme } = useTheme();
 
   const [theme, setThemeLocal] = useState(host.theme || "light");
-  const [isCreditEnabled, setIsCreditEnabled] = useState(true);
 
   // ⭐ APPLY THEME INSTANTLY WHEN DROPDOWN CHANGES
   useEffect(() => {
@@ -38,34 +38,11 @@ const AccountSettingsSection = forwardRef(({ host }: any, ref) => {
     confirmPassword: string;
   }) => {
     try {
-      const token = localStorage.getItem("hostToken");
-
-      if (!token) {
-        toast.error("No host token found. Please log in again.", {
-          style: {
-            background: "#101010",
-            color: "#fff",
-            border: "1px solid #D19537",
-          },
-        });
-        return;
-      }
-
-      await axios.put(
-        `${API_BASE_URL}/auth/change-password`,
-        {
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-          confirmPassword: data.confirmPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-tenant-id": HOST_Tenant_ID,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await apiClient.put("/auth/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+        confirmPassword: data.confirmPassword,
+      });
 
       toast.success("Password updated successfully!", {
         style: {
