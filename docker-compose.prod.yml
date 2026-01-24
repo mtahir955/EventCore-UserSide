@@ -1,28 +1,22 @@
-version: '3.8'
-
 # =============================================================================
 # EventCore Frontend Production Docker Compose
 # =============================================================================
-# 
-# ENVIRONMENT FILE:
-#   This file uses .env.prod by default. Create it from env.prod.example:
-#   cp env.prod.example .env.prod
 #
 # USAGE:
-#   # Start with default .env.prod (if exists)
-#   docker-compose -f docker-compose.prod.yml up -d
-#
-#   # Or explicitly specify env file
+#   # From the eventcore-fe-3001 directory:
 #   docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 #
-#   # Override specific variables at runtime
-#   NEXT_PUBLIC_API_BASE_URL=https://api.example.com docker-compose -f docker-compose.prod.yml up -d
+# NOTES:
+#   - Uses shared network 'eventcore_shared_network' - auto-created if not exists
+#   - API URL is hardcoded to api.eventcoresolutions.com (configured at build time)
 # =============================================================================
 
 services:
   eventcore-frontend:
     image: eventcoresolutions/eventcore-frontend:latest
     container_name: eventcore-frontend
+    env_file:
+      - .env.prod
     ports:
       - "3001:3000"
     restart: unless-stopped
@@ -34,7 +28,7 @@ services:
       - NEXT_PUBLIC_ROOT_DOMAIN=${NEXT_PUBLIC_ROOT_DOMAIN:-eventcoresolutions.com}
       - NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV:-production}
     networks:
-      - eventcore-network
+      - eventcore_shared_network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
@@ -43,6 +37,5 @@ services:
       start_period: 40s
 
 networks:
-  eventcore-network:
-    external: true
-    name: eventcore-network
+  eventcore_shared_network:
+    driver: bridge
