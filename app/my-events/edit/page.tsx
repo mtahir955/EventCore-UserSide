@@ -15,6 +15,23 @@ import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/apiClient";
+import React, { useMemo } from "react";
+import { City } from "country-state-city";
+import { countries as countriesList } from "countries-list";
+import { ChevronDown } from "lucide-react";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 
 const getFileUrl = (path?: string | null) => {
   if (!path) return "";
@@ -43,6 +60,124 @@ export default function EditEventPage() {
     { id: 2, message: "You sold 3 tickets for 'Lahore Music Fest'." },
     { id: 3, message: "New user message received." },
   ];
+
+  type CountryMeta = {
+    iso2: string;
+    name: string;
+    callingCode: string;
+    flag: string;
+  };
+
+  type LocationOption = {
+    key: string;
+    label: string; // "City, Country"
+    countryIso2: string;
+    callingCode: string;
+    flag: string;
+  };
+
+  const [openLocation, setOpenLocation] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationResults, setLocationResults] = useState<LocationOption[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // cache cities per country
+  const cityCacheRef = useRef<Map<string, string[]>>(new Map());
+
+  const allCountries: CountryMeta[] = useMemo(() => {
+    const entries = Object.entries(countriesList) as Array<
+      [string, { name: string; phone: string | string[] }]
+    >;
+
+    return entries
+      .map(([iso2, c]) => {
+        const phone = Array.isArray(c.phone) ? c.phone[0] : c.phone;
+        const callingCode = phone ? `+${phone}` : "";
+        const flag = `https://flagcdn.com/${iso2.toLowerCase()}.svg`;
+        return { iso2, name: c.name, callingCode, flag };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const q = locationQuery.trim().toLowerCase();
+    if (q.length < 2) {
+      setLocationResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+
+    const t = setTimeout(() => {
+      if (cancelled) return;
+
+      const results: LocationOption[] = [];
+      const LIMIT = 200;
+
+      for (const country of allCountries) {
+        if (results.length >= LIMIT) break;
+
+        let cities = cityCacheRef.current.get(country.iso2);
+        if (!cities) {
+          const raw = City.getCitiesOfCountry(country.iso2) ?? [];
+          cities = Array.from(new Set(raw.map((c) => c.name))).sort((a, b) =>
+            a.localeCompare(b),
+          );
+          cityCacheRef.current.set(country.iso2, cities);
+        }
+
+        // if country matches → show some cities
+        if (country.name.toLowerCase().includes(q)) {
+          for (const city of cities.slice(0, 20)) {
+            if (results.length >= LIMIT) break;
+            results.push({
+              key: `${city}-${country.iso2}`,
+              label: `${city}, ${country.name}`,
+              countryIso2: country.iso2,
+              callingCode: country.callingCode,
+              flag: country.flag,
+            });
+          }
+        }
+
+        // city matches
+        const matched = cities
+          .filter((c) => c.toLowerCase().includes(q))
+          .slice(0, 20);
+
+        for (const city of matched) {
+          if (results.length >= LIMIT) break;
+          results.push({
+            key: `${city}-${country.iso2}`,
+            label: `${city}, ${country.name}`,
+            countryIso2: country.iso2,
+            callingCode: country.callingCode,
+            flag: country.flag,
+          });
+        }
+      }
+
+      const uniq = Array.from(new Map(results.map((r) => [r.key, r])).values());
+
+      if (!cancelled) {
+        setLocationResults(uniq);
+        setIsSearching(false);
+      }
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [locationQuery, allCountries]);
+
+  const handleSelectLocation = (opt: LocationOption) => {
+    setEventLocation(opt.label); // ✅ saves FULL "City, Country"
+    setOpenLocation(false);
+  };
 
   const US_STATES = [
     "Alabama",
@@ -242,7 +377,7 @@ export default function EditEventPage() {
   }, [eventId]);
 
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(
-    null
+    null,
   );
 
   const handleUpdateEvent = async () => {
@@ -343,7 +478,7 @@ export default function EditEventPage() {
       // setCustomersTotalPages(res.data.data.pagination.totalPages);
     } catch (err: any) {
       toast.error(
-        err?.response?.data?.message || "Failed to load event customers"
+        err?.response?.data?.message || "Failed to load event customers",
       );
     } finally {
       setCustomersLoading(false);
@@ -652,19 +787,56 @@ export default function EditEventPage() {
                   Location
                 </label>
 
-                <select
-                  value={eventLocation}
-                  onChange={(e) => setEventLocation(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] 
-      bg-white dark:bg-[#101010] text-sm"
-                >
-                  <option value="">Select State</option>
-                  {US_STATES.map((state) => (
-                    <option key={state} value={state}>
-                      {state}
-                    </option>
-                  ))}
-                </select>
+                <Popover open={openLocation} onOpenChange={setOpenLocation}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5]
+      bg-white dark:bg-[#101010] text-sm flex items-center justify-between"
+                    >
+                      <span className={eventLocation ? "" : "text-gray-400"}>
+                        {eventLocation
+                          ? eventLocation
+                          : "Search city or country..."}
+                      </span>
+                      <ChevronDown size={16} className="opacity-70" />
+                    </button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                    <Command>
+                      <CommandInput
+                        placeholder="Type: lahore / pakistan / london..."
+                        value={locationQuery}
+                        onValueChange={setLocationQuery}
+                      />
+
+                      <CommandEmpty>
+                        {isSearching
+                          ? "Searching..."
+                          : "No results found (type 2+ letters)."}
+                      </CommandEmpty>
+
+                      <CommandGroup className="max-h-64 overflow-y-auto">
+                        {locationResults.map((opt) => (
+                          <CommandItem
+                            key={opt.key}
+                            value={opt.label}
+                            onSelect={() => handleSelectLocation(opt)}
+                            className="flex items-center gap-2"
+                          >
+                            <img
+                              src={opt.flag}
+                              alt="flag"
+                              className="h-4 w-6 object-cover rounded-sm"
+                            />
+                            <span>{opt.label}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div>

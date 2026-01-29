@@ -1,7 +1,7 @@
 "use client";
 
 import { Sidebar } from "../../host-dashboard/components/sidebar";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import SetImagesPage from "./set-images/page";
 import TicketingDetailsPage from "./ticketing-details/page";
@@ -20,12 +20,28 @@ import {
 } from "@/components/ui/select";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import EventSettingsPageInline from "./event-settings-inline";
+import { City } from "country-state-city";
+import { countries as countriesList } from "countries-list";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { ChevronDown } from "lucide-react";
 
 const STORAGE_KEY = "eventDraft";
 
 export default function CreateEventPage() {
   const [eventType, setEventType] = useState<"in-person" | "virtual">(
-    "in-person"
+    "in-person",
   );
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
@@ -58,6 +74,125 @@ export default function CreateEventPage() {
     { id: 2, message: "You sold 3 tickets for 'Lahore Music Fest'." },
     { id: 3, message: "New user message received." },
   ];
+
+  type CountryMeta = {
+    iso2: string;
+    name: string;
+    callingCode: string;
+    flag: string;
+  };
+
+  type LocationOption = {
+    key: string;
+    label: string; // "City, Country"
+    countryIso2: string;
+    callingCode: string;
+    flag: string;
+  };
+
+  const [openLocation, setOpenLocation] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationResults, setLocationResults] = useState<LocationOption[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // cache cities per country (performance)
+  const cityCacheRef = useRef<Map<string, string[]>>(new Map());
+
+  const allCountries: CountryMeta[] = useMemo(() => {
+    const entries = Object.entries(countriesList) as Array<
+      [string, { name: string; phone: string | string[] }]
+    >;
+
+    return entries
+      .map(([iso2, c]) => {
+        const phone = Array.isArray(c.phone) ? c.phone[0] : c.phone;
+        const callingCode = phone ? `+${phone}` : "";
+        const flag = `https://flagcdn.com/${iso2.toLowerCase()}.svg`;
+        return { iso2, name: c.name, callingCode, flag };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+
+  // on-demand search
+  useEffect(() => {
+    let cancelled = false;
+
+    const q = locationQuery.trim().toLowerCase();
+    if (q.length < 2) {
+      setLocationResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+
+    const t = setTimeout(() => {
+      if (cancelled) return;
+
+      const results: LocationOption[] = [];
+      const LIMIT = 200;
+
+      for (const country of allCountries) {
+        if (results.length >= LIMIT) break;
+
+        let cities = cityCacheRef.current.get(country.iso2);
+        if (!cities) {
+          const raw = City.getCitiesOfCountry(country.iso2) ?? [];
+          cities = Array.from(new Set(raw.map((c) => c.name))).sort((a, b) =>
+            a.localeCompare(b),
+          );
+          cityCacheRef.current.set(country.iso2, cities);
+        }
+
+        // country match → show some cities
+        if (country.name.toLowerCase().includes(q)) {
+          for (const city of cities.slice(0, 20)) {
+            if (results.length >= LIMIT) break;
+            results.push({
+              key: `${city}-${country.iso2}`,
+              label: `${city}, ${country.name}`,
+              countryIso2: country.iso2,
+              callingCode: country.callingCode,
+              flag: country.flag,
+            });
+          }
+        }
+
+        // city match
+        const matched = cities
+          .filter((c) => c.toLowerCase().includes(q))
+          .slice(0, 20);
+        for (const city of matched) {
+          if (results.length >= LIMIT) break;
+          results.push({
+            key: `${city}-${country.iso2}`,
+            label: `${city}, ${country.name}`,
+            countryIso2: country.iso2,
+            callingCode: country.callingCode,
+            flag: country.flag,
+          });
+        }
+      }
+
+      const uniq = Array.from(new Map(results.map((r) => [r.key, r])).values());
+
+      if (!cancelled) {
+        setLocationResults(uniq);
+        setIsSearching(false);
+      }
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [locationQuery, allCountries]);
+
+  const handleSelectLocation = (opt: LocationOption) => {
+    setEventLocation(opt.label); // ✅ saves FULL "City, Country"
+    setIsLocationOpen(false); // (optional: you had this state)
+    setOpenLocation(false);
+  };
 
   // Click outside handler
   useEffect(() => {
@@ -136,7 +271,7 @@ export default function CreateEventPage() {
 
     try {
       const existing = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "{}"
+        localStorage.getItem(STORAGE_KEY) || "{}",
       ) as any;
 
       const updated = {
@@ -253,14 +388,14 @@ export default function CreateEventPage() {
                     alt="notification"
                     className="h-4 w-4"
                   /> */}
-                  {/* Counter badge */}
-                  {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+              {/* Counter badge */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
                     {notifications.length}
                   </span>
                 </button> */}
 
-                {/* Notification popup */}
-                {/* {showNotifications && (
+              {/* Notification popup */}
+              {/* {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 rounded-xl z-50 p-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-white mb-2">
                       Notifications
@@ -386,8 +521,8 @@ export default function CreateEventPage() {
                     background: step.isdone
                       ? "#d19537"
                       : step.active
-                      ? "#000000"
-                      : "#D1D1D1",
+                        ? "#000000"
+                        : "#D1D1D1",
                     color: "#FFFFFF",
                   }}
                 >
@@ -598,12 +733,13 @@ export default function CreateEventPage() {
                     Event Location <span className="text-[#D6111A]">*</span>
                   </label>
 
-                  <select
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
-                    className="
+                  <Popover open={openLocation} onOpenChange={setOpenLocation}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="
         w-full 
-        sm:w-[510px] 
+        sm:w-[510px]
         h-12 
         px-4 
         rounded-lg 
@@ -613,65 +749,58 @@ export default function CreateEventPage() {
         bg-[#FAFAFB] 
         dark:bg-[#101010] 
         border-[#E5E5E5]
+        flex items-center justify-between
       "
-                  >
-                    <option value="">Please select one</option>
+                      >
+                        <span
+                          className={
+                            eventLocation
+                              ? "text-black dark:text-white"
+                              : "text-gray-400"
+                          }
+                        >
+                          {eventLocation
+                            ? eventLocation
+                            : "Search city or country..."}
+                        </span>
+                        <ChevronDown size={16} className="opacity-70" />
+                      </button>
+                    </PopoverTrigger>
 
-                    {/* US STATES LIST */}
-                    <option value="Alabama">Alabama</option>
-                    <option value="Alaska">Alaska</option>
-                    <option value="Arizona">Arizona</option>
-                    <option value="Arkansas">Arkansas</option>
-                    <option value="California">California</option>
-                    <option value="Colorado">Colorado</option>
-                    <option value="Connecticut">Connecticut</option>
-                    <option value="Delaware">Delaware</option>
-                    <option value="District of Columbia">
-                      District of Columbia
-                    </option>
-                    <option value="Florida">Florida</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Hawaii">Hawaii</option>
-                    <option value="Idaho">Idaho</option>
-                    <option value="Illinois">Illinois</option>
-                    <option value="Indiana">Indiana</option>
-                    <option value="Iowa">Iowa</option>
-                    <option value="Kansas">Kansas</option>
-                    <option value="Kentucky">Kentucky</option>
-                    <option value="Louisiana">Louisiana</option>
-                    <option value="Maine">Maine</option>
-                    <option value="Maryland">Maryland</option>
-                    <option value="Massachusetts">Massachusetts</option>
-                    <option value="Michigan">Michigan</option>
-                    <option value="Minnesota">Minnesota</option>
-                    <option value="Mississippi">Mississippi</option>
-                    <option value="Missouri">Missouri</option>
-                    <option value="Montana">Montana</option>
-                    <option value="Nebraska">Nebraska</option>
-                    <option value="Nevada">Nevada</option>
-                    <option value="New Hampshire">New Hampshire</option>
-                    <option value="New Jersey">New Jersey</option>
-                    <option value="New Mexico">New Mexico</option>
-                    <option value="New York">New York</option>
-                    <option value="North Carolina">North Carolina</option>
-                    <option value="North Dakota">North Dakota</option>
-                    <option value="Ohio">Ohio</option>
-                    <option value="Oklahoma">Oklahoma</option>
-                    <option value="Oregon">Oregon</option>
-                    <option value="Pennsylvania">Pennsylvania</option>
-                    <option value="Rhode Island">Rhode Island</option>
-                    <option value="South Carolina">South Carolina</option>
-                    <option value="South Dakota">South Dakota</option>
-                    <option value="Tennessee">Tennessee</option>
-                    <option value="Texas">Texas</option>
-                    <option value="Utah">Utah</option>
-                    <option value="Vermont">Vermont</option>
-                    <option value="Virginia">Virginia</option>
-                    <option value="Washington">Washington</option>
-                    <option value="West Virginia">West Virginia</option>
-                    <option value="Wisconsin">Wisconsin</option>
-                    <option value="Wyoming">Wyoming</option>
-                  </select>
+                    <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                      <Command>
+                        <CommandInput
+                          placeholder="Type: lahore / pakistan / london..."
+                          value={locationQuery}
+                          onValueChange={setLocationQuery}
+                        />
+
+                        <CommandEmpty>
+                          {isSearching
+                            ? "Searching..."
+                            : "No results found (type 2+ letters)."}
+                        </CommandEmpty>
+
+                        <CommandGroup className="max-h-64 overflow-y-auto">
+                          {locationResults.map((opt) => (
+                            <CommandItem
+                              key={opt.key}
+                              value={opt.label}
+                              onSelect={() => handleSelectLocation(opt)}
+                              className="flex items-center gap-2"
+                            >
+                              <img
+                                src={opt.flag}
+                                alt="flag"
+                                className="h-4 w-6 object-cover rounded-sm"
+                              />
+                              <span>{opt.label}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 

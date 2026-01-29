@@ -69,7 +69,7 @@ export default function TicketingDetailsPage({
         const res = await apiClient.get(`/tenants/my/features`);
 
         setAllowTransfers(
-          Boolean(res.data?.data?.features?.allowTransfers?.enabled)
+          Boolean(res.data?.data?.features?.allowTransfers?.enabled),
         );
       } catch (err) {
         console.error("Failed to load tenant features", err);
@@ -86,12 +86,12 @@ export default function TicketingDetailsPage({
 
   const saveTicketsToLocalStorage = (
     updatedTickets: Ticket[],
-    type?: string
+    type?: string,
   ) => {
     if (typeof window === "undefined") return;
     try {
       const existing = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "{}"
+        localStorage.getItem(STORAGE_KEY) || "{}",
       ) as any;
 
       const updated: any = {
@@ -297,7 +297,12 @@ export default function TicketingDetailsPage({
               onChange={(e) =>
                 setCurrentTicket({ ...currentTicket, type: e.target.value })
               }
-              className="w-full h-12 px-4 rounded-lg border mb-6"
+              className="
+    w-full h-12 px-4 rounded-lg border mb-6 outline-none
+    bg-white text-black border-gray-200
+    focus:ring-2 focus:ring-[#D19537] focus:border-transparent
+    dark:bg-[#101010] dark:text-white dark:border-gray-700
+  "
             >
               <option value="">Select Ticket Type</option>
               <option value="general">General</option>
@@ -389,7 +394,7 @@ export default function TicketingDetailsPage({
                     <button
                       onClick={() => {
                         const updatedTickets = tickets.filter(
-                          (t) => t.id !== ticket.id
+                          (t) => t.id !== ticket.id,
                         );
                         setTickets(updatedTickets);
                         saveTicketsToLocalStorage(updatedTickets, eventType);
