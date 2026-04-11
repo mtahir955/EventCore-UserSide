@@ -132,28 +132,28 @@ export default function AboutPage() {
       </section>
 
       {/* Testimonial Section */}
-      <section className="bg-gray-50 dark:bg-[#1A1A1A] py-12 sm:py-16 md:py-20 transition-colors duration-300">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-10 md:px-16 text-center">
+      {/* <section className="bg-gray-50 dark:bg-[#1A1A1A] py-12 sm:py-16 md:py-20 transition-colors duration-300">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-10 md:px-16 text-center"> */}
           {/* Stars */}
-          <div className="flex justify-center gap-2 mb-6">
+          {/* <div className="flex justify-center gap-2 mb-6">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
                 className="w-5 h-5 sm:w-6 sm:h-6 fill-[#FFD700] text-[#FFD700]"
               />
             ))}
-          </div>
+          </div> */}
 
           {/* Quote */}
-          <blockquote className="text-lg sm:text-xl md:text-2xl text-gray-900 dark:text-gray-100 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-2">
+          {/* <blockquote className="text-lg sm:text-xl md:text-2xl text-gray-900 dark:text-gray-100 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-2">
             &quot;
             {testimonial?.quote ||
               "Good Life Training made our conference seamless and stress-free!"}
             &quot;
-          </blockquote>
+          </blockquote> */}
 
           {/* Author Row */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
+          {/* <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
             <div className="flex items-center gap-4">
               <Image
                 src={
@@ -190,7 +190,7 @@ export default function AboutPage() {
             />
           </div>
         </div>
-      </section>
+      </section> */}
 
       <Footer />
     </div>

@@ -153,16 +153,16 @@ export function EventRevenueModal({
 
               {/* Breakdown */}
               <div className="rounded-xl border p-4 space-y-4">
-                <div className="flex justify-between">
+                {/*<div className="flex justify-between">
                   <span className="text-muted-foreground">
                     EventCore ({summary.platformFeePercent}%)
                   </span>
                   <span className="font-bold text-blue-600">
                     ${summary.platformShare.toFixed(2)}
                   </span>
-                </div>
+                </div>*/}
 
-                <div className="h-px bg-border" />
+                {/* <div className="h-px bg-border" /> */}
 
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">

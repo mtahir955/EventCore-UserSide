@@ -1058,6 +1058,9 @@ export default function OrderSummary() {
               </button>
             </div>
           </div>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            You may purchase up to {MAX_TICKETS_PER_ORDER} tickets per order.
+          </p>
         </div>
 
         {/* ─────────────────────────────────────────

@@ -141,7 +141,7 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
 
               {/* Breakdown */}
               <div className="rounded-xl border p-4 space-y-4">
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="text-muted-foreground">
                     Platform ({summary.platformPercent}%)
                   </span>
@@ -150,7 +150,7 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
                   </span>
                 </div>
 
-                <div className="h-px bg-border" />
+                <div className="h-px bg-border" /> */}
 
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">

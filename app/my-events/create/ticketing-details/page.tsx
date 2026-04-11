@@ -29,7 +29,7 @@ export default function TicketingDetailsPage({
     name: "",
     price: "",
     type: "",
-    transferable: false,
+    transferable: true,
   });
   const [error, setError] = useState("");
 
@@ -147,7 +147,7 @@ export default function TicketingDetailsPage({
       name: "",
       price: "",
       type: "",
-      transferable: false,
+      transferable: true,
     });
 
     setError("");

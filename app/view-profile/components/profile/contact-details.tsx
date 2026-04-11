@@ -1,7 +1,10 @@
 import Image from "next/image";
+import { formatUsPhoneNumber } from "@/lib/phoneFormat";
 
 export default function ContactDetails({ data }: any) {
   if (!data) return null;
+
+  const formattedPhone = formatUsPhoneNumber(data.phone);
 
   return (
     <div className="space-y-6 text-gray-900 dark:text-gray-100">
@@ -15,7 +18,7 @@ export default function ContactDetails({ data }: any) {
               height={20}
               alt="Flag"
             />
-            <span className="text-sm font-medium">{data.phone}</span>
+            <span className="text-sm font-medium">{formattedPhone}</span>
           </div>
         </div>
 

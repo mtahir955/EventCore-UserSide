@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import Image from "next/image";
 import Autocomplete from "react-google-autocomplete";
+import { formatUsPhoneNumber } from "@/lib/phoneFormat";
 
 interface ContactDetailsData {
   phone?: string;
@@ -44,7 +45,7 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
     useEffect(() => {
       if (existing) {
         setForm({
-          phone: existing.phone || "",
+          phone: formatUsPhoneNumber(existing.phone),
           city: existing.city || "",
           pincode: existing.pincode || "",
           address: existing.address || "",
@@ -138,11 +139,16 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
               </div>
 
               <input
-                placeholder="125-559-8852"
+                placeholder="(125) 559-8852"
                 value={form.phone}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, phone: e.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    phone: formatUsPhoneNumber(e.target.value),
+                  }))
                 }
+                inputMode="numeric"
+                maxLength={14}
                 className="h-10 w-full bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-sm"
                 aria-label="Phone number"
               />

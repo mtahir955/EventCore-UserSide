@@ -61,6 +61,16 @@ export default function CreateEventPage() {
 
   const { resolvedTheme, theme, setTheme } = useTheme();
 
+  const todayDateValue = useMemo(() => {
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    return today.toISOString().slice(0, 10);
+  }, []);
+
+  const isPastDate = (date: string) => date !== "" && date < todayDateValue;
+  const isStartDatePast = isPastDate(startDate);
+  const isEndDatePast = isPastDate(endDate);
+
   // Dropdowns
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -289,7 +299,6 @@ export default function CreateEventPage() {
     // validation
     if (
       !eventTitle ||
-      !eventDescription ||
       !eventCategory || // ⬅ ADDED
       !startDate ||
       !endDate ||
@@ -298,6 +307,10 @@ export default function CreateEventPage() {
       !eventLocation
     ) {
       setError("Please fill all required fields before continuing.");
+      return;
+    }
+    if (isStartDatePast || isEndDatePast) {
+      setError("Event date cannot be yesterday or any previous date.");
       return;
     }
     setError("");
@@ -582,7 +595,7 @@ export default function CreateEventPage() {
                   <div>
                     <label className="block text-[14px] font-medium mb-2">
                       Event Description{" "}
-                      <span className="text-[#D6111A]">*</span>
+                      {/* <span className="text-[#D6111A]">*</span> */}
                     </label>
                     <textarea
                       placeholder="Describe here..."
@@ -675,8 +688,18 @@ export default function CreateEventPage() {
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
+                        aria-invalid={isStartDatePast}
+                        className={`w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] ${
+                          isStartDatePast
+                            ? "border-[#D6111A] text-[#D6111A]"
+                            : "border-[#E5E5E5]"
+                        }`}
                       />
+                      {isStartDatePast && (
+                        <p className="mt-2 text-[12px] font-medium text-[#D6111A]">
+                          Start date cannot be in the past.
+                        </p>
+                      )}
                     </div>
 
                     {/* End Date */}
@@ -689,8 +712,18 @@ export default function CreateEventPage() {
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         min={startDate} // optional: prevent selecting date earlier than start
-                        className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
+                        aria-invalid={isEndDatePast}
+                        className={`w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] ${
+                          isEndDatePast
+                            ? "border-[#D6111A] text-[#D6111A]"
+                            : "border-[#E5E5E5]"
+                        }`}
                       />
+                      {isEndDatePast && (
+                        <p className="mt-2 text-[12px] font-medium text-[#D6111A]">
+                          End date cannot be in the past.
+                        </p>
+                      )}
                     </div>
 
                     {/* Start Time */}
@@ -770,7 +803,7 @@ export default function CreateEventPage() {
                     <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
                       <Command>
                         <CommandInput
-                          placeholder="Type: lahore / pakistan / london..."
+                          placeholder="Type: City / Country..."
                           value={locationQuery}
                           onValueChange={setLocationQuery}
                         />

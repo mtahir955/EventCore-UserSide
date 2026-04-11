@@ -200,11 +200,11 @@ export function Header() {
   return (
     <>
       {/* Top Banner */}
-      <div className="w-full bg-[#0077F7] py-2 text-center">
+      {/* <div className="w-full bg-[#0077F7] py-2 text-center">
         <p className="sm:text-sm text-[12px] text-white font-light">
           Signup today to get amazing discounts and exclusive perks!
         </p>
-      </div>
+      </div> */}
 
       <header className="w-full bg-white border-b border-gray-200 dark:bg-[#101010] dark:border-[#333] dark:text-gray-100 transition-colors duration-300">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between py-3 px-2 sm:px-6 md:px-8">
@@ -242,7 +242,7 @@ export function Header() {
                 className={`font-light transition-colors ${
                   pathname === item.href
                     ? "text-[#0077F7]"
-                    : "text-black dark:text-gray-200 hover:text-[#0077F7]"
+                    : "text-black dark:text-white dark:hover:text-[#0077F7] hover:text-[#0077F7]"
                 }`}
               >
                 {item.label}

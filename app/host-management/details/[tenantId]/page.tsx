@@ -54,9 +54,9 @@ export default function TenantDetailsPage() {
 
       <main className="flex-1 overflow-auto lg:ml-[250px] dark:bg-[#101010]">
         {/* Desktop Header */}
-        <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
+         <header className="hidden lg:flex bg-background border-b border-border px-8 py-6 items-center justify-between sticky top-0 z-30">
           <h1 className="text-3xl font-semibold text-foreground">
-            Tenant Events
+            Tenant Host
           </h1>
 
           <div className="flex items-center gap-4">
@@ -69,43 +69,60 @@ export default function TenantDetailsPage() {
 
             {/* Profile */}
             <div className="relative flex items-center gap-2" ref={profileRef}>
+              {/* Admin Name */}
               <span className="hidden sm:block font-semibold text-black dark:text-white">
                 {adminName}
               </span>
 
-              <button
-                onClick={() => setShowProfileDropdown((prev) => !prev)}
-                className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
-              >
-                <img
-                  src="/images/icons/profile-user.png"
-                  alt="profile"
-                  className="h-4 w-4"
-                />
-              </button>
+              {/* Profile Icon */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="bg-black border h-9 w-9 flex justify-center items-center rounded-full hover:opacity-90"
+                >
+                  <img
+                    src="/images/icons/profile-user.png"
+                    alt="profile"
+                    className="h-4 w-4"
+                  />
+                </button>
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
-                  <Link href="/tenant-form">
-                    <button className="dropdown-btn">Create Tenant</button>
-                  </Link>
-                  <Link href="/host-management">
-                    <button className="dropdown-btn">Tenant Host</button>
-                  </Link>
-                  <Link href="/tenant-management">
-                    <button className="dropdown-btn">Tenant Management</button>
-                  </Link>
-                  <Link href="/system-settings">
-                    <button className="dropdown-btn">System Settings</button>
-                  </Link>
-                  <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="dropdown-btn"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+                {/* Dropdown */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
+                    <Link href="/tenant-form">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Create Tenant
+                      </button>
+                    </Link>
+
+                    <Link href="/host-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Host
+                      </button>
+                    </Link>
+
+                    <Link href="/tenant-management">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        Tenant Management
+                      </button>
+                    </Link>
+
+                    <Link href="/system-settings">
+                      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg">
+                        System Settings
+                      </button>
+                    </Link>
+
+                    <button
+                      onClick={() => setShowLogoutModal(true)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-lg"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
