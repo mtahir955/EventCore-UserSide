@@ -13,6 +13,25 @@ import PaymentDetails from "./components/profile/payment-details";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
 
+function mergeProfileData(serverData: any, savedData: any) {
+  return {
+    ...(savedData || {}),
+    ...(serverData || {}),
+    basicInfo: {
+      ...(savedData?.basicInfo || {}),
+      ...(serverData?.basicInfo || {}),
+    },
+    contactDetails: {
+      ...(savedData?.contactDetails || {}),
+      ...(serverData?.contactDetails || {}),
+    },
+    paymentDetails: {
+      ...(savedData?.paymentDetails || {}),
+      ...(serverData?.paymentDetails || {}),
+    },
+  };
+}
+
 export default function Page() {
   const [profile, setProfile] = useState<any>(null);
 
@@ -51,8 +70,20 @@ export default function Page() {
   useEffect(() => {
     const load = async () => {
       try {
+        let savedData = null;
+        const savedProfile = localStorage.getItem("buyerProfile");
+        if (savedProfile) {
+          savedData = JSON.parse(savedProfile);
+          setProfile(savedData);
+        }
+
         const res = await apiClient.get("/users/buyer/profile");
-        setProfile(res.data.data);
+        const mergedProfile = savedData
+          ? mergeProfileData(res.data.data, savedData)
+          : res.data.data;
+
+        setProfile(mergedProfile);
+        localStorage.setItem("buyerProfile", JSON.stringify(mergedProfile));
       } catch (err) {
         console.log("Profile fetch error:", err);
       }

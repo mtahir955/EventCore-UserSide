@@ -18,6 +18,32 @@ import { syncThemeWithBackend } from "@/utils/themeManager";
 // import { API_BASE_URL } from "@/config/apiConfig";
 import HostDashboardHelpModal from "../help/HostDashboardHelpModal";
 import { apiClient } from "@/lib/apiClient";
+import {
+  DEFAULT_TIMEFRAME_PRESET,
+  TIMEFRAME_OPTIONS,
+  createTimeframe,
+  formatCurrency,
+  getTimeframeLabel,
+  getTimeframeParams,
+  normalizeTicketTypeBreakdowns,
+  updateCustomTimeframe,
+  type DashboardTimeframe,
+  type TimeframePreset,
+  type TicketTypeBreakdown,
+} from "@/lib/hostDashboardAnalytics";
+
+type OverviewState = {
+  totalEvents: number;
+  upcomingEvents: number;
+  ticketsSold: number;
+  revenue: number;
+  soldPercentage: number;
+  transferredPercentage: number;
+  salesTrend: Array<{ date: string; value: number }>;
+  ticketTypeBreakdown: TicketTypeBreakdown[];
+  revenueTypeBreakdown: TicketTypeBreakdown[];
+  currency: string;
+};
 
 export default function Page() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -27,7 +53,11 @@ export default function Page() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
 
-  const [overview, setOverview] = useState({
+  const [timeframe, setTimeframe] = useState<DashboardTimeframe>(() =>
+    createTimeframe(DEFAULT_TIMEFRAME_PRESET)
+  );
+
+  const [overview, setOverview] = useState<OverviewState>({
     totalEvents: 0,
     upcomingEvents: 0,
     ticketsSold: 0,
@@ -35,6 +65,9 @@ export default function Page() {
     soldPercentage: 0,
     transferredPercentage: 0,
     salesTrend: [],
+    ticketTypeBreakdown: [],
+    revenueTypeBreakdown: [],
+    currency: "USD",
   });
 
   const [loadingOverview, setLoadingOverview] = useState(true);
@@ -203,9 +236,15 @@ export default function Page() {
 
   const fetchDashboardOverview = async () => {
     try {
-      const res = await apiClient.get("/admin/events/dashboard/overview");
+      setLoadingOverview(true);
+      const res = await apiClient.get("/admin/events/dashboard/overview", {
+        params: getTimeframeParams(timeframe),
+      });
 
       const data = res.data?.data || {};
+      const breakdowns = normalizeTicketTypeBreakdowns(data);
+      const currency =
+        data.currency ?? data.stats?.totalRevenue?.currency ?? "USD";
 
       setOverview({
         totalEvents: data.stats?.totalEvents?.count ?? 0,
@@ -222,6 +261,9 @@ export default function Page() {
             date: item.label,
             value: item.value,
           })) ?? [],
+        ticketTypeBreakdown: breakdowns.ticketBreakdown,
+        revenueTypeBreakdown: breakdowns.revenueBreakdown,
+        currency,
       });
     } catch (err) {
       console.error("❌ Failed to load dashboard overview", err);
@@ -232,7 +274,7 @@ export default function Page() {
 
   useEffect(() => {
     fetchDashboardOverview();
-  }, []);
+  }, [timeframe.preset, timeframe.startDate, timeframe.endDate]);
 
   return (
     <main className="min-h-screen w-full bg-[var(--bg-base)] relative overflow-x-hidden">
@@ -440,8 +482,66 @@ export default function Page() {
           </div>
         </header>
 
+        {/* Timeframe Filter */}
+        <div className="px-4 md:px-8 sm:mt-20 md:mt-0 mt-20">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-[#1a1a1a]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Dashboard range</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                  Showing analytics for {getTimeframeLabel(timeframe)}.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <select
+                  value={timeframe.preset}
+                  onChange={(event) =>
+                    setTimeframe(
+                      createTimeframe(event.target.value as TimeframePreset)
+                    )
+                  }
+                  className="h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm outline-none dark:border-gray-700 dark:bg-[#101010]"
+                >
+                  {TIMEFRAME_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="date"
+                  value={timeframe.startDate}
+                  onChange={(event) =>
+                    setTimeframe((current) =>
+                      updateCustomTimeframe(current, {
+                        startDate: event.target.value,
+                      })
+                    )
+                  }
+                  className="h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm outline-none dark:border-gray-700 dark:bg-[#101010]"
+                />
+
+                <input
+                  type="date"
+                  value={timeframe.endDate}
+                  onChange={(event) =>
+                    setTimeframe((current) =>
+                      updateCustomTimeframe(current, {
+                        endDate: event.target.value,
+                      })
+                    )
+                  }
+                  className="h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm outline-none dark:border-gray-700 dark:bg-[#101010]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 sm:mt-20 md:mt-0 mt-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-8 mt-6">
           <StatCard
             icon="/images/icons/1.png"
             label="Total Events"
@@ -462,7 +562,9 @@ export default function Page() {
             icon="/images/icons/2.png"
             label="Revenue"
             value={
-              loadingOverview ? "--" : `$${overview.revenue.toLocaleString()}`
+              loadingOverview
+                ? "--"
+                : formatCurrency(overview.revenue, overview.currency)
             }
             accent="peach"
           />
@@ -478,12 +580,18 @@ export default function Page() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 mt-8 mb-4">
           <div className="lg:col-span-7">
-            <LineChartCard data={overview.salesTrend} />
+            <LineChartCard
+              data={overview.salesTrend}
+              subtitle={getTimeframeLabel(timeframe)}
+            />
           </div>
           <div className="lg:col-span-5">
             <DonutChartCard
               soldPercentage={overview.soldPercentage}
               transferredPercentage={overview.transferredPercentage}
+              ticketTypeBreakdown={overview.ticketTypeBreakdown}
+              revenueTypeBreakdown={overview.revenueTypeBreakdown}
+              currency={overview.currency}
             />
           </div>
         </div>

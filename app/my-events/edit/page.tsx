@@ -703,6 +703,17 @@ export default function EditEventPage() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-start sm:justify-end">
+              {eventId && (
+                <Link
+                  href={`/my-events/${eventId}/tickets?title=${encodeURIComponent(
+                    eventTitle || "Event",
+                  )}`}
+                >
+                  <button className="flex-shrink-0 px-4 sm:px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-[#D19537] whitespace-nowrap">
+                    View Tickets
+                  </button>
+                </Link>
+              )}
               <button
                 onClick={() => setIsStaffModalOpen(true)}
                 className="flex-shrink-0 px-4 sm:px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-black whitespace-nowrap"
@@ -889,11 +900,12 @@ export default function EditEventPage() {
           {/* Attendees Table */}
           <div className="rounded-xl overflow-hidden border border-[#F5EDE5]">
             {/* Table Header */}
-            <div className="flex sm:grid sm:grid-cols-4 px-6 py-4 text-sm font-semibold bg-[#F5EDE5] text-black">
+            <div className="flex sm:grid sm:grid-cols-5 px-6 py-4 text-sm font-semibold bg-[#F5EDE5] text-black">
               <div className="flex-1">Name</div>
               <div className="flex-1">Email</div>
               <div className="flex-1">Ticket ID</div>
               <div className="flex-1 text-right sm:text-left">Quantity</div>
+              <div className="flex-1 text-right sm:text-left">Actions</div>
             </div>
 
             {/* Mobile Table Title */}
@@ -914,7 +926,7 @@ export default function EditEventPage() {
               customers.map((attendee) => (
                 <div
                   key={attendee.id}
-                  className="grid grid-cols-4 px-4 sm:px-6 py-4 text-sm border-t border-[#F5EDE5] bg-white dark:bg-[#101010]"
+                  className="grid grid-cols-5 px-4 sm:px-6 py-4 text-sm border-t border-[#F5EDE5] bg-white dark:bg-[#101010]"
                 >
                   {/* Name */}
                   <div className="font-medium">{attendee.name}</div>
@@ -932,6 +944,20 @@ export default function EditEventPage() {
                   {/* Quantity */}
                   <div className="text-gray-700 dark:text-white">
                     {attendee.quantity}
+                  </div>
+
+                  <div>
+                    {eventId && (
+                      <Link
+                        href={`/my-events/${eventId}/tickets?title=${encodeURIComponent(
+                          eventTitle || "Event",
+                        )}`}
+                      >
+                        <button className="rounded-lg bg-[#D19537] px-3 py-1.5 text-xs font-semibold text-white">
+                          Manage
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))

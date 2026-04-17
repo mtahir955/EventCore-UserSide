@@ -173,20 +173,12 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
 
       const idToken = result.authorization.id_token;
 
-      const response = await fetch(`${API_BASE_URL}/auth/social/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Tenant-ID": HOST_Tenant_ID,
-        },
-        body: JSON.stringify({
-          provider: "apple",
-          idToken,
-        }),
+      const response = await apiClient.post("/auth/social/login", {
+        provider: "apple",
+        idToken,
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      const data = response.data;
 
       localStorage.setItem("buyerToken", data.data.access_token);
       localStorage.setItem("userData", JSON.stringify(data.data.user));
@@ -333,7 +325,7 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
         {/* Email */}
         <div>
           <label className="block text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
-            Email/Username
+            Email
           </label>
           <input
             type="email"

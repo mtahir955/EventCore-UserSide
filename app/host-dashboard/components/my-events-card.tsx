@@ -58,6 +58,13 @@ export function MyEventsCard({
       : (window.location.href = `/completed-events/edit?id=${id}`);
   };
 
+  const handleViewTickets = () => {
+    if (!id) return;
+    window.location.href = `/my-events/${id}/tickets?title=${encodeURIComponent(
+      title
+    )}`;
+  };
+
   const handleDelete = () => setShowDeleteConfirmation(true);
 
   const eventForModal = {
@@ -119,6 +126,15 @@ export function MyEventsCard({
               <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border z-50 overflow-hidden">
                 <button
                   onClick={() => {
+                    handleViewTickets();
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                >
+                  View Tickets
+                </button>
+                <button
+                  onClick={() => {
                     setShowRevenueModal(true);
                     setShowMenu(false);
                   }}
@@ -163,6 +179,13 @@ export function MyEventsCard({
               {time}
             </span>
           </div>
+
+          <button
+            onClick={handleViewTickets}
+            className="mt-4 rounded-lg bg-[#D19537] px-4 py-2 text-[12px] font-semibold text-white"
+          >
+            View Tickets
+          </button>
         </div>
       </div>
 

@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { Sidebar } from "../components/sidebar";
-import { X, LogOut, Moon, Sun } from "lucide-react";
+import { MoreVertical, X, LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
@@ -11,8 +18,82 @@ import toast from "react-hot-toast";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import {
+  DEFAULT_TICKET_EXPORT_COLUMN_KEYS,
+  TICKET_EXPORT_COLUMNS,
+  downloadCsvExport,
+} from "@/lib/hostDashboardAnalytics";
 
-export default function TicketManager() {
+type TicketManagerProps = {
+  eventId?: string;
+  eventTitle?: string;
+  eventScoped?: boolean;
+};
+
+type TenantTicketAction =
+  | "Check In"
+  | "Transfer"
+  | "Cancel / Refund"
+  | "Change Ticket Type"
+  | "Update Rank"
+  | "Assign Agent ID"
+  | "View Ticket"
+  | "View Receipt"
+  | "View History"
+  | "Add Note"
+  | "Reclaim Ticket"
+  | "Force Claim";
+
+type EventTicketCustomer = {
+  id: string;
+  customerId: string;
+  name: string;
+  email: string;
+  ticketId: string;
+  ticketName: string;
+  ticketType: string;
+  quantity: number;
+  status: string;
+  rank: string;
+  agentId: string;
+  registeredAt: string;
+  receiptId: string;
+};
+
+type EventTicketLocalState = {
+  status?: string;
+  checkedIn?: boolean;
+  ticketType?: string;
+  rank?: string;
+  agentId?: string;
+  notes?: string[];
+  history?: string[];
+};
+
+const tenantTicketActions: TenantTicketAction[] = [
+  "Check In",
+  "Transfer",
+  "Cancel / Refund",
+  "Change Ticket Type",
+  "Update Rank",
+  "Assign Agent ID",
+  "View Ticket",
+  "View Receipt",
+  "View History",
+  "Add Note",
+  "Reclaim Ticket",
+  "Force Claim",
+];
+
+const getTicketEventId = (ticket: any) =>
+  String(ticket?.eventId ?? ticket?.event?.id ?? ticket?.event?._id ?? "");
+
+export default function TicketManager({
+  eventId,
+  eventTitle,
+  eventScoped = false,
+}: TicketManagerProps = {}) {
+  const isEventScoped = Boolean(eventScoped && eventId);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -39,6 +120,30 @@ export default function TicketManager() {
   const [transferable, setTransferable] = useState(false);
 
   const [tickets, setTickets] = useState<any[]>([]);
+  const [eventTicketRows, setEventTicketRows] = useState<EventTicketCustomer[]>(
+    []
+  );
+  const [eventTicketsLoading, setEventTicketsLoading] = useState(false);
+  const [eventTicketSearch, setEventTicketSearch] = useState("");
+  const [eventTicketStatus, setEventTicketStatus] = useState("All");
+  const [eventCustomersPage, setEventCustomersPage] = useState(1);
+  const [eventCustomersTotalPages, setEventCustomersTotalPages] = useState(1);
+  const [selectedEventTicket, setSelectedEventTicket] =
+    useState<EventTicketCustomer | null>(null);
+  const [activeTenantAction, setActiveTenantAction] =
+    useState<TenantTicketAction | null>(null);
+  const [tenantActionFields, setTenantActionFields] = useState({
+    transferEmail: "",
+    ticketType: "",
+    rank: "",
+    agentId: "",
+    note: "",
+  });
+  const [eventTicketLocalState, setEventTicketLocalState] = useState<
+    Record<string, EventTicketLocalState>
+  >({});
+  const [eventTicketStateHydrated, setEventTicketStateHydrated] =
+    useState(false);
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -46,6 +151,8 @@ export default function TicketManager() {
 
   // ✅ NEW: allowTransfers feature flag
   const [allowTransfers, setAllowTransfers] = useState<boolean>(false);
+  const [allowForceClaim, setAllowForceClaim] = useState<boolean>(false);
+  const [allowReclaimTicket, setAllowReclaimTicket] = useState<boolean>(true);
 
   // ✅ NEW: fetch tenant features (allowTransfers)
   // useEffect(() => {
@@ -77,12 +184,21 @@ export default function TicketManager() {
     const fetchFeatures = async () => {
       try {
         const res = await apiClient.get(`/tenants/my/features`);
-        setAllowTransfers(
-          Boolean(res.data?.data?.features?.allowTransfers?.enabled)
+        const features = res.data?.data?.features ?? {};
+        setAllowTransfers(Boolean(features?.allowTransfers?.enabled));
+        setAllowForceClaim(
+          Boolean(
+            features?.forceClaim?.enabled ||
+              features?.forceClaimTickets?.enabled ||
+              features?.allowForceClaim?.enabled
+          )
         );
+        setAllowReclaimTicket(features?.reclaimTickets?.enabled !== false);
       } catch (err) {
         console.error("Failed to fetch tenant features:", err);
         setAllowTransfers(false);
+        setAllowForceClaim(false);
+        setAllowReclaimTicket(true);
       }
     };
 
@@ -311,16 +427,27 @@ export default function TicketManager() {
       //     "X-Tenant-ID": HOST_Tenant_ID,
       //   },
       // });
-      const response = await apiClient.get(`/tickets`);
+      const response = await apiClient.get(
+        isEventScoped ? `/tickets/event/${eventId}` : `/tickets`
+      );
 
       console.log("API Tickets:", response.data);
 
       // 🟢 Correct extraction of tickets array
       const apiTickets = Array.isArray(response.data?.data?.tickets)
         ? response.data.data.tickets
-        : [];
+        : Array.isArray(response.data?.tickets)
+          ? response.data.tickets
+          : [];
 
-      setTickets(apiTickets);
+      setTickets(
+        isEventScoped
+          ? apiTickets.filter((ticket: any) => {
+              const ticketEventId = getTicketEventId(ticket);
+              return !ticketEventId || ticketEventId === eventId;
+            })
+          : apiTickets
+      );
     } catch (error) {
       console.error("Ticket Fetch Error:", error);
       toast.error("Failed to load tickets!");
@@ -329,7 +456,255 @@ export default function TicketManager() {
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [eventId, isEventScoped]);
+
+  const eventProfileStorageKey = eventId
+    ? `tenant-event-ticket-state:${eventId}`
+    : "";
+
+  useEffect(() => {
+    if (!isEventScoped || !eventProfileStorageKey) return;
+
+    setEventTicketStateHydrated(false);
+    try {
+      const saved = localStorage.getItem(eventProfileStorageKey);
+      setEventTicketLocalState(saved ? JSON.parse(saved) : {});
+    } catch {
+      setEventTicketLocalState({});
+    } finally {
+      setEventTicketStateHydrated(true);
+    }
+  }, [eventProfileStorageKey, isEventScoped]);
+
+  useEffect(() => {
+    if (!isEventScoped || !eventProfileStorageKey || !eventTicketStateHydrated)
+      return;
+    localStorage.setItem(
+      eventProfileStorageKey,
+      JSON.stringify(eventTicketLocalState)
+    );
+  }, [
+    eventProfileStorageKey,
+    eventTicketLocalState,
+    eventTicketStateHydrated,
+    isEventScoped,
+  ]);
+
+  const fetchEventTicketRows = async () => {
+    if (!eventId) return;
+
+    try {
+      setEventTicketsLoading(true);
+      const res = await apiClient.get(`/events/${eventId}/customers`, {
+        params: { page: eventCustomersPage, limit: ticketsPerPage },
+      });
+
+      const customersRaw = res.data?.data?.customers ?? [];
+      const totalPages =
+        res.data?.data?.pagination?.totalPages ??
+        res.data?.pagination?.totalPages ??
+        1;
+
+      const normalizedCustomers = customersRaw.map((customer: any) => {
+        const ticketId = String(
+          customer.ticketId ??
+            customer.ticket?.id ??
+            customer.ticket?._id ??
+            customer.id ??
+            ""
+        );
+        const customerId = String(
+          customer.customerId ??
+            customer.userId ??
+            customer.user?.id ??
+            customer.id ??
+            ticketId
+        );
+        const rowId = `${customerId}-${ticketId || "ticket"}`;
+
+        return {
+          id: rowId,
+          customerId,
+          name:
+            customer.fullName ??
+            customer.name ??
+            customer.user?.fullName ??
+            "Unknown attendee",
+          email: customer.email ?? customer.user?.email ?? "N/A",
+          ticketId: ticketId || "N/A",
+          ticketName:
+            customer.ticketName ??
+            customer.ticket?.name ??
+            customer.ticketType ??
+            "Assigned ticket",
+          ticketType:
+            customer.ticketType ??
+            customer.ticket?.type ??
+            customer.type ??
+            "General",
+          quantity: Number(customer.quantity ?? 1),
+          status: customer.status ?? "Registered",
+          rank: customer.rank ?? customer.user?.rank ?? "",
+          agentId: customer.agentId ?? customer.user?.agentId ?? "",
+          registeredAt:
+            customer.registeredAt ??
+            customer.createdAt ??
+            customer.purchaseDate ??
+            "",
+          receiptId:
+            customer.receiptId ??
+            customer.orderId ??
+            customer.paymentId ??
+            customer.invoiceId ??
+            "N/A",
+        };
+      });
+
+      setEventTicketRows(normalizedCustomers);
+      setEventCustomersTotalPages(totalPages);
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to load event tickets"
+      );
+      setEventTicketRows([]);
+    } finally {
+      setEventTicketsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isEventScoped) return;
+    fetchEventTicketRows();
+  }, [eventId, eventCustomersPage, isEventScoped]);
+
+  const getDisplayTicket = (ticket: EventTicketCustomer) => {
+    const local = eventTicketLocalState[ticket.id] ?? {};
+    return {
+      ...ticket,
+      status: local.status ?? ticket.status,
+      checkedIn: local.checkedIn ?? false,
+      ticketType: local.ticketType ?? ticket.ticketType,
+      rank: local.rank ?? ticket.rank,
+      agentId: local.agentId ?? ticket.agentId,
+      notes: local.notes ?? [],
+      history: local.history ?? ["Registered"],
+    };
+  };
+
+  const filteredEventTicketRows = eventTicketRows
+    .map(getDisplayTicket)
+    .filter((ticket) => {
+      const query = eventTicketSearch.trim().toLowerCase();
+      const matchesQuery =
+        !query ||
+        ticket.name.toLowerCase().includes(query) ||
+        ticket.email.toLowerCase().includes(query) ||
+        ticket.ticketId.toLowerCase().includes(query);
+      const matchesStatus =
+        eventTicketStatus === "All" ||
+        ticket.status.toLowerCase() === eventTicketStatus.toLowerCase();
+
+      return matchesQuery && matchesStatus;
+    });
+
+  const openTenantAction = (
+    action: TenantTicketAction,
+    ticket: EventTicketCustomer
+  ) => {
+    const displayTicket = getDisplayTicket(ticket);
+    setSelectedEventTicket(ticket);
+    setActiveTenantAction(action);
+    setTenantActionFields({
+      transferEmail: "",
+      ticketType: displayTicket.ticketType,
+      rank: displayTicket.rank,
+      agentId: displayTicket.agentId,
+      note: "",
+    });
+  };
+
+  const closeTenantAction = () => {
+    setSelectedEventTicket(null);
+    setActiveTenantAction(null);
+  };
+
+  const appendTicketHistory = (
+    current: EventTicketLocalState,
+    message: string
+  ) => ({
+    ...current,
+    history: [...(current.history ?? ["Registered"]), message],
+  });
+
+  const applyTenantAction = () => {
+    if (!selectedEventTicket || !activeTenantAction) return;
+
+    const ticketKey = selectedEventTicket.id;
+    const timestamp = new Date().toLocaleString();
+
+    setEventTicketLocalState((current) => {
+      const existing = current[ticketKey] ?? {};
+      let next = appendTicketHistory(
+        existing,
+        `${activeTenantAction} updated on ${timestamp}`
+      );
+
+      if (activeTenantAction === "Check In") {
+        next = { ...next, checkedIn: true, status: "Checked In" };
+      }
+
+      if (activeTenantAction === "Transfer") {
+        next = {
+          ...next,
+          status: tenantActionFields.transferEmail
+            ? `Transfer pending to ${tenantActionFields.transferEmail}`
+            : "Transfer pending",
+        };
+      }
+
+      if (activeTenantAction === "Cancel / Refund") {
+        next = { ...next, status: "Cancelled / Refund pending" };
+      }
+
+      if (activeTenantAction === "Change Ticket Type") {
+        next = { ...next, ticketType: tenantActionFields.ticketType };
+      }
+
+      if (activeTenantAction === "Update Rank") {
+        next = { ...next, rank: tenantActionFields.rank };
+      }
+
+      if (activeTenantAction === "Assign Agent ID") {
+        next = { ...next, agentId: tenantActionFields.agentId };
+      }
+
+      if (activeTenantAction === "Add Note") {
+        next = {
+          ...next,
+          notes: tenantActionFields.note
+            ? [...(existing.notes ?? []), tenantActionFields.note]
+            : existing.notes ?? [],
+        };
+      }
+
+      if (activeTenantAction === "Reclaim Ticket") {
+        next = { ...next, status: "Reclaim requested" };
+      }
+
+      if (activeTenantAction === "Force Claim") {
+        next = { ...next, status: "Force claimed" };
+      }
+
+      return { ...current, [ticketKey]: next };
+    });
+
+    toast.success(`${activeTenantAction} saved in the event ticket view`);
+    closeTenantAction();
+  };
+
+  const selectedDisplayTicket = selectedEventTicket
+    ? getDisplayTicket(selectedEventTicket)
+    : null;
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans dark:bg-[#101010]">
@@ -343,7 +718,7 @@ export default function TicketManager() {
           {/* Desktop Header */}
           <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
             <h1 className="text-[32px] font-semibold tracking-[-0.02em]">
-              Ticket Manager
+              {isEventScoped ? "Event Tickets" : "Ticket Manager"}
             </h1>
             {/* Right section */}
             <div className="flex flex-col items-end gap-3">
@@ -465,6 +840,33 @@ export default function TicketManager() {
           <div className="border-b border-gray-200 dark:border-gray-800"></div>
         </div>
 
+        {isEventScoped ? (
+          <EventScopedTicketOperations
+            activeTenantAction={activeTenantAction}
+            allowForceClaim={allowForceClaim}
+            allowReclaimTicket={allowReclaimTicket}
+            closeTenantAction={closeTenantAction}
+            eventCustomersPage={eventCustomersPage}
+            eventCustomersTotalPages={eventCustomersTotalPages}
+            eventId={eventId}
+            eventTicketSearch={eventTicketSearch}
+            eventTicketStatus={eventTicketStatus}
+            eventTicketsLoading={eventTicketsLoading}
+            eventTitle={eventTitle}
+            filteredEventTicketRows={filteredEventTicketRows}
+            openTenantAction={openTenantAction}
+            selectedDisplayTicket={selectedDisplayTicket}
+            setEventCustomersPage={setEventCustomersPage}
+            setEventTicketSearch={setEventTicketSearch}
+            setEventTicketStatus={setEventTicketStatus}
+            setTenantActionFields={setTenantActionFields}
+            tenantActionFields={tenantActionFields}
+            tickets={tickets}
+            applyTenantAction={applyTenantAction}
+          />
+        ) : (
+          <>
+
         {/* 🔍 Search & Filters */}
         <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mt-18 sm:mt-6 mx-8 p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-4">Search Tickets</h2>
@@ -491,7 +893,18 @@ export default function TicketManager() {
 
         {/* 🎟 Ticket Table */}
         <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mx-4 sm:mx-6 md:mx-8 p-4 sm:p-6 border border-gray-200 dark:border-gray-700 transition-all">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">Tickets</h2>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold">Tickets</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                Export uses the active ticket filters.
+              </p>
+            </div>
+            <TicketExportControls
+              rows={filteredTickets}
+              filename="ticket-manager-export"
+            />
+          </div>
 
           {/* 🖥 Desktop / Tablet Table View */}
           <div className="hidden sm:block overflow-x-auto">
@@ -787,6 +1200,9 @@ export default function TicketManager() {
           </div>
         )}
 
+          </>
+        )}
+
         {/* Logout Modal */}
         <LogoutModalHost
           isOpen={showLogoutModal}
@@ -851,6 +1267,722 @@ function ToggleRow({
           }`}
         />
       </button>
+    </div>
+  );
+}
+
+function TicketExportControls({
+  rows,
+  filename,
+  buttonClassName = "",
+}: {
+  rows: any[];
+  filename: string;
+  buttonClassName?: string;
+}) {
+  const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(
+    DEFAULT_TICKET_EXPORT_COLUMN_KEYS
+  );
+
+  const selectedColumns = TICKET_EXPORT_COLUMNS.filter((column) =>
+    selectedColumnKeys.includes(column.key)
+  );
+
+  const toggleColumn = (key: string) => {
+    setSelectedColumnKeys((current) =>
+      current.includes(key)
+        ? current.filter((columnKey) => columnKey !== key)
+        : [...current, key]
+    );
+  };
+
+  const handleExport = () => {
+    if (!rows.length) {
+      toast.error("No ticket data available to export.");
+      return;
+    }
+
+    if (!selectedColumns.length) {
+      toast.error("Select at least one export column.");
+      return;
+    }
+
+    const safeFilename = `${filename}-${new Date()
+      .toISOString()
+      .slice(0, 10)}`.replace(/[^a-z0-9-_]/gi, "-");
+
+    downloadCsvExport(rows, selectedColumns, safeFilename);
+    toast.success(`Exported ${rows.length} ticket row${rows.length === 1 ? "" : "s"}.`);
+  };
+
+  return (
+    <div className="relative flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-end">
+      <details className="group">
+        <summary className="flex h-10 cursor-pointer list-none items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
+          Columns ({selectedColumns.length})
+        </summary>
+        <div className="absolute right-0 z-40 mt-2 max-h-80 w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-[#1a1a1a]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedColumnKeys(DEFAULT_TICKET_EXPORT_COLUMN_KEYS)
+              }
+              className="text-xs font-semibold text-[#D19537]"
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedColumnKeys([])}
+              className="text-xs font-semibold text-gray-500"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {TICKET_EXPORT_COLUMNS.map((column) => (
+              <label
+                key={column.key}
+                className="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-200"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedColumnKeys.includes(column.key)}
+                  onChange={() => toggleColumn(column.key)}
+                  className="h-4 w-4 accent-[#D19537]"
+                />
+                <span>{column.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </details>
+
+      <button
+        type="button"
+        onClick={handleExport}
+        className={`rounded-lg bg-[#D19537] px-4 py-2 text-sm font-semibold text-white ${buttonClassName}`}
+      >
+        Export CSV
+      </button>
+    </div>
+  );
+}
+
+function EventScopedTicketOperations({
+  activeTenantAction,
+  allowForceClaim,
+  allowReclaimTicket,
+  applyTenantAction,
+  closeTenantAction,
+  eventCustomersPage,
+  eventCustomersTotalPages,
+  eventId,
+  eventTicketSearch,
+  eventTicketStatus,
+  eventTicketsLoading,
+  eventTitle,
+  filteredEventTicketRows,
+  openTenantAction,
+  selectedDisplayTicket,
+  setEventCustomersPage,
+  setEventTicketSearch,
+  setEventTicketStatus,
+  setTenantActionFields,
+  tenantActionFields,
+  tickets,
+}: {
+  activeTenantAction: TenantTicketAction | null;
+  allowForceClaim: boolean;
+  allowReclaimTicket: boolean;
+  applyTenantAction: () => void;
+  closeTenantAction: () => void;
+  eventCustomersPage: number;
+  eventCustomersTotalPages: number;
+  eventId?: string;
+  eventTicketSearch: string;
+  eventTicketStatus: string;
+  eventTicketsLoading: boolean;
+  eventTitle?: string;
+  filteredEventTicketRows: Array<
+    EventTicketCustomer & {
+      checkedIn: boolean;
+      notes: string[];
+      history: string[];
+    }
+  >;
+  openTenantAction: (
+    action: TenantTicketAction,
+    ticket: EventTicketCustomer
+  ) => void;
+  selectedDisplayTicket:
+    | (EventTicketCustomer & {
+        checkedIn: boolean;
+        notes: string[];
+        history: string[];
+      })
+    | null;
+  setEventCustomersPage: Dispatch<SetStateAction<number>>;
+  setEventTicketSearch: Dispatch<SetStateAction<string>>;
+  setEventTicketStatus: Dispatch<SetStateAction<string>>;
+  setTenantActionFields: Dispatch<
+    SetStateAction<{
+      transferEmail: string;
+      ticketType: string;
+      rank: string;
+      agentId: string;
+      note: string;
+    }>
+  >;
+  tenantActionFields: {
+    transferEmail: string;
+    ticketType: string;
+    rank: string;
+    agentId: string;
+    note: string;
+  };
+  tickets: any[];
+}) {
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+  const [actionMenuPosition, setActionMenuPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
+  const openActionTicket =
+    filteredEventTicketRows.find((ticket) => ticket.id === openActionMenuId) ??
+    null;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        actionMenuRef.current &&
+        !actionMenuRef.current.contains(event.target as Node)
+      ) {
+        setOpenActionMenuId(null);
+        setActionMenuPosition(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const closeMenu = () => {
+      setOpenActionMenuId(null);
+      setActionMenuPosition(null);
+    };
+
+    window.addEventListener("resize", closeMenu);
+    return () => window.removeEventListener("resize", closeMenu);
+  }, []);
+
+  const toggleActionMenu = (
+    ticket: EventTicketCustomer,
+    button: HTMLButtonElement
+  ) => {
+    if (openActionMenuId === ticket.id) {
+      setOpenActionMenuId(null);
+      setActionMenuPosition(null);
+      return;
+    }
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 224;
+    const menuMaxHeight = 288;
+    const left = Math.min(
+      window.innerWidth - menuWidth - 12,
+      Math.max(12, rect.right - menuWidth)
+    );
+    const top =
+      rect.bottom + 8 + menuMaxHeight > window.innerHeight
+        ? Math.max(12, rect.top - menuMaxHeight - 8)
+        : rect.bottom + 8;
+
+    setOpenActionMenuId(ticket.id);
+    setActionMenuPosition({ left, top });
+  };
+
+  return (
+    <>
+      <div className="mx-4 mt-6 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <button
+              onClick={() => window.history.back()}
+              className="mb-3 text-sm font-semibold text-[#D19537]"
+            >
+              Back to events
+            </button>
+            <h2 className="text-xl font-semibold">
+              {eventTitle || "Selected event"} tickets
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+              Event scoped tenant operations only apply to event ID{" "}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {eventId}
+              </span>
+              .
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-sm sm:min-w-[360px]">
+            <div className="rounded-lg bg-[#FAFAFB] p-3 dark:bg-[#101010]">
+              <p className="text-gray-500 dark:text-gray-400">Loaded rows</p>
+              <p className="mt-1 text-lg font-semibold">
+                {filteredEventTicketRows.length}
+              </p>
+            </div>
+            <div className="rounded-lg bg-[#FAFAFB] p-3 dark:bg-[#101010]">
+              <p className="text-gray-500 dark:text-gray-400">Ticket types</p>
+              <p className="mt-1 text-lg font-semibold">{tickets.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <input
+            type="text"
+            placeholder="Search name, email, or ticket ID"
+            value={eventTicketSearch}
+            onChange={(e) => setEventTicketSearch(e.target.value)}
+            className="h-11 rounded-lg border border-gray-300 px-4 text-sm outline-none dark:border-gray-700 dark:bg-[#101010]"
+          />
+          <select
+            value={eventTicketStatus}
+            onChange={(e) => setEventTicketStatus(e.target.value)}
+            className="h-11 rounded-lg border border-gray-300 px-4 text-sm outline-none dark:border-gray-700 dark:bg-[#101010]"
+          >
+            <option>All</option>
+            <option>Registered</option>
+            <option>Checked In</option>
+            <option>Cancelled / Refund pending</option>
+            <option>Reclaim requested</option>
+            <option>Force claimed</option>
+          </select>
+          <Link href="/ticket-manager">
+            <button className="h-11 w-full rounded-lg border border-[#D19537] px-4 text-sm font-semibold text-[#D19537]">
+              Open global ticket manager
+            </button>
+          </Link>
+          <TicketExportControls
+            rows={filteredEventTicketRows.map((row) => ({
+              ...row,
+              eventId,
+              eventName: eventTitle,
+            }))}
+            filename={`event-${eventId || "tickets"}-export`}
+            buttonClassName="h-11 w-full"
+          />
+        </div>
+      </div>
+
+      <div className="mx-3 mt-6 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-8 sm:p-6">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Event ticket operations</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-300">
+              Tenant-only actions are shown per ticket row.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#D19537]/15 px-3 py-1 text-xs font-semibold text-[#D19537]">
+            Event scoped
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-sm xl:min-w-0">
+            <thead>
+              <tr className="border-b border-gray-200 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                <th className="pb-3">Attendee</th>
+                <th className="pb-3">Ticket</th>
+                <th className="pb-3">Qty</th>
+                <th className="pb-3">Status</th>
+                <th className="pb-3">Rank</th>
+                <th className="pb-3">Agent ID</th>
+                <th className="pb-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eventTicketsLoading ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="py-8 text-center text-sm text-gray-500"
+                  >
+                    Loading event tickets...
+                  </td>
+                </tr>
+              ) : filteredEventTicketRows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="py-8 text-center text-sm text-gray-500"
+                  >
+                    No tickets found for this event.
+                  </td>
+                </tr>
+              ) : (
+                filteredEventTicketRows.map((ticket) => (
+                  <tr
+                    key={ticket.id}
+                    className="border-b border-gray-100 align-top dark:border-gray-800"
+                  >
+                    <td className="py-4 pr-4">
+                      <p className="text-sm font-semibold">{ticket.name}</p>
+                      <p className="text-xs text-gray-500">{ticket.email}</p>
+                    </td>
+                    <td className="max-w-[300px] py-4 pr-4 text-sm">
+                      <p className="font-medium">{ticket.ticketName}</p>
+                      <p className="break-all text-xs text-gray-500">
+                        {ticket.ticketId} - {ticket.ticketType}
+                      </p>
+                    </td>
+                    <td className="py-4 pr-4 text-sm">{ticket.quantity}</td>
+                    <td className="py-4 pr-4">
+                      <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-[#101010] dark:text-gray-200">
+                        {ticket.status}
+                      </span>
+                    </td>
+                    <td className="py-4 pr-4 text-sm">
+                      {ticket.rank || "Not set"}
+                    </td>
+                    <td className="py-4 pr-4 text-sm">
+                      {ticket.agentId || "Not assigned"}
+                    </td>
+                    <td className="py-4">
+                      <div className="inline-flex justify-end">
+                        <button
+                          aria-label={`Open actions for ${ticket.name}`}
+                          onMouseDown={(event) => event.stopPropagation()}
+                          onClick={(event) =>
+                            toggleActionMenu(ticket, event.currentTarget)
+                          }
+                          className="inline-flex items-center justify-center p-1 text-gray-600 hover:text-[#D19537] dark:text-gray-200 dark:hover:text-[#D19537]"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {openActionTicket && actionMenuPosition && (
+          <div
+            ref={actionMenuRef}
+            onMouseDown={(event) => event.stopPropagation()}
+            style={{
+              left: actionMenuPosition.left,
+              top: actionMenuPosition.top,
+            }}
+            className="fixed z-[80] max-h-72 w-56 overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-[#1a1a1a]"
+          >
+            {tenantTicketActions.map((action) => {
+              const disabled =
+                (action === "Force Claim" && !allowForceClaim) ||
+                (action === "Reclaim Ticket" && !allowReclaimTicket);
+
+              return (
+                <button
+                  key={action}
+                  disabled={disabled}
+                  onClick={() => {
+                    openTenantAction(action, openActionTicket);
+                    setOpenActionMenuId(null);
+                    setActionMenuPosition(null);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm font-medium ${
+                    disabled
+                      ? "cursor-not-allowed text-gray-400"
+                      : "text-gray-700 hover:bg-[#D19537]/10 hover:text-[#D19537] dark:text-white"
+                  }`}
+                >
+                  {action}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {eventCustomersTotalPages > 1 && (
+          <div className="mt-6 flex justify-center gap-2">
+            <button
+              disabled={eventCustomersPage === 1}
+              onClick={() => setEventCustomersPage((p) => p - 1)}
+              className="rounded-md border px-4 py-2 disabled:opacity-40 dark:border-gray-700"
+            >
+              Prev
+            </button>
+            {Array.from({ length: eventCustomersTotalPages }, (_, index) => {
+              const page = index + 1;
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => setEventCustomersPage(page)}
+                  className={`rounded-md border px-4 py-2 ${
+                    eventCustomersPage === page
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : "dark:border-gray-700 dark:bg-[#181818]"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+            <button
+              disabled={eventCustomersPage === eventCustomersTotalPages}
+              onClick={() => setEventCustomersPage((p) => p + 1)}
+              className="rounded-md border px-4 py-2 disabled:opacity-40 dark:border-gray-700"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+
+      {activeTenantAction && selectedDisplayTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-[#1a1a1a]">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">{activeTenantAction}</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                  {selectedDisplayTicket.name} - {selectedDisplayTicket.ticketId}
+                </p>
+              </div>
+              <button
+                onClick={closeTenantAction}
+                className="text-gray-500 hover:text-red-500"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid gap-3 text-sm sm:grid-cols-2">
+              <InfoField label="Event ID" value={eventId || "N/A"} />
+              <InfoField
+                label="Receipt ID"
+                value={selectedDisplayTicket.receiptId}
+              />
+              <InfoField
+                label="Current status"
+                value={selectedDisplayTicket.status}
+              />
+              <InfoField
+                label="Registered"
+                value={selectedDisplayTicket.registeredAt || "N/A"}
+              />
+            </div>
+
+            {activeTenantAction === "Transfer" && (
+              <ActionField label="Transfer to email">
+                <input
+                  type="email"
+                  value={tenantActionFields.transferEmail}
+                  onChange={(e) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      transferEmail: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  placeholder="customer@example.com"
+                />
+              </ActionField>
+            )}
+
+            {activeTenantAction === "Change Ticket Type" && (
+              <ActionField label="New ticket type">
+                <select
+                  value={tenantActionFields.ticketType}
+                  onChange={(e) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      ticketType: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                >
+                  {tickets.length > 0 ? (
+                    tickets.map((ticket: any) => (
+                      <option
+                        key={ticket.id ?? ticket.name}
+                        value={ticket.type ?? ticket.name}
+                      >
+                        {ticket.name ?? ticket.type}{" "}
+                        {ticket.price ? `- $${ticket.price}` : ""}
+                      </option>
+                    ))
+                  ) : (
+                    <option>{selectedDisplayTicket.ticketType}</option>
+                  )}
+                </select>
+                <p className="mt-2 text-xs text-gray-500">
+                  Difference charge or refund will be handled by the connected
+                  backend flow when available.
+                </p>
+              </ActionField>
+            )}
+
+            {activeTenantAction === "Update Rank" && (
+              <ActionField label="Rank">
+                <input
+                  type="text"
+                  value={tenantActionFields.rank}
+                  onChange={(e) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      rank: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  placeholder="VIP, Gold, Tier 1"
+                />
+              </ActionField>
+            )}
+
+            {activeTenantAction === "Assign Agent ID" && (
+              <ActionField label="Agent ID">
+                <input
+                  type="text"
+                  value={tenantActionFields.agentId}
+                  onChange={(e) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      agentId: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  placeholder="AG-1001"
+                />
+              </ActionField>
+            )}
+
+            {activeTenantAction === "Add Note" && (
+              <ActionField label="Internal note">
+                <textarea
+                  value={tenantActionFields.note}
+                  onChange={(e) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      note: e.target.value,
+                    }))
+                  }
+                  className="min-h-[110px] w-full rounded-lg border px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  placeholder="Add a tenant-only note"
+                />
+              </ActionField>
+            )}
+
+            {activeTenantAction === "View Ticket" && (
+              <DetailList
+                items={[
+                  ["Ticket ID", selectedDisplayTicket.ticketId],
+                  ["Ticket Type", selectedDisplayTicket.ticketType],
+                  ["Quantity", String(selectedDisplayTicket.quantity)],
+                  ["Checked In", selectedDisplayTicket.checkedIn ? "Yes" : "No"],
+                ]}
+              />
+            )}
+
+            {activeTenantAction === "View Receipt" && (
+              <DetailList
+                items={[
+                  ["Receipt ID", selectedDisplayTicket.receiptId],
+                  ["Attendee", selectedDisplayTicket.name],
+                  ["Email", selectedDisplayTicket.email],
+                  ["Event ID", eventId || "N/A"],
+                ]}
+              />
+            )}
+
+            {activeTenantAction === "View History" && (
+              <div className="mt-5 rounded-lg border p-4 dark:border-gray-700">
+                <h4 className="mb-3 font-semibold">History</h4>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                  {selectedDisplayTicket.history.map((item, index) => (
+                    <p key={`${item}-${index}`}>{item}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedDisplayTicket.notes.length > 0 && (
+              <div className="mt-5 rounded-lg border p-4 dark:border-gray-700">
+                <h4 className="mb-3 font-semibold">Internal notes</h4>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                  {selectedDisplayTicket.notes.map((note, index) => (
+                    <p key={`${note}-${index}`}>{note}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                onClick={closeTenantAction}
+                className="rounded-lg border px-5 py-2 text-sm font-semibold dark:border-gray-700"
+              >
+                Close
+              </button>
+              {!["View Ticket", "View Receipt", "View History"].includes(
+                activeTenantAction
+              ) && (
+                <button
+                  onClick={applyTenantAction}
+                  className="rounded-lg bg-[#D19537] px-5 py-2 text-sm font-semibold text-white"
+                >
+                  Save action
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function InfoField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-[#FAFAFB] p-3 dark:bg-[#101010]">
+      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-1 break-words font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function ActionField({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="mt-5">
+      <label className="mb-2 block text-sm font-semibold">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function DetailList({ items }: { items: string[][] }) {
+  return (
+    <div className="mt-5 rounded-lg border p-4 dark:border-gray-700">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map(([label, value]) => (
+          <InfoField key={label} label={label} value={value} />
+        ))}
+      </div>
     </div>
   );
 }

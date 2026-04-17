@@ -6,6 +6,19 @@ import { useEffect, useState } from "react";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import {
+  DEFAULT_TIMEFRAME_PRESET,
+  TIMEFRAME_OPTIONS,
+  createTimeframe,
+  formatCurrency,
+  getTimeframeLabel,
+  getTimeframeParams,
+  normalizeTicketTypeBreakdowns,
+  updateCustomTimeframe,
+  type DashboardTimeframe,
+  type TimeframePreset,
+  type TicketTypeBreakdown,
+} from "@/lib/hostDashboardAnalytics";
 
 interface Props {
   isOpen: boolean;
@@ -23,12 +36,17 @@ type RevenueSummary = {
   platformAmount: number;
   organizerAmount: number;
   currency: string;
+  ticketTypeBreakdown: TicketTypeBreakdown[];
+  revenueTypeBreakdown: TicketTypeBreakdown[];
 };
 
 export function EventRevenueModal({ isOpen, event, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<RevenueSummary | null>(null);
+  const [timeframe, setTimeframe] = useState<DashboardTimeframe>(() =>
+    createTimeframe(DEFAULT_TIMEFRAME_PRESET)
+  );
 
   useEffect(() => {
     if (!isOpen || !event?.id) return;
@@ -56,9 +74,12 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
         //     },
         //   }
         // );
-        const res = await apiClient.get(`/events/${event.id}/revenue-summary`);
+        const res = await apiClient.get(`/events/${event.id}/revenue-summary`, {
+          params: getTimeframeParams(timeframe),
+        });
 
         const data = res.data?.data;
+        const breakdowns = normalizeTicketTypeBreakdowns(data);
 
         // 🔁 Normalize backend response → UI shape
         setSummary({
@@ -68,6 +89,8 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
           platformAmount: data?.platform?.amount ?? 0,
           organizerAmount: data?.organizer?.amount ?? 0,
           currency: data?.currency ?? "USD",
+          ticketTypeBreakdown: breakdowns.ticketBreakdown,
+          revenueTypeBreakdown: breakdowns.revenueBreakdown,
         });
       } catch (err: any) {
         console.error("Revenue fetch failed:", err);
@@ -84,7 +107,13 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
     };
 
     fetchRevenue();
-  }, [isOpen, event?.id]);
+  }, [
+    isOpen,
+    event?.id,
+    timeframe.preset,
+    timeframe.startDate,
+    timeframe.endDate,
+  ]);
 
   if (!isOpen) return null;
 
@@ -97,12 +126,15 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md rounded-2xl border bg-background shadow-xl">
+      <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
             <h2 className="text-lg font-semibold">Event Revenue</h2>
             <p className="text-sm text-muted-foreground">{event.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {getTimeframeLabel(timeframe)}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -114,6 +146,48 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
 
         {/* Body */}
         <div className="p-6 space-y-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <select
+              value={timeframe.preset}
+              onChange={(selectEvent) =>
+                setTimeframe(
+                  createTimeframe(selectEvent.target.value as TimeframePreset)
+                )
+              }
+              className="h-10 rounded-lg border bg-background px-3 text-sm"
+            >
+              {TIMEFRAME_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={timeframe.startDate}
+              onChange={(inputEvent) =>
+                setTimeframe((current) =>
+                  updateCustomTimeframe(current, {
+                    startDate: inputEvent.target.value,
+                  })
+                )
+              }
+              className="h-10 rounded-lg border bg-background px-3 text-sm"
+            />
+            <input
+              type="date"
+              value={timeframe.endDate}
+              onChange={(inputEvent) =>
+                setTimeframe((current) =>
+                  updateCustomTimeframe(current, {
+                    endDate: inputEvent.target.value,
+                  })
+                )
+              }
+              className="h-10 rounded-lg border bg-background px-3 text-sm"
+            />
+          </div>
+
           {loading && (
             <p className="text-center text-sm text-muted-foreground">
               Loading revenue summary...
@@ -134,7 +208,7 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
                 <div className="rounded-xl border p-4 text-center">
                   <p className="text-xs text-muted-foreground">Total Revenue</p>
                   <p className="text-xl font-semibold">
-                    ${summary.totalRevenue.toFixed(2)}
+                    {formatCurrency(summary.totalRevenue, summary.currency)}
                   </p>
                 </div>
               </div>
@@ -157,10 +231,26 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
                     Organizer Earnings
                   </span>
                   <span className="font-medium">
-                    ${summary.organizerAmount.toFixed(2)}
+                    {formatCurrency(summary.organizerAmount, summary.currency)}
                   </span>
                 </div>
               </div>
+
+              <RevenueBreakdownList
+                title="Tickets by type"
+                emptyText="No ticket type data for this range."
+                items={summary.ticketTypeBreakdown}
+                getValue={(item) => item.ticketsSold.toLocaleString()}
+              />
+
+              <RevenueBreakdownList
+                title="Revenue by type"
+                emptyText="No revenue breakdown for this range."
+                items={summary.revenueTypeBreakdown}
+                getValue={(item) =>
+                  formatCurrency(item.revenue, summary.currency)
+                }
+              />
             </>
           )}
         </div>
@@ -175,6 +265,41 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RevenueBreakdownList({
+  title,
+  emptyText,
+  items,
+  getValue,
+}: {
+  title: string;
+  emptyText: string;
+  items: TicketTypeBreakdown[];
+  getValue: (item: TicketTypeBreakdown) => string;
+}) {
+  return (
+    <div className="rounded-xl border p-4">
+      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div
+              key={`${title}-${item.ticketType}`}
+              className="flex items-center justify-between gap-4 text-sm"
+            >
+              <span className="truncate text-muted-foreground">
+                {item.ticketType}
+              </span>
+              <span className="font-semibold">{getValue(item)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

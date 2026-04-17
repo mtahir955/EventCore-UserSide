@@ -17,16 +17,27 @@ type LineChartPoint = {
 
 type LineChartCardProps = {
   data: LineChartPoint[];
+  title?: string;
+  subtitle?: string;
 };
 
-export function LineChartCard({ data }: LineChartCardProps) {
+export function LineChartCard({
+  data,
+  title = "Reports",
+  subtitle,
+}: LineChartCardProps) {
   const safeData = Array.isArray(data) && data.length > 0 ? data : [];
 
   return (
-    <div className="rounded-2xl border bg-card p-5 h-full">
+    <div className="relative rounded-2xl border bg-card p-5 h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[16px] font-semibold">Reports</h3>
+        <div>
+          <h3 className="text-[16px] font-semibold">{title}</h3>
+          {subtitle && (
+            <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
         <span className="text-muted-foreground text-size-lg">...</span>
       </div>
 
@@ -59,7 +70,7 @@ export function LineChartCard({ data }: LineChartCardProps) {
               axisLine={false}
               tickLine={false}
               tickCount={6}
-              domain={[0, 100]}
+              domain={[0, "auto"]}
             />
 
             <Tooltip
@@ -93,7 +104,7 @@ export function LineChartCard({ data }: LineChartCardProps) {
 
       {/* Empty state */}
       {safeData.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center pt-14 text-sm text-muted-foreground">
           No report data available
         </div>
       )}

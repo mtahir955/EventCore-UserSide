@@ -1,17 +1,25 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { formatCurrency, type TicketTypeBreakdown } from "@/lib/hostDashboardAnalytics";
 
 const COLORS = ["rgba(91, 147, 255, 1)", "rgba(255, 214, 107, 1)"];
+const EMPTY_COLOR = "rgba(209, 213, 219, 1)";
 
 type DonutChartCardProps = {
   soldPercentage: number;
   transferredPercentage: number;
+  ticketTypeBreakdown?: TicketTypeBreakdown[];
+  revenueTypeBreakdown?: TicketTypeBreakdown[];
+  currency?: string;
 };
 
 export function DonutChartCard({
   soldPercentage,
   transferredPercentage,
+  ticketTypeBreakdown = [],
+  revenueTypeBreakdown = [],
+  currency = "USD",
 }: DonutChartCardProps) {
   const safeSold = Number.isFinite(soldPercentage) ? soldPercentage : 0;
   const safeTransferred = Number.isFinite(transferredPercentage)
@@ -22,6 +30,8 @@ export function DonutChartCard({
     { name: "Ticket Sold", value: safeSold },
     { name: "Ticket Transferred", value: safeTransferred },
   ];
+  const hasActivity = data.some((item) => item.value > 0);
+  const chartData = hasActivity ? data : [{ name: "No activity", value: 1 }];
 
   return (
     <div className="rounded-2xl border bg-card p-5 h-full">
@@ -36,7 +46,7 @@ export function DonutChartCard({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               innerRadius={70}
               outerRadius={95}
               paddingAngle={2}
@@ -45,10 +55,10 @@ export function DonutChartCard({
               dataKey="value"
               cornerRadius={6}
             >
-              {data.map((_, index) => (
+              {chartData.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
+                  fill={hasActivity ? COLORS[index % COLORS.length] : EMPTY_COLOR}
                 />
               ))}
             </Pie>
@@ -70,6 +80,20 @@ export function DonutChartCard({
           label={`Ticket Transferred (${safeTransferred}%)`}
         />
       </div>
+
+      <BreakdownList
+        title="Tickets by type"
+        emptyText="No ticket type data yet"
+        items={ticketTypeBreakdown}
+        getValue={(item) => item.ticketsSold.toLocaleString()}
+      />
+
+      <BreakdownList
+        title="Revenue by type"
+        emptyText="No revenue breakdown yet"
+        items={revenueTypeBreakdown}
+        getValue={(item) => formatCurrency(item.revenue, currency)}
+      />
     </div>
   );
 }
@@ -83,6 +107,44 @@ function LegendDot({ color, label }: { color: string; label: string }) {
         aria-hidden
       />
       <span className="text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+function BreakdownList({
+  title,
+  emptyText,
+  items,
+  getValue,
+}: {
+  title: string;
+  emptyText: string;
+  items: TicketTypeBreakdown[];
+  getValue: (item: TicketTypeBreakdown) => string;
+}) {
+  return (
+    <div className="mt-5 border-t pt-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="text-sm font-semibold">{title}</h4>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div
+              key={`${title}-${item.ticketType}`}
+              className="flex items-center justify-between gap-4 text-sm"
+            >
+              <span className="truncate text-muted-foreground">
+                {item.ticketType}
+              </span>
+              <span className="font-semibold">{getValue(item)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

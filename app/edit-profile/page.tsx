@@ -16,6 +16,57 @@ import { CheckCircle } from "lucide-react";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
 
+function mergeProfileData(serverData: any, payload: any) {
+  return {
+    ...(serverData || {}),
+    basicInfo: {
+      ...(payload.basicInfo || {}),
+      ...(serverData?.basicInfo || {}),
+    },
+    contactDetails: {
+      ...(payload.contactDetails || {}),
+      ...(serverData?.contactDetails || {}),
+    },
+    paymentDetails: {
+      ...(payload.paymentDetails || {}),
+      ...(serverData?.paymentDetails || {}),
+    },
+  };
+}
+
+function syncStoredBuyerUser(profile: any) {
+  const basicInfo = profile?.basicInfo || {};
+  const contactDetails = profile?.contactDetails || {};
+  const fullName = `${basicInfo.firstName || ""} ${
+    basicInfo.lastName || ""
+  }`.trim();
+
+  ["userData", "buyerUser"].forEach((key) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(key) || "{}");
+      const nextValue = {
+        ...existing,
+        username: basicInfo.email || existing.username,
+        firstName: basicInfo.firstName || existing.firstName,
+        lastName: basicInfo.lastName || existing.lastName,
+        fullName: fullName || existing.fullName,
+        birthday: basicInfo.birthday || existing.birthday,
+        email: basicInfo.email || existing.email,
+        accountType: basicInfo.accountType || existing.accountType,
+        ambassadorId: basicInfo.ambassadorId || existing.ambassadorId,
+        phoneCountryCode:
+          contactDetails.phoneCountryCode || existing.phoneCountryCode,
+        phoneNumber: contactDetails.phoneNumber || existing.phoneNumber,
+        phone: contactDetails.phone || existing.phone,
+      };
+
+      localStorage.setItem(key, JSON.stringify(nextValue));
+    } catch (error) {
+      console.error(`Failed to sync ${key}:`, error);
+    }
+  });
+}
+
 export default function Page() {
   const [showToast, setShowToast] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
@@ -56,9 +107,20 @@ export default function Page() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
+        let savedData = null;
+        const savedProfile = localStorage.getItem("buyerProfile");
+        if (savedProfile) {
+          savedData = JSON.parse(savedProfile);
+          setProfileData(savedData);
+        }
+
         const res = await apiClient.get("/users/buyer/profile");
-        setProfileData(res.data.data);
-        localStorage.setItem("buyerProfile", JSON.stringify(res.data.data));
+        const mergedProfile = savedData
+          ? mergeProfileData(res.data.data, savedData)
+          : res.data.data;
+
+        setProfileData(mergedProfile);
+        localStorage.setItem("buyerProfile", JSON.stringify(mergedProfile));
       } catch (err) {
         console.error("Error fetching buyer profile:", err);
       }
@@ -104,12 +166,14 @@ export default function Page() {
       //   }
       // );
       const response = await apiClient.put("/users/buyer/profile", formData);
+      const mergedProfile = mergeProfileData(response.data.data, payload);
 
       // ⭐ UPDATE STATE WITH NEW PHOTO URL
-      setProfileData(response.data.data);
+      setProfileData(mergedProfile);
 
       // ⭐ Optionally persist to localStorage
-      localStorage.setItem("buyerProfile", JSON.stringify(response.data.data));
+      localStorage.setItem("buyerProfile", JSON.stringify(mergedProfile));
+      syncStoredBuyerUser(mergedProfile);
 
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);

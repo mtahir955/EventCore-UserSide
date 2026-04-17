@@ -1,10 +1,27 @@
-import Image from "next/image";
 import { formatUsPhoneNumber } from "@/lib/phoneFormat";
+
+const countryCodes = ["+1", "+44", "+92", "+91", "+61", "+971"];
+
+function getPhoneParts(data: any) {
+  const rawPhone = data?.phone || "";
+  const countryCode =
+    data?.phoneCountryCode ||
+    countryCodes.find((code) => rawPhone.trim().startsWith(code)) ||
+    "+1";
+  const rawNumber =
+    data?.phoneNumber || rawPhone.replace(countryCode, "").trim();
+
+  return {
+    countryCode,
+    phoneNumber:
+      countryCode === "+1" ? formatUsPhoneNumber(rawNumber) : rawNumber,
+  };
+}
 
 export default function ContactDetails({ data }: any) {
   if (!data) return null;
 
-  const formattedPhone = formatUsPhoneNumber(data.phone);
+  const phone = getPhoneParts(data);
 
   return (
     <div className="space-y-6 text-gray-900 dark:text-gray-100">
@@ -12,13 +29,8 @@ export default function ContactDetails({ data }: any) {
         <div className="space-y-2">
           <label className="text-sm">Phone Number:</label>
           <div className="h-12 flex items-center gap-2 rounded-lg border bg-gray-50 dark:bg-[#181818] px-3">
-            <Image
-              src="/images/flag-us.png"
-              width={20}
-              height={20}
-              alt="Flag"
-            />
-            <span className="text-sm font-medium">{formattedPhone}</span>
+            <span className="text-sm font-semibold">{phone.countryCode}</span>
+            <span className="text-sm font-medium">{phone.phoneNumber}</span>
           </div>
         </div>
 
