@@ -13,6 +13,7 @@ interface BasicInfoData {
   email?: string;
   accountType?: string;
   ambassadorId?: string;
+  ambassadorIdNumber?: string;
 }
 
 interface BasicInfoProps {
@@ -27,13 +28,14 @@ export interface BasicInfoRef {
     gender: string;
     email: string;
     accountType: string;
-    ambassadorId: string;
+    ambassadorIdNumber: string;
   };
 }
 
 const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(
   ({ existing }, ref) => {
     const [showModal, setShowModal] = useState(false);
+    const [wasAmbassadorIdInitiallyEmpty, setWasAmbassadorIdInitiallyEmpty] = useState(true);
 
     const [form, setForm] = useState({
       firstName: "",
@@ -42,13 +44,16 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(
       gender: "",
       email: "",
       accountType: "",
-      ambassadorId: "",
+      ambassadorIdNumber: "",
     });
 
     useEffect(() => {
       if (existing) {
         const fullNameParts = (existing.fullName || "").trim().split(" ");
-        const accountType = (existing.accountType || "").toLowerCase();
+        const accountType = existing.accountType || "";
+        const ambassadorIdNumber = existing.ambassadorIdNumber || existing.ambassadorId || "";
+
+        setWasAmbassadorIdInitiallyEmpty(!ambassadorIdNumber);
 
         setForm({
           firstName: existing.firstName || fullNameParts[0] || "",
@@ -58,11 +63,8 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(
           birthday: existing.birthday || existing.dateOfBirth || "",
           gender: existing.gender || "",
           email: existing.email || "",
-          accountType:
-            accountType === "ambassador" || accountType === "guest"
-              ? accountType
-              : "",
-          ambassadorId: existing.ambassadorId || "",
+          accountType,
+          ambassadorIdNumber,
         });
       }
     }, [existing]);
@@ -70,6 +72,9 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(
     useImperativeHandle(ref, () => ({
       getValues: () => form,
     }));
+
+    const isGuestAccount = form.accountType.toLowerCase() === "guest";
+    const canEditAmbassadorId = isGuestAccount && wasAmbassadorIdInitiallyEmpty;
 
     return (
       <>
@@ -173,12 +178,21 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(
             </label>
             <input
               placeholder="Enter Ambassador ID Number"
-              value={form.ambassadorId}
+              value={form.ambassadorIdNumber}
+              disabled={!canEditAmbassadorId}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, ambassadorId: e.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  ambassadorIdNumber: e.target.value,
+                }))
               }
-              className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 px-4 outline-none text-sm"
+              className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 px-4 outline-none text-sm disabled:cursor-not-allowed disabled:bg-gray-100 disabled:dark:bg-[#161616]"
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {canEditAmbassadorId
+                ? "You can enter your Ambassador ID Number once. After that it can only be changed by the tenant."
+                : "Ambassador ID Number can only be changed by the tenant."}
+            </p>
           </div>
 
           {/* CHANGE PASSWORD BUTTON */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 // import axios from "axios";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/header";
@@ -53,7 +54,11 @@ function syncStoredBuyerUser(profile: any) {
         birthday: basicInfo.birthday || existing.birthday,
         email: basicInfo.email || existing.email,
         accountType: basicInfo.accountType || existing.accountType,
-        ambassadorId: basicInfo.ambassadorId || existing.ambassadorId,
+        ambassadorId:
+          basicInfo.ambassadorIdNumber ||
+          basicInfo.ambassadorId ||
+          existing.ambassadorId ||
+          existing.ambassadorIdNumber,
         phoneCountryCode:
           contactDetails.phoneCountryCode || existing.phoneCountryCode,
         phoneNumber: contactDetails.phoneNumber || existing.phoneNumber,
@@ -68,6 +73,7 @@ function syncStoredBuyerUser(profile: any) {
 }
 
 export default function Page() {
+  const router = useRouter();
   const [showToast, setShowToast] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
 
@@ -176,7 +182,10 @@ export default function Page() {
       syncStoredBuyerUser(mergedProfile);
 
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        router.push('/view-profile');
+      }, 3000);
     } catch (error) {
       console.error("Error updating buyer profile:", error);
     }

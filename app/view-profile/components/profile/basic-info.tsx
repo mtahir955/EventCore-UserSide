@@ -89,7 +89,7 @@ export default function BasicInfo({ data }: any) {
           Ambassador ID Number:
         </label>
         <div className="h-12 flex items-center rounded-lg border px-4 text-sm font-medium bg-gray-50 dark:bg-[#181818]">
-          {data.ambassadorId || "Not added"}
+          {data.ambassadorIdNumber || "Not added"}
         </div>
       </div>
     </div>
