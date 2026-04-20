@@ -324,19 +324,48 @@ export const TICKET_EXPORT_COLUMNS: TicketExportColumn[] = [
     key: "checkInStatus",
     label: "Check In Status",
     getValue: (row) =>
-      firstDefined(row.checkInStatus, row.checkedIn, row.checkIn?.status, row.checkIn?.checkedIn),
+      firstDefined(
+        row.checkInStatus,
+        typeof row.checkedIn === "boolean"
+          ? row.checkedIn
+            ? "Checked in"
+            : "Not checked in"
+          : undefined,
+        row.checkIn?.status,
+        typeof row.checkIn?.checkedIn === "boolean"
+          ? row.checkIn.checkedIn
+            ? "Checked in"
+            : "Not checked in"
+          : undefined
+      ),
   },
   {
     key: "transferStatus",
     label: "Transfer Status",
     getValue: (row) =>
-      firstDefined(row.transferStatus, row.transfer?.status, row.isTransferable),
+      firstDefined(
+        row.transferStatus,
+        row.transfer?.status,
+        typeof row.isTransferable === "boolean"
+          ? row.isTransferable
+            ? "Transferable"
+            : "Not transferable"
+          : undefined
+      ),
   },
   {
     key: "refundStatus",
     label: "Refund Status",
     getValue: (row) =>
-      firstDefined(row.refundStatus, row.refund?.status, row.isRefundable),
+      firstDefined(
+        row.refundStatus,
+        row.refund?.status,
+        typeof row.isRefundable === "boolean"
+          ? row.isRefundable
+            ? "Refundable"
+            : "Not refundable"
+          : undefined
+      ),
   },
   {
     key: "receiptId",

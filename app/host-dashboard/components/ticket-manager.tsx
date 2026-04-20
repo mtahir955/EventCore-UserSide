@@ -19,9 +19,12 @@ import toast from "react-hot-toast";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
 import {
+  DEFAULT_TIMEFRAME_PRESET,
   DEFAULT_TICKET_EXPORT_COLUMN_KEYS,
   TICKET_EXPORT_COLUMNS,
+  createTimeframe,
   downloadCsvExport,
+  getTimeframeParams,
 } from "@/lib/hostDashboardAnalytics";
 
 type TicketManagerProps = {
@@ -41,33 +44,84 @@ type TenantTicketAction =
   | "View Receipt"
   | "View History"
   | "Add Note"
+  | "Edit Note"
   | "Reclaim Ticket"
   | "Force Claim";
 
 type EventTicketCustomer = {
+  [key: string]: any;
   id: string;
+  ticketPurchaseId: string;
   customerId: string;
   name: string;
   email: string;
   ticketId: string;
+  ticketTypeId: string;
   ticketName: string;
   ticketType: string;
   quantity: number;
   status: string;
+  checkedIn: boolean;
   rank: string;
   agentId: string;
   registeredAt: string;
   receiptId: string;
+  orderId: string;
+  notesCount: number;
+  lastHistoryStatus: string;
+  permissions: {
+    canCheckIn?: boolean;
+    canTransfer?: boolean;
+    canCancelRefund?: boolean;
+    canChangeTicketType?: boolean;
+    canUpdateRank?: boolean;
+    canAssignAgentId?: boolean;
+    canAddNote?: boolean;
+    canReclaim?: boolean;
+    canForceClaim?: boolean;
+  };
 };
 
-type EventTicketLocalState = {
-  status?: string;
-  checkedIn?: boolean;
-  ticketType?: string;
-  rank?: string;
-  agentId?: string;
-  notes?: string[];
-  history?: string[];
+type TicketHistoryItem = {
+  id: string;
+  label: string;
+  description: string;
+  performedBy: string;
+  performedByRole: string;
+  createdAt: string;
+};
+
+type TicketNote = {
+  noteId: string;
+  note: string;
+  visibility: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+type TenantActionDetails = {
+  ticket: Record<string, any> | null;
+  receipt: Record<string, any> | null;
+  history: TicketHistoryItem[];
+  notes: TicketNote[];
+};
+
+type TenantActionFields = {
+  transferEmail: string;
+  ticketType: string;
+  rank: string;
+  agentId: string;
+  note: string;
+  reason: string;
+  refundType: string;
+  refundAmount: string;
+  notifyCustomer: boolean;
+  notifyRecipient: boolean;
+  adjustmentMode: string;
+  paymentMethodId: string;
+  claimForCustomerId: string;
+  editNoteId: string;
 };
 
 const tenantTicketActions: TenantTicketAction[] = [
@@ -81,12 +135,252 @@ const tenantTicketActions: TenantTicketAction[] = [
   "View Receipt",
   "View History",
   "Add Note",
+  "Edit Note",
   "Reclaim Ticket",
   "Force Claim",
 ];
 
+const TICKET_RANK_OPTIONS = [
+  "Standard",
+  "VIP",
+  "Guest",
+  "Staff",
+  "Speaker",
+  "Sponsor",
+  "Exhibitor",
+  "Internal",
+] as const;
+
+type TicketRankOption = (typeof TICKET_RANK_OPTIONS)[number];
+
+const DEFAULT_TICKET_RANK: TicketRankOption = "Standard";
+
 const getTicketEventId = (ticket: any) =>
   String(ticket?.eventId ?? ticket?.event?.id ?? ticket?.event?._id ?? "");
+
+const getStringValue = (value: any, fallback = "") =>
+  value === null || value === undefined ? fallback : String(value);
+
+const getAllowedTicketRank = (rank: any): TicketRankOption => {
+  const rankValue = getStringValue(rank).trim();
+  const allowedRank = TICKET_RANK_OPTIONS.find(
+    (option) => option.toLowerCase() === rankValue.toLowerCase()
+  );
+
+  return allowedRank ?? DEFAULT_TICKET_RANK;
+};
+
+const formatReceiptAmount = (currency: any, amount: any) => {
+  if (amount === null || amount === undefined || amount === "") return "N/A";
+
+  const currencyLabel = getStringValue(currency).toUpperCase();
+  return `${currencyLabel ? `${currencyLabel} ` : ""}${amount}`;
+};
+
+const formatHistoryLabel = (item: any) => {
+  if (item?.label) return getStringValue(item.label);
+
+  return getStringValue(item?.action ?? item?.type, "Updated")
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const formatHistoryDescription = (item: any) => {
+  if (item?.description) return getStringValue(item.description);
+
+  const action = getStringValue(item?.action ?? item?.type).toUpperCase();
+  const oldValues = item?.oldValues ?? {};
+  const newValues = item?.newValues ?? {};
+
+  if (action === "REGISTERED") {
+    return [
+      newValues.fullTicketNumber
+        ? `Ticket ${newValues.fullTicketNumber} registered`
+        : "Ticket registered",
+      newValues.buyerId ? `Buyer ${newValues.buyerId}` : "",
+    ]
+      .filter(Boolean)
+      .join(" for ");
+  }
+
+  if (action === "TICKET_TYPE_CHANGED") {
+    const fromTicket = oldValues.ticketType || oldValues.ticketName;
+    const toTicket = newValues.ticketType || newValues.ticketName;
+    const priceText =
+      oldValues.price !== undefined && newValues.price !== undefined
+        ? `Price ${oldValues.price} to ${newValues.price}`
+        : "";
+    const amountText =
+      item?.amountDelta !== undefined ? `Amount delta ${item.amountDelta}` : "";
+    const noteText = item?.note ? `Note: ${item.note}` : "";
+
+    return [
+      fromTicket && toTicket
+        ? `Changed from ${fromTicket} to ${toTicket}`
+        : "Ticket type changed",
+      priceText,
+      amountText,
+      noteText,
+    ]
+      .filter(Boolean)
+      .join(". ");
+  }
+
+  if (action === "NOTE_ADDED") {
+    return item?.note || newValues.note
+      ? `Note: ${item?.note ?? newValues.note}`
+      : "Internal note added";
+  }
+
+  return item?.note ? `Note: ${item.note}` : "";
+};
+
+const getTenantActionLoadingKey = (
+  ticket: EventTicketCustomer,
+  action: TenantTicketAction
+) => `${ticket.id}:${action}`;
+
+type TicketExportFormat = "csv" | "xlsx";
+
+type BackendTicketExportConfig = {
+  endpoint: string;
+  exportDataEndpoint?: string;
+  buildPayload: (
+    columnKeys: string[],
+    format: TicketExportFormat
+  ) => Record<string, any>;
+  buildExportDataParams?: () => Record<string, any>;
+};
+
+const getDefaultExportTimeframeParams = () =>
+  getTimeframeParams(createTimeframe(DEFAULT_TIMEFRAME_PRESET));
+
+const getSafeExportFilename = (filename: string, format: TicketExportFormat) =>
+  `${filename}-${new Date().toISOString().slice(0, 10)}`
+    .replace(/[^a-z0-9-_]/gi, "-")
+    .replace(new RegExp(`-${format}$`, "i"), "");
+
+const getFilenameFromContentDisposition = (contentDisposition: any) => {
+  const header = getStringValue(contentDisposition);
+  if (!header) return "";
+
+  const encodedMatch = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch?.[1]) {
+    try {
+      return decodeURIComponent(encodedMatch[1].replace(/"/g, ""));
+    } catch {
+      return encodedMatch[1].replace(/"/g, "");
+    }
+  }
+
+  const quotedMatch = header.match(/filename="?([^";]+)"?/i);
+  return quotedMatch?.[1]?.trim() ?? "";
+};
+
+const downloadBlobFile = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const downloadFromUrl = (url: string, filename?: string) => {
+  const link = document.createElement("a");
+  link.href = url;
+  if (filename) link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const readBlobJson = async (blob: Blob) => {
+  try {
+    return JSON.parse(await blob.text());
+  } catch {
+    return null;
+  }
+};
+
+const getResponseHeader = (headers: any, key: string) =>
+  headers?.get?.(key) ??
+  headers?.[key] ??
+  headers?.[key.toLowerCase()] ??
+  headers?.[key.toUpperCase()];
+
+const isJsonBlobResponse = (blob: Blob, headers: any) => {
+  const contentType = getStringValue(getResponseHeader(headers, "content-type"));
+  return blob.type.includes("application/json") || contentType.includes("application/json");
+};
+
+const getExportErrorMessage = async (error: any) => {
+  const data = error?.response?.data;
+
+  if (data instanceof Blob) {
+    const json = await readBlobJson(data);
+    return (
+      json?.message ||
+      json?.error?.message ||
+      json?.error ||
+      error?.message ||
+      "Ticket export failed."
+    );
+  }
+
+  return (
+    data?.message ||
+    data?.error?.message ||
+    data?.error ||
+    error?.message ||
+    "Ticket export failed."
+  );
+};
+
+const isExportEndpointUnavailable = (error: any) =>
+  [404, 405, 501].includes(Number(error?.response?.status));
+
+const fetchPaginatedExportRows = async (
+  endpoint: string,
+  baseParams: Record<string, any>
+) => {
+  const rows: any[] = [];
+  const limit = 500;
+  let page = 1;
+  let hasNextPage = true;
+
+  while (hasNextPage && page <= 100) {
+    const res = await apiClient.get(endpoint, {
+      params: {
+        ...baseParams,
+        page,
+        limit,
+      },
+    });
+    const data = res.data?.data ?? res.data ?? {};
+    const pageRows = Array.isArray(data.rows)
+      ? data.rows
+      : Array.isArray(data.tickets)
+        ? data.tickets
+        : Array.isArray(data.customers)
+          ? data.customers
+          : [];
+    const pagination = data.pagination ?? {};
+
+    rows.push(...pageRows);
+
+    const totalPages = Number(pagination.totalPages ?? page);
+    hasNextPage =
+      Boolean(pagination.hasNextPage) ||
+      (Number.isFinite(totalPages) && page < totalPages);
+    page += 1;
+  }
+
+  return rows;
+};
 
 export default function TicketManager({
   eventId,
@@ -126,24 +420,42 @@ export default function TicketManager({
   const [eventTicketsLoading, setEventTicketsLoading] = useState(false);
   const [eventTicketSearch, setEventTicketSearch] = useState("");
   const [eventTicketStatus, setEventTicketStatus] = useState("All");
+  const [eventTicketTypeId, setEventTicketTypeId] = useState("All");
   const [eventCustomersPage, setEventCustomersPage] = useState(1);
   const [eventCustomersTotalPages, setEventCustomersTotalPages] = useState(1);
   const [selectedEventTicket, setSelectedEventTicket] =
     useState<EventTicketCustomer | null>(null);
   const [activeTenantAction, setActiveTenantAction] =
     useState<TenantTicketAction | null>(null);
-  const [tenantActionFields, setTenantActionFields] = useState({
+  const [tenantActionFields, setTenantActionFields] = useState<TenantActionFields>({
     transferEmail: "",
     ticketType: "",
-    rank: "",
+    rank: DEFAULT_TICKET_RANK,
     agentId: "",
     note: "",
+    reason: "",
+    refundType: "full",
+    refundAmount: "",
+    notifyCustomer: true,
+    notifyRecipient: true,
+    adjustmentMode: "charge_difference",
+    paymentMethodId: "",
+    claimForCustomerId: "",
+    editNoteId: "",
   });
-  const [eventTicketLocalState, setEventTicketLocalState] = useState<
-    Record<string, EventTicketLocalState>
-  >({});
-  const [eventTicketStateHydrated, setEventTicketStateHydrated] =
+  const [tenantActionLoadingKey, setTenantActionLoadingKey] = useState<
+    string | null
+  >(null);
+  const [tenantActionDetailLoading, setTenantActionDetailLoading] =
     useState(false);
+  const [tenantActionError, setTenantActionError] = useState("");
+  const [tenantActionDetails, setTenantActionDetails] =
+    useState<TenantActionDetails>({
+      ticket: null,
+      receipt: null,
+      history: [],
+      notes: [],
+    });
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -151,8 +463,11 @@ export default function TicketManager({
 
   // ✅ NEW: allowTransfers feature flag
   const [allowTransfers, setAllowTransfers] = useState<boolean>(false);
+  const [allowRefunds, setAllowRefunds] = useState<boolean>(false);
   const [allowForceClaim, setAllowForceClaim] = useState<boolean>(false);
   const [allowReclaimTicket, setAllowReclaimTicket] = useState<boolean>(true);
+  const [allowTicketNotes, setAllowTicketNotes] = useState<boolean>(true);
+  const [allowTicketHistory, setAllowTicketHistory] = useState<boolean>(true);
 
   // ✅ NEW: fetch tenant features (allowTransfers)
   // useEffect(() => {
@@ -186,6 +501,7 @@ export default function TicketManager({
         const res = await apiClient.get(`/tenants/my/features`);
         const features = res.data?.data?.features ?? {};
         setAllowTransfers(Boolean(features?.allowTransfers?.enabled));
+        setAllowRefunds(Boolean(features?.allowRefunds?.enabled));
         setAllowForceClaim(
           Boolean(
             features?.forceClaim?.enabled ||
@@ -194,11 +510,16 @@ export default function TicketManager({
           )
         );
         setAllowReclaimTicket(features?.reclaimTickets?.enabled !== false);
+        setAllowTicketNotes(features?.ticketNotes?.enabled !== false);
+        setAllowTicketHistory(features?.ticketHistory?.enabled !== false);
       } catch (err) {
         console.error("Failed to fetch tenant features:", err);
         setAllowTransfers(false);
+        setAllowRefunds(false);
         setAllowForceClaim(false);
         setAllowReclaimTicket(true);
+        setAllowTicketNotes(true);
+        setAllowTicketHistory(true);
       }
     };
 
@@ -458,107 +779,281 @@ export default function TicketManager({
     fetchTickets();
   }, [eventId, isEventScoped]);
 
-  const eventProfileStorageKey = eventId
-    ? `tenant-event-ticket-state:${eventId}`
-    : "";
-
-  useEffect(() => {
-    if (!isEventScoped || !eventProfileStorageKey) return;
-
-    setEventTicketStateHydrated(false);
-    try {
-      const saved = localStorage.getItem(eventProfileStorageKey);
-      setEventTicketLocalState(saved ? JSON.parse(saved) : {});
-    } catch {
-      setEventTicketLocalState({});
-    } finally {
-      setEventTicketStateHydrated(true);
-    }
-  }, [eventProfileStorageKey, isEventScoped]);
-
-  useEffect(() => {
-    if (!isEventScoped || !eventProfileStorageKey || !eventTicketStateHydrated)
-      return;
-    localStorage.setItem(
-      eventProfileStorageKey,
-      JSON.stringify(eventTicketLocalState)
+  const normalizeEventTicketRow = (ticket: any): EventTicketCustomer => {
+    const ticketPurchaseId = getStringValue(
+      ticket.ticketPurchaseId ??
+        ticket.issuedTicketId ??
+        ticket.ticketId ??
+        ticket.issuedTicket?.id ??
+        ticket.ticket?.purchaseId ??
+        ticket.ticket?.ticketPurchaseId ??
+        ticket.id ??
+        ticket._id
     );
-  }, [
-    eventProfileStorageKey,
-    eventTicketLocalState,
-    eventTicketStateHydrated,
-    isEventScoped,
-  ]);
+    const ticketTypeId = getStringValue(
+      ticket.ticketTypeId ??
+        ticket.ticket?.ticketTypeId ??
+        ticket.ticket?.id ??
+        ticket.ticket?._id ??
+        ticket.typeId
+    );
+    const customerId = getStringValue(
+        ticket.customerId ??
+        ticket.userId ??
+        ticket.buyer?.id ??
+        ticket.buyer?._id ??
+        ticket.customer?.id ??
+        ticket.customer?._id ??
+        ticket.user?.id ??
+        ticket.user?._id,
+      ticketPurchaseId
+    );
+    const rowId = getStringValue(
+      ticket.issuedTicketId ?? ticket.id ?? ticket._id ?? ticketPurchaseId,
+      `${customerId}-${ticketTypeId || "ticket"}`
+    );
+    const permissions = ticket.permissions ?? {};
+    const availableActions = ticket.availableActions ?? {};
+
+    return {
+      id: rowId,
+      ticketPurchaseId,
+      customerId,
+      name:
+        ticket.customerName ??
+        ticket.fullName ??
+        ticket.name ??
+        ticket.buyer?.name ??
+        ticket.buyer?.fullName ??
+        ticket.customer?.fullName ??
+        ticket.customer?.name ??
+        ticket.user?.fullName ??
+        ticket.user?.name ??
+        "Unknown attendee",
+      email:
+        ticket.customerEmail ??
+        ticket.email ??
+        ticket.buyer?.email ??
+        ticket.customer?.email ??
+        ticket.user?.email ??
+        "N/A",
+      firstName:
+        ticket.firstName ??
+        ticket.customer?.firstName ??
+        ticket.user?.firstName ??
+        ticket.buyer?.firstName,
+      lastName:
+        ticket.lastName ??
+        ticket.customer?.lastName ??
+        ticket.user?.lastName ??
+        ticket.buyer?.lastName,
+      phoneNumber:
+        ticket.phoneNumber ??
+        ticket.phone ??
+        ticket.customer?.phoneNumber ??
+        ticket.customer?.phone ??
+        ticket.user?.phoneNumber ??
+        ticket.user?.phone,
+      ticketNumber:
+        ticket.ticketNumber ??
+        ticket.fullTicketNumber ??
+        ticket.ticket?.ticketNumber ??
+        ticket.ticket?.fullTicketNumber,
+      ticketStatus: ticket.ticketStatus ?? ticket.status,
+      orderDate:
+        ticket.orderDate ??
+        ticket.registeredAt ??
+        ticket.createdAt ??
+        ticket.purchaseDate,
+      ticketPrice:
+        ticket.ticketPrice ??
+        ticket.price ??
+        ticket.ticket?.price ??
+        ticket.purchase?.ticketPrice,
+      serviceFee:
+        ticket.serviceFee ??
+        ticket.fees?.service ??
+        ticket.order?.serviceFee ??
+        ticket.purchase?.serviceFee,
+      processingFee:
+        ticket.processingFee ??
+        ticket.fees?.processing ??
+        ticket.order?.processingFee ??
+        ticket.purchase?.processingFee,
+      customOrderFormAnswers:
+        ticket.customOrderFormAnswers ??
+        ticket.customAnswers ??
+        ticket.orderFormAnswers ??
+        ticket.answers ??
+        ticket.order?.customOrderFormAnswers,
+      billingAmount:
+        ticket.billingAmount ??
+        ticket.totalAmount ??
+        ticket.amount ??
+        ticket.order?.billingAmount ??
+        ticket.purchase?.billingAmount,
+      cardLast4:
+        ticket.cardLast4 ??
+        ticket.cardNumberLast4 ??
+        ticket.last4 ??
+        ticket.payment?.cardLast4 ??
+        ticket.payment?.card?.last4,
+      cardholderName:
+        ticket.cardholderName ??
+        ticket.cardHolderName ??
+        ticket.payment?.cardholderName ??
+        ticket.payment?.card?.name,
+      note:
+        ticket.note ??
+        ticket.notes ??
+        ticket.internalNote ??
+        ticket.latestNote,
+      ticketId:
+        getStringValue(ticket.fullTicketNumber ?? ticket.ticketNumber) ||
+        ticketPurchaseId ||
+        "N/A",
+      ticketTypeId,
+      ticketName:
+        ticket.ticketName ??
+        ticket.ticket?.name ??
+        ticket.metadata?.ticketName ??
+        ticket.ticketType ??
+        "Assigned ticket",
+      ticketType:
+        ticket.ticketType ??
+        ticket.ticket?.type ??
+        ticket.metadata?.ticketType ??
+        ticket.type ??
+        "General",
+      quantity: Number(ticket.quantity ?? ticket.purchase?.ticketQuantity ?? 1),
+      status: ticket.status ?? ticket.lastHistoryStatus ?? "Registered",
+      checkedIn: Boolean(
+        ticket.checkedIn ??
+          ticket.usedAt ??
+          String(ticket.status ?? "").toLowerCase() === "checked in"
+      ),
+      checkInStatus:
+        ticket.checkInStatus ??
+        (ticket.checkedIn ? "Checked in" : "Not checked in"),
+      transferStatus:
+        ticket.transferStatus ??
+        ticket.transfer?.status ??
+        (ticket.isTransferable ? "Transferable" : "Not transferred"),
+      refundStatus:
+        ticket.refundStatus ??
+        ticket.refund?.status ??
+        (ticket.isRefundable ? "Refundable" : "Not refunded"),
+      isTransferable: ticket.isTransferable,
+      isRefundable: ticket.isRefundable,
+      eventId: ticket.eventId ?? ticket.event?.id ?? ticket.event?._id ?? eventId,
+      eventName:
+        ticket.eventName ??
+        ticket.eventTitle ??
+        ticket.event?.name ??
+        ticket.event?.title ??
+        eventTitle,
+      rank: getStringValue(
+        ticket.rank ?? ticket.buyer?.rank ?? ticket.customer?.rank ?? ticket.user?.rank
+      ),
+      agentId: getStringValue(
+        ticket.agentId ??
+          ticket.buyer?.agentId ??
+          ticket.customer?.agentId ??
+          ticket.user?.agentId
+      ),
+      registeredAt: getStringValue(
+        ticket.registeredAt ?? ticket.createdAt ?? ticket.purchaseDate
+      ),
+      receiptId: getStringValue(
+        ticket.receiptId ??
+          ticket.receipt?.id ??
+          ticket.orderId ??
+          ticket.purchase?.confirmationNumber ??
+          ticket.purchaseId ??
+          ticket.paymentId,
+        "N/A"
+      ),
+      orderId: getStringValue(
+        ticket.orderId ?? ticket.receipt?.orderId ?? ticket.purchase?.id ?? ticket.purchaseId,
+        "N/A"
+      ),
+      notesCount: Number(
+        ticket.notesCount ??
+          ticket.notes?.count ??
+          (Array.isArray(ticket.notes) ? ticket.notes.length : 0)
+      ),
+      lastHistoryStatus: getStringValue(ticket.lastHistoryStatus ?? ticket.status),
+      permissions: {
+        canCheckIn:
+          permissions.canCheckIn ?? availableActions.checkIn ?? ticket.canCheckIn,
+        canTransfer:
+          permissions.canTransfer ?? availableActions.transfer ?? ticket.canTransfer,
+        canCancelRefund:
+          permissions.canCancelRefund ??
+          availableActions.cancelRefund ??
+          permissions.canRefund ??
+          ticket.canCancelRefund,
+        canChangeTicketType:
+          permissions.canChangeTicketType ??
+          availableActions.changeTicketType ??
+          ticket.canChangeTicketType,
+        canUpdateRank:
+          permissions.canUpdateRank ?? availableActions.updateRank ?? ticket.canUpdateRank,
+        canAssignAgentId:
+          permissions.canAssignAgentId ??
+          permissions.canAssignAgentID ??
+          availableActions.assignAgentId ??
+          ticket.canAssignAgentId,
+        canAddNote:
+          permissions.canAddNote ?? availableActions.addNote ?? ticket.canAddNote,
+        canReclaim:
+          permissions.canReclaim ?? availableActions.reclaim ?? ticket.canReclaim,
+        canForceClaim:
+          permissions.canForceClaim ??
+          availableActions.forceClaim ??
+          ticket.canForceClaim,
+      },
+    };
+  };
 
   const fetchEventTicketRows = async () => {
     if (!eventId) return;
 
     try {
       setEventTicketsLoading(true);
-      const res = await apiClient.get(`/events/${eventId}/customers`, {
-        params: { page: eventCustomersPage, limit: ticketsPerPage },
-      });
+      const params = {
+        page: eventCustomersPage,
+        limit: ticketsPerPage,
+        ...(eventTicketSearch.trim()
+          ? { search: eventTicketSearch.trim() }
+          : {}),
+        ...(eventTicketStatus !== "All" ? { status: eventTicketStatus } : {}),
+        ...(eventTicketTypeId !== "All" ? { ticketTypeId: eventTicketTypeId } : {}),
+      };
 
-      const customersRaw = res.data?.data?.customers ?? [];
+      let res;
+      try {
+        res = await apiClient.get(`/events/${eventId}/tickets/manage`, {
+          params,
+        });
+      } catch (manageErr: any) {
+        if (manageErr?.response?.status !== 404) throw manageErr;
+        res = await apiClient.get(`/events/${eventId}/customers`, {
+          params,
+        });
+      }
+
+      const responseData = res.data?.data ?? res.data ?? {};
+      const customersRaw =
+        responseData.tickets ?? responseData.customers ?? responseData.rows ?? [];
       const totalPages =
-        res.data?.data?.pagination?.totalPages ??
+        responseData?.pagination?.totalPages ??
         res.data?.pagination?.totalPages ??
         1;
 
-      const normalizedCustomers = customersRaw.map((customer: any) => {
-        const ticketId = String(
-          customer.ticketId ??
-            customer.ticket?.id ??
-            customer.ticket?._id ??
-            customer.id ??
-            ""
-        );
-        const customerId = String(
-          customer.customerId ??
-            customer.userId ??
-            customer.user?.id ??
-            customer.id ??
-            ticketId
-        );
-        const rowId = `${customerId}-${ticketId || "ticket"}`;
-
-        return {
-          id: rowId,
-          customerId,
-          name:
-            customer.fullName ??
-            customer.name ??
-            customer.user?.fullName ??
-            "Unknown attendee",
-          email: customer.email ?? customer.user?.email ?? "N/A",
-          ticketId: ticketId || "N/A",
-          ticketName:
-            customer.ticketName ??
-            customer.ticket?.name ??
-            customer.ticketType ??
-            "Assigned ticket",
-          ticketType:
-            customer.ticketType ??
-            customer.ticket?.type ??
-            customer.type ??
-            "General",
-          quantity: Number(customer.quantity ?? 1),
-          status: customer.status ?? "Registered",
-          rank: customer.rank ?? customer.user?.rank ?? "",
-          agentId: customer.agentId ?? customer.user?.agentId ?? "",
-          registeredAt:
-            customer.registeredAt ??
-            customer.createdAt ??
-            customer.purchaseDate ??
-            "",
-          receiptId:
-            customer.receiptId ??
-            customer.orderId ??
-            customer.paymentId ??
-            customer.invoiceId ??
-            "N/A",
-        };
-      });
+      const normalizedCustomers = Array.isArray(customersRaw)
+        ? customersRaw.map(normalizeEventTicketRow)
+        : [];
 
       setEventTicketRows(normalizedCustomers);
       setEventCustomersTotalPages(totalPages);
@@ -575,19 +1070,23 @@ export default function TicketManager({
   useEffect(() => {
     if (!isEventScoped) return;
     fetchEventTicketRows();
-  }, [eventId, eventCustomersPage, isEventScoped]);
+  }, [
+    eventId,
+    eventCustomersPage,
+    eventTicketSearch,
+    eventTicketStatus,
+    eventTicketTypeId,
+    isEventScoped,
+  ]);
+
+  useEffect(() => {
+    if (!isEventScoped) return;
+    setEventCustomersPage(1);
+  }, [eventTicketSearch, eventTicketStatus, eventTicketTypeId, isEventScoped]);
 
   const getDisplayTicket = (ticket: EventTicketCustomer) => {
-    const local = eventTicketLocalState[ticket.id] ?? {};
     return {
       ...ticket,
-      status: local.status ?? ticket.status,
-      checkedIn: local.checkedIn ?? false,
-      ticketType: local.ticketType ?? ticket.ticketType,
-      rank: local.rank ?? ticket.rank,
-      agentId: local.agentId ?? ticket.agentId,
-      notes: local.notes ?? [],
-      history: local.history ?? ["Registered"],
     };
   };
 
@@ -603,8 +1102,12 @@ export default function TicketManager({
       const matchesStatus =
         eventTicketStatus === "All" ||
         ticket.status.toLowerCase() === eventTicketStatus.toLowerCase();
+      const matchesTicketType =
+        eventTicketTypeId === "All" ||
+        ticket.ticketTypeId === eventTicketTypeId ||
+        ticket.ticketType.toLowerCase() === eventTicketTypeId.toLowerCase();
 
-      return matchesQuery && matchesStatus;
+      return matchesQuery && matchesStatus && matchesTicketType;
     });
 
   const openTenantAction = (
@@ -614,92 +1117,344 @@ export default function TicketManager({
     const displayTicket = getDisplayTicket(ticket);
     setSelectedEventTicket(ticket);
     setActiveTenantAction(action);
+    setTenantActionError("");
+    setTenantActionDetails({ ticket: null, receipt: null, history: [], notes: [] });
     setTenantActionFields({
       transferEmail: "",
-      ticketType: displayTicket.ticketType,
-      rank: displayTicket.rank,
+      ticketType: displayTicket.ticketTypeId || displayTicket.ticketType,
+      rank: getAllowedTicketRank(displayTicket.rank),
       agentId: displayTicket.agentId,
       note: "",
+      reason: "",
+      refundType: "full",
+      refundAmount: "",
+      notifyCustomer: true,
+      notifyRecipient: true,
+      adjustmentMode: "charge_difference",
+      paymentMethodId: "",
+      claimForCustomerId: displayTicket.customerId,
+      editNoteId: "",
     });
+    loadTenantActionData(action, displayTicket);
   };
 
   const closeTenantAction = () => {
     setSelectedEventTicket(null);
     setActiveTenantAction(null);
+    setTenantActionError("");
+    setTenantActionDetails({ ticket: null, receipt: null, history: [], notes: [] });
   };
 
-  const appendTicketHistory = (
-    current: EventTicketLocalState,
-    message: string
-  ) => ({
-    ...current,
-    history: [...(current.history ?? ["Registered"]), message],
-  });
+  const permissionEnabled = (value: boolean | undefined) => value !== false;
 
-  const applyTenantAction = () => {
-    if (!selectedEventTicket || !activeTenantAction) return;
+  const canRunTenantAction = (
+    action: TenantTicketAction,
+    ticket: EventTicketCustomer
+  ) => {
+    const permissions = ticket.permissions ?? {};
 
-    const ticketKey = selectedEventTicket.id;
-    const timestamp = new Date().toLocaleString();
+    switch (action) {
+      case "Check In":
+        return permissionEnabled(permissions.canCheckIn);
+      case "Transfer":
+        return allowTransfers && permissionEnabled(permissions.canTransfer);
+      case "Cancel / Refund":
+        return allowRefunds && permissionEnabled(permissions.canCancelRefund);
+      case "Change Ticket Type":
+        return permissionEnabled(permissions.canChangeTicketType);
+      case "Update Rank":
+        return permissionEnabled(permissions.canUpdateRank);
+      case "Assign Agent ID":
+        return permissionEnabled(permissions.canAssignAgentId);
+      case "Add Note":
+      case "Edit Note":
+        return allowTicketNotes && permissionEnabled(permissions.canAddNote);
+      case "View History":
+        return allowTicketHistory;
+      case "Reclaim Ticket":
+        return allowReclaimTicket && permissionEnabled(permissions.canReclaim);
+      case "Force Claim":
+        return allowForceClaim && permissionEnabled(permissions.canForceClaim);
+      default:
+        return true;
+    }
+  };
 
-    setEventTicketLocalState((current) => {
-      const existing = current[ticketKey] ?? {};
-      let next = appendTicketHistory(
-        existing,
-        `${activeTenantAction} updated on ${timestamp}`
-      );
+  const getCurrentTenantUserId = () => {
+    if (typeof window === "undefined") return "";
+
+    const storageKeys = ["hostUser", "staffUser", "adminUser", "userData"];
+    for (const key of storageKeys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      try {
+        const parsed = JSON.parse(raw);
+        const user = parsed?.user ?? parsed;
+        const id = user?.id ?? user?._id ?? user?.userId;
+        if (id) return String(id);
+      } catch {
+        continue;
+      }
+    }
+
+    return "";
+  };
+
+  const loadTenantActionData = async (
+    action: TenantTicketAction,
+    ticket: EventTicketCustomer
+  ) => {
+    if (!eventId || !ticket.ticketPurchaseId) return;
+
+    const shouldLoadTicket = action === "View Ticket";
+    const shouldLoadReceipt = action === "View Receipt";
+    const shouldLoadHistory = action === "View History";
+    const shouldLoadNotes = action === "Add Note" || action === "Edit Note";
+
+    if (!shouldLoadTicket && !shouldLoadReceipt && !shouldLoadHistory && !shouldLoadNotes) {
+      return;
+    }
+
+    try {
+      setTenantActionDetailLoading(true);
+      setTenantActionError("");
+
+      const nextDetails: TenantActionDetails = {
+        ticket: null,
+        receipt: null,
+        history: [],
+        notes: [],
+      };
+
+      if (shouldLoadTicket) {
+        const res = await apiClient.get(
+          `/events/${eventId}/tickets/${ticket.ticketPurchaseId}`
+        );
+        nextDetails.ticket = res.data?.data ?? res.data ?? null;
+      }
+
+      if (shouldLoadReceipt) {
+        const res = await apiClient.get(
+          `/events/${eventId}/tickets/${ticket.ticketPurchaseId}/receipt`
+        );
+        nextDetails.receipt = res.data?.data ?? res.data ?? null;
+      }
+
+      if (shouldLoadHistory) {
+        const res = await apiClient.get(
+          `/events/${eventId}/tickets/${ticket.ticketPurchaseId}/history`
+        );
+        const history = res.data?.data?.history ?? res.data?.history ?? [];
+        nextDetails.history = Array.isArray(history)
+          ? history.map((item: any, index: number) => ({
+              id: getStringValue(
+                item.id ?? item._id ?? `${item.action ?? "history"}-${item.createdAt ?? index}`,
+                `history-${index}`
+              ),
+              label: formatHistoryLabel(item),
+              description: formatHistoryDescription(item),
+              performedBy: getStringValue(item.performedBy),
+              performedByRole: getStringValue(item.performedByRole),
+              createdAt: getStringValue(item.createdAt),
+            }))
+          : [];
+      }
+
+      if (shouldLoadNotes) {
+        const res = await apiClient.get(
+          `/events/${eventId}/tickets/${ticket.ticketPurchaseId}/notes`
+        );
+        const notes = res.data?.data?.notes ?? res.data?.notes ?? [];
+        nextDetails.notes = Array.isArray(notes)
+          ? notes.map((item: any, index: number) => ({
+              noteId: getStringValue(item.noteId ?? item.id ?? item._id, `note-${index}`),
+              note: getStringValue(item.note),
+              visibility: getStringValue(item.visibility, "internal"),
+              createdBy: getStringValue(item.createdBy, "N/A"),
+              createdAt: getStringValue(item.createdAt),
+              updatedAt: item.updatedAt ? getStringValue(item.updatedAt) : undefined,
+            }))
+          : [];
+
+        if (action === "Edit Note" && nextDetails.notes.length > 0) {
+          const firstNote = nextDetails.notes[0];
+          setTenantActionFields((fields) => ({
+            ...fields,
+            editNoteId: firstNote.noteId,
+            note: firstNote.note,
+          }));
+        }
+      }
+
+      setTenantActionDetails(nextDetails);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || `Failed to load ${action.toLowerCase()}`;
+      setTenantActionError(message);
+      toast.error(message);
+    } finally {
+      setTenantActionDetailLoading(false);
+    }
+  };
+
+  const applyTenantAction = async () => {
+    if (!selectedEventTicket || !activeTenantAction || !eventId) return;
+
+    const ticketPurchaseId = selectedEventTicket.ticketPurchaseId;
+    const currentActionKey = getTenantActionLoadingKey(
+      selectedEventTicket,
+      activeTenantAction
+    );
+
+    try {
+      setTenantActionLoadingKey(currentActionKey);
+      setTenantActionError("");
+
+      let response;
 
       if (activeTenantAction === "Check In") {
-        next = { ...next, checkedIn: true, status: "Checked In" };
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/check-in`,
+          {
+            checkedInBy: getCurrentTenantUserId() || undefined,
+            source: "tenant-dashboard",
+            note:
+              tenantActionFields.note ||
+              tenantActionFields.reason ||
+              "Checked in manually by tenant",
+          }
+        );
       }
 
       if (activeTenantAction === "Transfer") {
-        next = {
-          ...next,
-          status: tenantActionFields.transferEmail
-            ? `Transfer pending to ${tenantActionFields.transferEmail}`
-            : "Transfer pending",
-        };
+        if (!tenantActionFields.transferEmail.trim()) {
+          toast.error("Enter the recipient email.");
+          return;
+        }
+
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/transfer`,
+          {
+            toEmail: tenantActionFields.transferEmail.trim(),
+            reason: tenantActionFields.reason || "Customer requested transfer",
+            notifyRecipient: tenantActionFields.notifyRecipient,
+          }
+        );
       }
 
       if (activeTenantAction === "Cancel / Refund") {
-        next = { ...next, status: "Cancelled / Refund pending" };
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/cancel-refund`,
+          {
+            refundType: tenantActionFields.refundType,
+            refundAmount:
+              tenantActionFields.refundType === "partial" &&
+              tenantActionFields.refundAmount
+                ? Number(tenantActionFields.refundAmount)
+                : null,
+            reason:
+              tenantActionFields.reason || "Customer requested cancellation",
+            notifyCustomer: tenantActionFields.notifyCustomer,
+          }
+        );
       }
 
       if (activeTenantAction === "Change Ticket Type") {
-        next = { ...next, ticketType: tenantActionFields.ticketType };
+        response = await apiClient.patch(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/type`,
+          {
+            newTicketTypeId: tenantActionFields.ticketType,
+            adjustmentMode: tenantActionFields.adjustmentMode,
+            paymentMethodId: tenantActionFields.paymentMethodId || undefined,
+            reason: tenantActionFields.reason || "Tenant changed ticket type",
+          }
+        );
       }
 
       if (activeTenantAction === "Update Rank") {
-        next = { ...next, rank: tenantActionFields.rank };
+        response = await apiClient.patch(
+          `/events/${eventId}/customers/${selectedEventTicket.customerId}/rank`,
+          {
+            rank: tenantActionFields.rank,
+            reason: tenantActionFields.reason || "Tenant updated customer rank",
+          }
+        );
       }
 
       if (activeTenantAction === "Assign Agent ID") {
-        next = { ...next, agentId: tenantActionFields.agentId };
+        response = await apiClient.patch(
+          `/events/${eventId}/customers/${selectedEventTicket.customerId}/agent`,
+          {
+            agentId: tenantActionFields.agentId,
+            reason: tenantActionFields.reason || "Assigned by tenant",
+          }
+        );
       }
 
       if (activeTenantAction === "Add Note") {
-        next = {
-          ...next,
-          notes: tenantActionFields.note
-            ? [...(existing.notes ?? []), tenantActionFields.note]
-            : existing.notes ?? [],
-        };
+        if (!tenantActionFields.note.trim()) {
+          toast.error("Add a note before saving.");
+          return;
+        }
+
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/notes`,
+          {
+            note: tenantActionFields.note.trim(),
+            visibility: "internal",
+          }
+        );
+      }
+
+      if (activeTenantAction === "Edit Note") {
+        if (!tenantActionFields.editNoteId) {
+          toast.error("Select a note to edit.");
+          return;
+        }
+
+        response = await apiClient.patch(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/notes/${tenantActionFields.editNoteId}`,
+          {
+            note: tenantActionFields.note.trim(),
+          }
+        );
       }
 
       if (activeTenantAction === "Reclaim Ticket") {
-        next = { ...next, status: "Reclaim requested" };
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/reclaim`,
+          {
+            reason: tenantActionFields.reason || "Ticket reclaimed by tenant",
+            notifyCustomer: tenantActionFields.notifyCustomer,
+          }
+        );
       }
 
       if (activeTenantAction === "Force Claim") {
-        next = { ...next, status: "Force claimed" };
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/force-claim`,
+          {
+            claimForCustomerId: tenantActionFields.claimForCustomerId,
+            reason: tenantActionFields.reason || "Manual tenant override",
+            notifyCustomer: tenantActionFields.notifyCustomer,
+          }
+        );
       }
 
-      return { ...current, [ticketKey]: next };
-    });
-
-    toast.success(`${activeTenantAction} saved in the event ticket view`);
-    closeTenantAction();
+      toast.success(
+        response?.data?.message || `${activeTenantAction} completed successfully`
+      );
+      await fetchEventTicketRows();
+      closeTenantAction();
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || `${activeTenantAction} failed`;
+      setTenantActionError(message);
+      toast.error(message);
+    } finally {
+      setTenantActionLoadingKey(null);
+    }
   };
 
   const selectedDisplayTicket = selectedEventTicket
@@ -843,14 +1598,14 @@ export default function TicketManager({
         {isEventScoped ? (
           <EventScopedTicketOperations
             activeTenantAction={activeTenantAction}
-            allowForceClaim={allowForceClaim}
-            allowReclaimTicket={allowReclaimTicket}
             closeTenantAction={closeTenantAction}
+            canRunTenantAction={canRunTenantAction}
             eventCustomersPage={eventCustomersPage}
             eventCustomersTotalPages={eventCustomersTotalPages}
             eventId={eventId}
             eventTicketSearch={eventTicketSearch}
             eventTicketStatus={eventTicketStatus}
+            eventTicketTypeId={eventTicketTypeId}
             eventTicketsLoading={eventTicketsLoading}
             eventTitle={eventTitle}
             filteredEventTicketRows={filteredEventTicketRows}
@@ -859,8 +1614,13 @@ export default function TicketManager({
             setEventCustomersPage={setEventCustomersPage}
             setEventTicketSearch={setEventTicketSearch}
             setEventTicketStatus={setEventTicketStatus}
+            setEventTicketTypeId={setEventTicketTypeId}
             setTenantActionFields={setTenantActionFields}
             tenantActionFields={tenantActionFields}
+            tenantActionDetailLoading={tenantActionDetailLoading}
+            tenantActionDetails={tenantActionDetails}
+            tenantActionError={tenantActionError}
+            tenantActionLoadingKey={tenantActionLoadingKey}
             tickets={tickets}
             applyTenantAction={applyTenantAction}
           />
@@ -903,6 +1663,29 @@ export default function TicketManager({
             <TicketExportControls
               rows={filteredTickets}
               filename="ticket-manager-export"
+              backendExport={{
+                endpoint: "/tickets/export",
+                exportDataEndpoint: "/tickets/export-data",
+                buildPayload: (columnKeys, format) => ({
+                  format,
+                  scope: "global",
+                  ...getDefaultExportTimeframeParams(),
+                  filters: {
+                    ticketType,
+                    ticketName,
+                    eventId: null,
+                    status: "All",
+                    search: ticketName.trim(),
+                  },
+                  columns: columnKeys,
+                }),
+                buildExportDataParams: () => ({
+                  ...getDefaultExportTimeframeParams(),
+                  ticketType,
+                  status: "All",
+                  search: ticketName.trim(),
+                }),
+              }}
             />
           </div>
 
@@ -1274,15 +2057,19 @@ function ToggleRow({
 function TicketExportControls({
   rows,
   filename,
+  backendExport,
   buttonClassName = "",
 }: {
   rows: any[];
   filename: string;
+  backendExport?: BackendTicketExportConfig;
   buttonClassName?: string;
 }) {
   const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(
     DEFAULT_TICKET_EXPORT_COLUMN_KEYS
   );
+  const [exportFormat, setExportFormat] = useState<TicketExportFormat>("csv");
+  const [isExporting, setIsExporting] = useState(false);
 
   const selectedColumns = TICKET_EXPORT_COLUMNS.filter((column) =>
     selectedColumnKeys.includes(column.key)
@@ -1296,7 +2083,100 @@ function TicketExportControls({
     );
   };
 
-  const handleExport = () => {
+  const exportLoadedRowsAsCsv = () => {
+    const safeFilename = getSafeExportFilename(filename, "csv");
+
+    downloadCsvExport(rows, selectedColumns, safeFilename);
+    toast.success(`Exported ${rows.length} ticket row${rows.length === 1 ? "" : "s"}.`);
+  };
+
+  const exportFromBackend = async () => {
+    if (!backendExport) return false;
+
+    const safeFilename = getSafeExportFilename(filename, exportFormat);
+
+    try {
+      const res = await apiClient.post(
+        backendExport.endpoint,
+        backendExport.buildPayload(selectedColumnKeys, exportFormat),
+        { responseType: "blob" }
+      );
+      const blob =
+        res.data instanceof Blob
+          ? res.data
+          : new Blob([res.data], {
+              type: getStringValue(getResponseHeader(res.headers, "content-type")),
+            });
+
+      if (isJsonBlobResponse(blob, res.headers)) {
+        const json = await readBlobJson(blob);
+        const data = json?.data ?? {};
+
+        if (data.rowCount === 0) {
+          toast.error("No ticket data available to export.");
+          return true;
+        }
+
+        if (data.downloadUrl) {
+          downloadFromUrl(data.downloadUrl, data.filename);
+          toast.success(
+            `Exported ${data.rowCount ?? rows.length} ticket row${
+              data.rowCount === 1 ? "" : "s"
+            }.`
+          );
+          return true;
+        }
+
+        throw new Error(
+          json?.message ||
+            json?.error?.message ||
+            "Backend export response did not include a downloadable file."
+        );
+      }
+
+      const headerFilename = getFilenameFromContentDisposition(
+        getResponseHeader(res.headers, "content-disposition")
+      );
+      downloadBlobFile(blob, headerFilename || `${safeFilename}.${exportFormat}`);
+      toast.success("Ticket export downloaded.");
+      return true;
+    } catch (error: any) {
+      if (!isExportEndpointUnavailable(error)) {
+        throw new Error(await getExportErrorMessage(error));
+      }
+
+      if (!backendExport.exportDataEndpoint) return false;
+
+      if (exportFormat !== "csv") {
+        throw new Error("XLSX export requires the backend file export endpoint.");
+      }
+
+      try {
+        const exportRows = await fetchPaginatedExportRows(
+          backendExport.exportDataEndpoint,
+          backendExport.buildExportDataParams?.() ?? {}
+        );
+
+        if (!exportRows.length) {
+          toast.error("No ticket data available to export.");
+          return true;
+        }
+
+        downloadCsvExport(exportRows, selectedColumns, getSafeExportFilename(filename, "csv"));
+        toast.success(
+          `Exported ${exportRows.length} ticket row${
+            exportRows.length === 1 ? "" : "s"
+          }.`
+        );
+        return true;
+      } catch (exportDataError: any) {
+        if (isExportEndpointUnavailable(exportDataError)) return false;
+        throw new Error(await getExportErrorMessage(exportDataError));
+      }
+    }
+  };
+
+  const handleExport = async () => {
     if (!rows.length) {
       toast.error("No ticket data available to export.");
       return;
@@ -1307,16 +2187,37 @@ function TicketExportControls({
       return;
     }
 
-    const safeFilename = `${filename}-${new Date()
-      .toISOString()
-      .slice(0, 10)}`.replace(/[^a-z0-9-_]/gi, "-");
+    setIsExporting(true);
 
-    downloadCsvExport(rows, selectedColumns, safeFilename);
-    toast.success(`Exported ${rows.length} ticket row${rows.length === 1 ? "" : "s"}.`);
+    try {
+      const downloadedFromBackend = await exportFromBackend();
+
+      if (!downloadedFromBackend) {
+        if (exportFormat !== "csv") {
+          toast.error("XLSX export is not available for the loaded-row fallback.");
+          return;
+        }
+
+        exportLoadedRowsAsCsv();
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Ticket export failed.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
     <div className="relative flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-end">
+      <select
+        value={exportFormat}
+        onChange={(event) => setExportFormat(event.target.value as TicketExportFormat)}
+        className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 outline-none dark:border-gray-700 dark:bg-[#101010] dark:text-gray-200"
+      >
+        <option value="csv">CSV</option>
+        <option value="xlsx">XLSX</option>
+      </select>
+
       <details className="group">
         <summary className="flex h-10 cursor-pointer list-none items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
           Columns ({selectedColumns.length})
@@ -1363,9 +2264,10 @@ function TicketExportControls({
       <button
         type="button"
         onClick={handleExport}
-        className={`rounded-lg bg-[#D19537] px-4 py-2 text-sm font-semibold text-white ${buttonClassName}`}
+        disabled={isExporting}
+        className={`rounded-lg bg-[#D19537] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 ${buttonClassName}`}
       >
-        Export CSV
+        {isExporting ? "Exporting..." : `Export ${exportFormat.toUpperCase()}`}
       </button>
     </div>
   );
@@ -1373,15 +2275,15 @@ function TicketExportControls({
 
 function EventScopedTicketOperations({
   activeTenantAction,
-  allowForceClaim,
-  allowReclaimTicket,
   applyTenantAction,
+  canRunTenantAction,
   closeTenantAction,
   eventCustomersPage,
   eventCustomersTotalPages,
   eventId,
   eventTicketSearch,
   eventTicketStatus,
+  eventTicketTypeId,
   eventTicketsLoading,
   eventTitle,
   filteredEventTicketRows,
@@ -1390,59 +2292,46 @@ function EventScopedTicketOperations({
   setEventCustomersPage,
   setEventTicketSearch,
   setEventTicketStatus,
+  setEventTicketTypeId,
   setTenantActionFields,
   tenantActionFields,
+  tenantActionDetailLoading,
+  tenantActionDetails,
+  tenantActionError,
+  tenantActionLoadingKey,
   tickets,
 }: {
   activeTenantAction: TenantTicketAction | null;
-  allowForceClaim: boolean;
-  allowReclaimTicket: boolean;
-  applyTenantAction: () => void;
+  applyTenantAction: () => Promise<void>;
+  canRunTenantAction: (
+    action: TenantTicketAction,
+    ticket: EventTicketCustomer
+  ) => boolean;
   closeTenantAction: () => void;
   eventCustomersPage: number;
   eventCustomersTotalPages: number;
   eventId?: string;
   eventTicketSearch: string;
   eventTicketStatus: string;
+  eventTicketTypeId: string;
   eventTicketsLoading: boolean;
   eventTitle?: string;
-  filteredEventTicketRows: Array<
-    EventTicketCustomer & {
-      checkedIn: boolean;
-      notes: string[];
-      history: string[];
-    }
-  >;
+  filteredEventTicketRows: EventTicketCustomer[];
   openTenantAction: (
     action: TenantTicketAction,
     ticket: EventTicketCustomer
   ) => void;
-  selectedDisplayTicket:
-    | (EventTicketCustomer & {
-        checkedIn: boolean;
-        notes: string[];
-        history: string[];
-      })
-    | null;
+  selectedDisplayTicket: EventTicketCustomer | null;
   setEventCustomersPage: Dispatch<SetStateAction<number>>;
   setEventTicketSearch: Dispatch<SetStateAction<string>>;
   setEventTicketStatus: Dispatch<SetStateAction<string>>;
-  setTenantActionFields: Dispatch<
-    SetStateAction<{
-      transferEmail: string;
-      ticketType: string;
-      rank: string;
-      agentId: string;
-      note: string;
-    }>
-  >;
-  tenantActionFields: {
-    transferEmail: string;
-    ticketType: string;
-    rank: string;
-    agentId: string;
-    note: string;
-  };
+  setEventTicketTypeId: Dispatch<SetStateAction<string>>;
+  setTenantActionFields: Dispatch<SetStateAction<TenantActionFields>>;
+  tenantActionFields: TenantActionFields;
+  tenantActionDetailLoading: boolean;
+  tenantActionDetails: TenantActionDetails;
+  tenantActionError: string;
+  tenantActionLoadingKey: string | null;
   tickets: any[];
 }) {
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
@@ -1506,6 +2395,18 @@ function EventScopedTicketOperations({
     setActionMenuPosition({ left, top });
   };
 
+  const selectedTicketType = tickets.find((ticket: any) => {
+    const typeId = String(ticket.id ?? ticket._id ?? ticket.type ?? "");
+    return typeId === eventTicketTypeId || ticket.type === eventTicketTypeId;
+  });
+  const selectedTicketTypeFilter =
+    eventTicketTypeId === "All"
+      ? "All"
+      : getStringValue(
+          selectedTicketType?.type ?? selectedTicketType?.name,
+          eventTicketTypeId
+        );
+
   return (
     <>
       <div className="mx-4 mt-6 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-8">
@@ -1543,7 +2444,7 @@ function EventScopedTicketOperations({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
           <input
             type="text"
             placeholder="Search name, email, or ticket ID"
@@ -1559,9 +2460,26 @@ function EventScopedTicketOperations({
             <option>All</option>
             <option>Registered</option>
             <option>Checked In</option>
-            <option>Cancelled / Refund pending</option>
-            <option>Reclaim requested</option>
-            <option>Force claimed</option>
+            <option>Transfer Pending</option>
+            <option>Cancelled</option>
+            <option>Reclaimed</option>
+            <option>Force Claimed</option>
+          </select>
+          <select
+            value={eventTicketTypeId}
+            onChange={(e) => setEventTicketTypeId(e.target.value)}
+            className="h-11 rounded-lg border border-gray-300 px-4 text-sm outline-none dark:border-gray-700 dark:bg-[#101010]"
+          >
+            <option value="All">All ticket types</option>
+            {tickets.map((ticket: any) => {
+              const typeId = String(ticket.id ?? ticket._id ?? ticket.type ?? "");
+
+              return (
+                <option key={typeId || ticket.name} value={typeId || ticket.type}>
+                  {ticket.name ?? ticket.type ?? "Ticket type"}
+                </option>
+              );
+            })}
           </select>
           <Link href="/ticket-manager">
             <button className="h-11 w-full rounded-lg border border-[#D19537] px-4 text-sm font-semibold text-[#D19537]">
@@ -1575,6 +2493,30 @@ function EventScopedTicketOperations({
               eventName: eventTitle,
             }))}
             filename={`event-${eventId || "tickets"}-export`}
+            backendExport={
+              eventId
+                ? {
+                    endpoint: `/events/${eventId}/tickets/export`,
+                    exportDataEndpoint: `/events/${eventId}/tickets/export-data`,
+                    buildPayload: (columnKeys, format) => ({
+                      format,
+                      ...getDefaultExportTimeframeParams(),
+                      filters: {
+                        status: eventTicketStatus,
+                        search: eventTicketSearch.trim(),
+                        ticketType: selectedTicketTypeFilter,
+                      },
+                      columns: columnKeys,
+                    }),
+                    buildExportDataParams: () => ({
+                      ...getDefaultExportTimeframeParams(),
+                      status: eventTicketStatus,
+                      search: eventTicketSearch.trim(),
+                      ticketType: selectedTicketTypeFilter,
+                    }),
+                  }
+                : undefined
+            }
             buttonClassName="h-11 w-full"
           />
         </div>
@@ -1686,8 +2628,9 @@ function EventScopedTicketOperations({
           >
             {tenantTicketActions.map((action) => {
               const disabled =
-                (action === "Force Claim" && !allowForceClaim) ||
-                (action === "Reclaim Ticket" && !allowReclaimTicket);
+                !canRunTenantAction(action, openActionTicket) ||
+                tenantActionLoadingKey ===
+                  getTenantActionLoadingKey(openActionTicket, action);
 
               return (
                 <button
@@ -1782,88 +2725,282 @@ function EventScopedTicketOperations({
               />
             </div>
 
-            {activeTenantAction === "Transfer" && (
-              <ActionField label="Transfer to email">
-                <input
-                  type="email"
-                  value={tenantActionFields.transferEmail}
+            {tenantActionError && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {tenantActionError}
+              </div>
+            )}
+
+            {activeTenantAction === "Check In" && (
+              <ActionField label="Check-in note">
+                <textarea
+                  value={tenantActionFields.note}
                   onChange={(e) =>
                     setTenantActionFields((fields) => ({
                       ...fields,
-                      transferEmail: e.target.value,
+                      note: e.target.value,
                     }))
                   }
-                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
-                  placeholder="customer@example.com"
+                  className="min-h-[90px] w-full rounded-lg border px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  placeholder="Checked in manually by tenant"
                 />
               </ActionField>
+            )}
+
+            {activeTenantAction === "Transfer" && (
+              <>
+                <ActionField label="Transfer to email">
+                  <input
+                    type="email"
+                    value={tenantActionFields.transferEmail}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        transferEmail: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="customer@example.com"
+                  />
+                </ActionField>
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Customer requested transfer"
+                  />
+                </ActionField>
+                <ToggleField
+                  checked={tenantActionFields.notifyRecipient}
+                  label="Notify recipient"
+                  onChange={(checked) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      notifyRecipient: checked,
+                    }))
+                  }
+                />
+              </>
+            )}
+
+            {activeTenantAction === "Cancel / Refund" && (
+              <>
+                <ActionField label="Refund type">
+                  <select
+                    value={tenantActionFields.refundType}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        refundType: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  >
+                    <option value="full">Full</option>
+                    <option value="partial">Partial</option>
+                  </select>
+                </ActionField>
+                {tenantActionFields.refundType === "partial" && (
+                  <ActionField label="Refund amount">
+                    <input
+                      type="number"
+                      min="0"
+                      value={tenantActionFields.refundAmount}
+                      onChange={(e) =>
+                        setTenantActionFields((fields) => ({
+                          ...fields,
+                          refundAmount: e.target.value,
+                        }))
+                      }
+                      className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                      placeholder="25"
+                    />
+                  </ActionField>
+                )}
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Customer requested cancellation"
+                  />
+                </ActionField>
+                <ToggleField
+                  checked={tenantActionFields.notifyCustomer}
+                  label="Notify customer"
+                  onChange={(checked) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      notifyCustomer: checked,
+                    }))
+                  }
+                />
+              </>
             )}
 
             {activeTenantAction === "Change Ticket Type" && (
-              <ActionField label="New ticket type">
-                <select
-                  value={tenantActionFields.ticketType}
-                  onChange={(e) =>
-                    setTenantActionFields((fields) => ({
-                      ...fields,
-                      ticketType: e.target.value,
-                    }))
-                  }
-                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
-                >
-                  {tickets.length > 0 ? (
-                    tickets.map((ticket: any) => (
-                      <option
-                        key={ticket.id ?? ticket.name}
-                        value={ticket.type ?? ticket.name}
-                      >
-                        {ticket.name ?? ticket.type}{" "}
-                        {ticket.price ? `- $${ticket.price}` : ""}
+              <>
+                <ActionField label="New ticket type">
+                  <select
+                    value={tenantActionFields.ticketType}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        ticketType: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  >
+                    {tickets.length > 0 ? (
+                      tickets.map((ticket: any) => {
+                        const typeId = String(ticket.id ?? ticket._id ?? ticket.type ?? "");
+
+                        return (
+                          <option
+                            key={typeId || ticket.name}
+                            value={typeId || ticket.type || ticket.name}
+                          >
+                            {ticket.name ?? ticket.type}{" "}
+                            {ticket.price ? `- $${ticket.price}` : ""}
+                          </option>
+                        );
+                      })
+                    ) : (
+                      <option value={selectedDisplayTicket.ticketTypeId}>
+                        {selectedDisplayTicket.ticketType}
                       </option>
-                    ))
-                  ) : (
-                    <option>{selectedDisplayTicket.ticketType}</option>
-                  )}
-                </select>
-                <p className="mt-2 text-xs text-gray-500">
-                  Difference charge or refund will be handled by the connected
-                  backend flow when available.
-                </p>
-              </ActionField>
+                    )}
+                  </select>
+                </ActionField>
+                <ActionField label="Adjustment mode">
+                  <select
+                    value={tenantActionFields.adjustmentMode}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        adjustmentMode: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  >
+                    <option value="charge_difference">Charge difference</option>
+                    <option value="refund_difference">Refund difference</option>
+                    <option value="no_charge">No charge</option>
+                    <option value="manual_offline">Manual offline</option>
+                  </select>
+                </ActionField>
+                <ActionField label="Payment method ID">
+                  <input
+                    type="text"
+                    value={tenantActionFields.paymentMethodId}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        paymentMethodId: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="pm_123"
+                  />
+                </ActionField>
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Customer upgraded to VIP"
+                  />
+                </ActionField>
+              </>
             )}
 
             {activeTenantAction === "Update Rank" && (
-              <ActionField label="Rank">
-                <input
-                  type="text"
-                  value={tenantActionFields.rank}
-                  onChange={(e) =>
-                    setTenantActionFields((fields) => ({
-                      ...fields,
-                      rank: e.target.value,
-                    }))
-                  }
-                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
-                  placeholder="VIP, Gold, Tier 1"
-                />
-              </ActionField>
+              <>
+                <ActionField label="Rank">
+                  <select
+                    value={tenantActionFields.rank}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        rank: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  >
+                    {TICKET_RANK_OPTIONS.map((rank) => (
+                      <option key={rank} value={rank}>
+                        {rank}
+                      </option>
+                    ))}
+                  </select>
+                </ActionField>
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Tenant upgraded customer rank"
+                  />
+                </ActionField>
+              </>
             )}
 
             {activeTenantAction === "Assign Agent ID" && (
-              <ActionField label="Agent ID">
-                <input
-                  type="text"
-                  value={tenantActionFields.agentId}
-                  onChange={(e) =>
-                    setTenantActionFields((fields) => ({
-                      ...fields,
-                      agentId: e.target.value,
-                    }))
-                  }
-                  className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
-                  placeholder="AG-1001"
-                />
-              </ActionField>
+              <>
+                <ActionField label="Agent ID">
+                  <input
+                    type="text"
+                    value={tenantActionFields.agentId}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        agentId: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="AG-1001"
+                  />
+                </ActionField>
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Assigned by tenant"
+                  />
+                </ActionField>
+              </>
             )}
 
             {activeTenantAction === "Add Note" && (
@@ -1882,45 +3019,296 @@ function EventScopedTicketOperations({
               </ActionField>
             )}
 
+            {activeTenantAction === "Edit Note" && (
+              <>
+                {tenantActionDetailLoading ? (
+                  <p className="mt-5 text-sm text-gray-500">Loading notes...</p>
+                ) : tenantActionDetails.notes.length === 0 ? (
+                  <p className="mt-5 text-sm text-gray-500">
+                    No internal notes are available to edit.
+                  </p>
+                ) : (
+                  <>
+                    <ActionField label="Select note">
+                      <select
+                        value={tenantActionFields.editNoteId}
+                        onChange={(e) => {
+                          const selectedNote = tenantActionDetails.notes.find(
+                            (note) => note.noteId === e.target.value
+                          );
+
+                          setTenantActionFields((fields) => ({
+                            ...fields,
+                            editNoteId: e.target.value,
+                            note: selectedNote?.note ?? "",
+                          }));
+                        }}
+                        className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                      >
+                        {tenantActionDetails.notes.map((note) => (
+                          <option key={note.noteId} value={note.noteId}>
+                            {note.note.slice(0, 60) || note.noteId}
+                          </option>
+                        ))}
+                      </select>
+                    </ActionField>
+                    <ActionField label="Internal note">
+                      <textarea
+                        value={tenantActionFields.note}
+                        onChange={(e) =>
+                          setTenantActionFields((fields) => ({
+                            ...fields,
+                            note: e.target.value,
+                          }))
+                        }
+                        className="min-h-[110px] w-full rounded-lg border px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                        placeholder="Update the tenant-only note"
+                      />
+                    </ActionField>
+                  </>
+                )}
+              </>
+            )}
+
+            {activeTenantAction === "Reclaim Ticket" && (
+              <>
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Ticket was transferred incorrectly"
+                  />
+                </ActionField>
+                <ToggleField
+                  checked={tenantActionFields.notifyCustomer}
+                  label="Notify customer"
+                  onChange={(checked) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      notifyCustomer: checked,
+                    }))
+                  }
+                />
+              </>
+            )}
+
+            {activeTenantAction === "Force Claim" && (
+              <>
+                <ActionField label="Claim for customer ID">
+                  <input
+                    type="text"
+                    value={tenantActionFields.claimForCustomerId}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        claimForCustomerId: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="user_456"
+                  />
+                </ActionField>
+                <ActionField label="Reason">
+                  <input
+                    type="text"
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Manual tenant override"
+                  />
+                </ActionField>
+                <ToggleField
+                  checked={tenantActionFields.notifyCustomer}
+                  label="Notify customer"
+                  onChange={(checked) =>
+                    setTenantActionFields((fields) => ({
+                      ...fields,
+                      notifyCustomer: checked,
+                    }))
+                  }
+                />
+              </>
+            )}
+
             {activeTenantAction === "View Ticket" && (
-              <DetailList
-                items={[
-                  ["Ticket ID", selectedDisplayTicket.ticketId],
-                  ["Ticket Type", selectedDisplayTicket.ticketType],
-                  ["Quantity", String(selectedDisplayTicket.quantity)],
-                  ["Checked In", selectedDisplayTicket.checkedIn ? "Yes" : "No"],
-                ]}
-              />
+              tenantActionDetailLoading ? (
+                <p className="mt-5 text-sm text-gray-500">Loading ticket...</p>
+              ) : (
+                <DetailList
+                  items={[
+                    [
+                      "Ticket ID",
+                      getStringValue(
+                        tenantActionDetails.ticket?.ticketPurchaseId,
+                        selectedDisplayTicket.ticketId
+                      ),
+                    ],
+                    [
+                      "Ticket Type",
+                      getStringValue(
+                        tenantActionDetails.ticket?.ticketType,
+                        selectedDisplayTicket.ticketType
+                      ),
+                    ],
+                    [
+                      "Ticket Name",
+                      getStringValue(
+                        tenantActionDetails.ticket?.ticketName,
+                        selectedDisplayTicket.ticketName
+                      ),
+                    ],
+                    [
+                      "Quantity",
+                      getStringValue(
+                        tenantActionDetails.ticket?.quantity,
+                        String(selectedDisplayTicket.quantity)
+                      ),
+                    ],
+                    [
+                      "Checked In",
+                      tenantActionDetails.ticket?.checkedIn ??
+                      selectedDisplayTicket.checkedIn
+                        ? "Yes"
+                        : "No",
+                    ],
+                    [
+                      "QR Code",
+                      getStringValue(tenantActionDetails.ticket?.qrCodeUrl, "N/A"),
+                    ],
+                  ]}
+                />
+              )
             )}
 
             {activeTenantAction === "View Receipt" && (
-              <DetailList
-                items={[
-                  ["Receipt ID", selectedDisplayTicket.receiptId],
-                  ["Attendee", selectedDisplayTicket.name],
-                  ["Email", selectedDisplayTicket.email],
-                  ["Event ID", eventId || "N/A"],
-                ]}
-              />
+              tenantActionDetailLoading ? (
+                <p className="mt-5 text-sm text-gray-500">Loading receipt...</p>
+              ) : (
+                <DetailList
+                  items={[
+                    [
+                      "Receipt ID",
+                      getStringValue(
+                        tenantActionDetails.receipt?.receiptId ??
+                          tenantActionDetails.receipt?.purchase?.confirmationNumber,
+                        selectedDisplayTicket.receiptId
+                      ),
+                    ],
+                    [
+                      "Order ID",
+                      getStringValue(
+                        tenantActionDetails.receipt?.orderId ??
+                          tenantActionDetails.receipt?.purchase?.id,
+                        selectedDisplayTicket.orderId
+                      ),
+                    ],
+                    [
+                      "Attendee",
+                      getStringValue(
+                        tenantActionDetails.receipt?.customerName ??
+                          tenantActionDetails.receipt?.buyer?.name,
+                        selectedDisplayTicket.name
+                      ),
+                    ],
+                    [
+                      "Email",
+                      getStringValue(
+                        tenantActionDetails.receipt?.customerEmail ??
+                          tenantActionDetails.receipt?.buyer?.email,
+                        selectedDisplayTicket.email
+                      ),
+                    ],
+                    [
+                      "Total",
+                      formatReceiptAmount(
+                        tenantActionDetails.receipt?.currency ??
+                          tenantActionDetails.receipt?.purchase?.currency,
+                        tenantActionDetails.receipt?.total ??
+                          tenantActionDetails.receipt?.purchase?.totalAmount
+                      ),
+                    ],
+                    [
+                      "Payment Status",
+                      getStringValue(
+                        tenantActionDetails.receipt?.paymentStatus ??
+                          tenantActionDetails.receipt?.purchase?.status,
+                        "N/A"
+                      ),
+                    ],
+                    [
+                      "Paid At",
+                      getStringValue(
+                        tenantActionDetails.receipt?.paidAt ??
+                          tenantActionDetails.receipt?.purchase?.paidAt,
+                        "N/A"
+                      ),
+                    ],
+                  ]}
+                />
+              )
             )}
 
             {activeTenantAction === "View History" && (
               <div className="mt-5 rounded-lg border p-4 dark:border-gray-700">
                 <h4 className="mb-3 font-semibold">History</h4>
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                  {selectedDisplayTicket.history.map((item, index) => (
-                    <p key={`${item}-${index}`}>{item}</p>
-                  ))}
+                  {tenantActionDetailLoading ? (
+                    <p>Loading history...</p>
+                  ) : tenantActionDetails.history.length === 0 ? (
+                    <p>No history found.</p>
+                  ) : (
+                    tenantActionDetails.history.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-lg bg-[#FAFAFB] p-3 dark:bg-[#101010]"
+                      >
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {item.label}
+                        </p>
+                        {item.description && <p>{item.description}</p>}
+                        {[item.performedByRole, item.performedBy, item.createdAt]
+                          .filter(Boolean).length > 0 && (
+                          <p className="text-xs text-gray-500">
+                            {[item.performedByRole, item.performedBy, item.createdAt]
+                              .filter(Boolean)
+                              .join(" - ")}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
 
-            {selectedDisplayTicket.notes.length > 0 && (
+            {(activeTenantAction === "Add Note" ||
+              activeTenantAction === "Edit Note") &&
+              tenantActionDetails.notes.length > 0 && (
               <div className="mt-5 rounded-lg border p-4 dark:border-gray-700">
                 <h4 className="mb-3 font-semibold">Internal notes</h4>
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                  {selectedDisplayTicket.notes.map((note, index) => (
-                    <p key={`${note}-${index}`}>{note}</p>
+                  {tenantActionDetails.notes.map((note) => (
+                    <div
+                      key={note.noteId}
+                      className="rounded-lg bg-[#FAFAFB] p-3 dark:bg-[#101010]"
+                    >
+                      <p>{note.note}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {note.visibility} - {note.createdAt || "N/A"}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1938,9 +3326,16 @@ function EventScopedTicketOperations({
               ) && (
                 <button
                   onClick={applyTenantAction}
-                  className="rounded-lg bg-[#D19537] px-5 py-2 text-sm font-semibold text-white"
+                  disabled={
+                    tenantActionLoadingKey ===
+                    getTenantActionLoadingKey(selectedDisplayTicket, activeTenantAction)
+                  }
+                  className="rounded-lg bg-[#D19537] px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Save action
+                  {tenantActionLoadingKey ===
+                  getTenantActionLoadingKey(selectedDisplayTicket, activeTenantAction)
+                    ? "Saving..."
+                    : "Save action"}
                 </button>
               )}
             </div>
@@ -1971,6 +3366,35 @@ function ActionField({
     <div className="mt-5">
       <label className="mb-2 block text-sm font-semibold">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function ToggleField({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="mt-5 flex items-center justify-between rounded-lg border px-4 py-3 dark:border-gray-700">
+      <span className="text-sm font-semibold">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          checked ? "bg-[#D19537]" : "bg-gray-300"
+        }`}
+      >
+        <span
+          className={`inline-block h-[22px] w-[22px] rounded-full bg-white transition-transform ${
+            checked ? "translate-x-[20px]" : "translate-x-0"
+          }`}
+        />
+      </button>
     </div>
   );
 }
