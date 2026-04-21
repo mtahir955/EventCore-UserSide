@@ -7,15 +7,28 @@ import { getSavedTenantId, getSavedAdminTenantId } from "@/config/tenantConfig";
 const getToken = () => {
   if (typeof window === "undefined") return null;
 
-  const adminMode = isAdminContext(window.location.pathname);
+  const path = window.location.pathname;
+  const adminMode = isAdminContext(path);
+  const staffMode =
+    path.startsWith("/staff-dashboard") ||
+    path.startsWith("/my-events-staff") ||
+    path.startsWith("/ticket-manager-staff") ||
+    path.startsWith("/ticket-check-staff") ||
+    path.startsWith("/profile-settings-staff");
 
   const raw = adminMode
     ? localStorage.getItem("adminToken")
-    : localStorage.getItem("buyerToken") ||
-      localStorage.getItem("userToken") ||
-      localStorage.getItem("staffToken") ||
-      localStorage.getItem("hostToken") ||
-      localStorage.getItem("token"); // fallback
+    : staffMode
+      ? localStorage.getItem("staffToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("hostToken") ||
+        localStorage.getItem("buyerToken") ||
+        localStorage.getItem("userToken")
+      : localStorage.getItem("buyerToken") ||
+        localStorage.getItem("userToken") ||
+        localStorage.getItem("staffToken") ||
+        localStorage.getItem("hostToken") ||
+        localStorage.getItem("token"); // fallback
 
   if (!raw) return null;
 
