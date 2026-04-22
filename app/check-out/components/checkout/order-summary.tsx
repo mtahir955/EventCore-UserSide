@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
@@ -15,6 +16,11 @@ import {
   getSavedPaymentMethodId,
   type SavedPaymentCard,
 } from "@/lib/paymentCards";
+import {
+  formatEventDateLabel,
+  getEventAccessState,
+  normalizeEvent,
+} from "@/lib/event-publishing";
 
 // Stripe
 import { loadStripe } from "@stripe/stripe-js";
@@ -64,6 +70,44 @@ const readStoredCards = (): StoredCardSummary[] => {
     return [];
   }
 };
+
+const checkoutPasswordStorageKey = (eventKey: string) => `event-access:${eventKey}`;
+
+async function fetchCheckoutEventByIdentifiers(
+  eventId?: string | null,
+  eventSlug?: string | null
+) {
+  const attempts: Array<() => Promise<any>> = [];
+
+  if (eventId) {
+    attempts.push(() => apiClient.get(`/events/public/${eventId}`));
+  }
+
+  if (eventSlug) {
+    attempts.push(() => apiClient.get(`/events/public/slug/${eventSlug}`));
+    attempts.push(() => apiClient.get(`/events/public/by-slug/${eventSlug}`));
+  }
+
+  let lastError: any = null;
+
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      return res.data?.data || res.data;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (eventSlug) {
+    const fallback = await apiClient.get("/events/upcoming");
+    const events = fallback.data?.data?.events || fallback.data?.events || [];
+    const matched = events.find((entry: any) => normalizeEvent(entry).slug === eventSlug);
+    if (matched) return matched;
+  }
+
+  throw lastError;
+}
 
 /* ─────────────────────────────────────────
    STRIPE CARD PAYMENT COMPONENT (DIRECT)
@@ -519,13 +563,16 @@ export default function OrderSummary({
 }) {
   const searchParams = useSearchParams();
   const eventId = searchParams.get("id");
+  const eventSlug = searchParams.get("slug");
 
   const [eventData, setEventData] = useState<any>(null);
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingEvent, setLoadingEvent] = useState(true);
+  const [checkoutEventError, setCheckoutEventError] = useState("");
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>(
     {}
   );
+  const [hasPasswordAccess, setHasPasswordAccess] = useState(false);
 
   const [initiatingPayment, setInitiatingPayment] = useState(false);
 
@@ -634,6 +681,18 @@ export default function OrderSummary({
     useState<number>(0);
   const [loadingProcessingFee, setLoadingProcessingFee] =
     useState<boolean>(false);
+  const normalizedEvent = useMemo(() => normalizeEvent(eventData), [eventData]);
+  const resolvedEventId = normalizedEvent.id || eventId || "";
+  const checkoutAccessState = useMemo(
+    () =>
+      getEventAccessState(normalizedEvent, {
+        hasPasswordAccess,
+        isAuthorizedInvitee: Boolean(
+          eventData?.isAuthorizedInvitee || eventData?.accessGranted
+        ),
+      }),
+    [eventData, hasPasswordAccess, normalizedEvent]
+  );
 
   // ───────── CALCULATE ORDER AMOUNT (for fee estimation) ─────────
   const orderAmount = useMemo(() => {
@@ -795,28 +854,39 @@ export default function OrderSummary({
 
   /* ─────────────── FETCH EVENT ───────────────*/
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId && !eventSlug) return;
 
-    // const token = getToken();
-
-    // axios
-    //   .get(`${API_BASE_URL}/events/public/${eventId}`, {
-    //     headers: {
-    //       Authorization: token ? `Bearer ${token}` : "",
-    //       "X-Tenant-ID": HOST_Tenant_ID,
-    //     },
-    //   })
-    apiClient
-      .get(`/events/public/${eventId}`)
-
-      .then((res) => setEventData(res.data.data))
-      .catch(() => toast.error("Failed to load event"))
+    fetchCheckoutEventByIdentifiers(eventId, eventSlug)
+      .then((data) => {
+        setEventData(data);
+        setCheckoutEventError("");
+      })
+      .catch(() => {
+        setCheckoutEventError("Failed to load event");
+        toast.error("Failed to load event");
+      })
       .finally(() => setLoadingEvent(false));
-  }, [eventId]);
+  }, [eventId, eventSlug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const eventKey =
+      normalizedEvent.slug || normalizedEvent.id || eventSlug || eventId || "";
+    if (!eventKey) return;
+
+    const storedPassword = localStorage.getItem(
+      checkoutPasswordStorageKey(eventKey)
+    );
+    if (!storedPassword) return;
+
+    if (!normalizedEvent.accessPassword || storedPassword === normalizedEvent.accessPassword) {
+      setHasPasswordAccess(true);
+    }
+  }, [eventId, eventSlug, normalizedEvent.accessPassword, normalizedEvent.id, normalizedEvent.slug]);
 
   /* ─────────────── FETCH TICKETS ───────────────*/
   useEffect(() => {
-    if (!eventId) return;
+    if (!resolvedEventId) return;
     // const token = getToken();
 
     // axios
@@ -827,13 +897,13 @@ export default function OrderSummary({
     //     },
     //   })
     apiClient
-      .get(`/tickets/event/${eventId}`)
+      .get(`/tickets/event/${resolvedEventId}`)
 
       .then((res) => {
         if (res.data?.data?.tickets) setTickets(res.data.data.tickets);
       })
       .catch(() => toast.error("Failed to load tickets"));
-  }, [eventId]);
+  }, [resolvedEventId]);
 
   /* ─────────────── FETCH AVAILABLE PAYMENT METHODS (Stripe BNPL) ───────────────*/
   useEffect(() => {
@@ -970,7 +1040,8 @@ export default function OrderSummary({
     localStorage.setItem(
       "checkoutSelectionSummary",
       JSON.stringify({
-        eventId,
+        eventId: resolvedEventId,
+        eventSlug: normalizedEvent.slug,
         eventName: eventData?.title || eventData?.name || "Event",
         items: selectedCartItems,
         totalQuantity: totalTicketCount,
@@ -982,7 +1053,8 @@ export default function OrderSummary({
 
   const buildPaymentPayloadCandidates = () => {
     const commonPayload: Record<string, any> = {
-      eventId,
+      eventId: resolvedEventId,
+      eventSlug: normalizedEvent.slug || eventSlug,
       useCredits,
     };
 
@@ -1002,19 +1074,7 @@ export default function OrderSummary({
       commonPayload.serviceFee = Number(calculatedServiceFee.toFixed(2));
     }
 
-    if (selectedCartItems.length === 1) {
-      const [ticket] = selectedCartItems;
-
-      return [
-        {
-          ...commonPayload,
-          ticketId: ticket.id,
-          quantity: ticket.quantity,
-        },
-      ];
-    }
-
-    const multiTicketItems = selectedCartItems.map((ticket) => ({
+    const checkoutItems = selectedCartItems.map((ticket) => ({
       ticketId: ticket.id,
       quantity: ticket.quantity,
     }));
@@ -1022,22 +1082,31 @@ export default function OrderSummary({
     return [
       {
         ...commonPayload,
-        items: multiTicketItems,
+        items: checkoutItems,
+        totalQuantity: totalTicketCount,
+      },
+      ...(selectedCartItems.length === 1
+        ? [
+            {
+              ...commonPayload,
+              ticketId: checkoutItems[0].ticketId,
+              quantity: checkoutItems[0].quantity,
+            },
+          ]
+        : []),
+      {
+        ...commonPayload,
+        tickets: checkoutItems,
         totalQuantity: totalTicketCount,
       },
       {
         ...commonPayload,
-        tickets: multiTicketItems,
+        lineItems: checkoutItems,
         totalQuantity: totalTicketCount,
       },
       {
         ...commonPayload,
-        lineItems: multiTicketItems,
-        totalQuantity: totalTicketCount,
-      },
-      {
-        ...commonPayload,
-        ticketSelections: multiTicketItems,
+        ticketSelections: checkoutItems,
         totalQuantity: totalTicketCount,
       },
     ];
@@ -1059,6 +1128,18 @@ export default function OrderSummary({
   };
 
   const handlePaymentInitiate = async () => {
+    if (!resolvedEventId) {
+      toast.error("This event is missing a valid checkout identifier.");
+      return;
+    }
+
+    if (!checkoutAccessState.canPurchase) {
+      toast.error(
+        checkoutAccessState.message || "This event is not available for purchase."
+      );
+      return;
+    }
+
     const token = getToken();
     if (!token) {
       toast.error(
@@ -1251,18 +1332,42 @@ export default function OrderSummary({
         {/* Event Details */}
         <div className="rounded-[12px] border bg-white dark:bg-[#1a1a1a] p-4">
           <div className="relative mb-3 overflow-hidden rounded-[12px]">
-            Event Detials
+            Event Details
           </div>
 
           <p className="text-lg font-medium">
-            {eventData?.title || "Loading..."}
+            {normalizedEvent.title || "Loading..."}
           </p>
 
           <p className="text-sm text-gray-400 mt-2">
-            {eventData?.date?.fullDate}
+            {formatEventDateLabel(normalizedEvent)}
           </p>
-          <p className="text-sm text-gray-400">{eventData?.location}</p>
+          <p className="text-sm text-gray-400">
+            {normalizedEvent.mode === "virtual"
+              ? "Online"
+              : normalizedEvent.locationLabel}
+          </p>
+          {normalizedEvent.slug ? (
+            <p className="mt-2 text-xs text-gray-500">/event/{normalizedEvent.slug}</p>
+          ) : null}
         </div>
+
+        {!checkoutAccessState.canPurchase && (
+          <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-100">
+            {checkoutAccessState.message ||
+              checkoutEventError ||
+              "This event is not available for new purchases right now."}
+            {checkoutAccessState.state === "password-required" && normalizedEvent.urlPath ? (
+              <div className="mt-2">
+                Unlock the event from{" "}
+                <Link href={normalizedEvent.urlPath} className="font-semibold underline">
+                  the public event page
+                </Link>{" "}
+                first, then return to checkout.
+              </div>
+            ) : null}
+          </div>
+        )}
 
         {/* Ticket selection */}
         <div className="rounded-[12px] border bg-white dark:bg-[#1a1a1a] p-4">
@@ -1732,7 +1837,11 @@ export default function OrderSummary({
           <Button
             className="w-full h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handlePaymentInitiate}
-            disabled={initiatingPayment || !isAuthenticated}
+            disabled={
+              initiatingPayment ||
+              !isAuthenticated ||
+              !checkoutAccessState.canPurchase
+            }
           >
             {initiatingPayment ? (
               <>

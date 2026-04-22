@@ -51,19 +51,37 @@ export const buildSavedCardsFromApi = (
 ): SavedPaymentCard[] =>
   getSavedPaymentCards(buildPaymentDetailsFromApi(data, fallbackDetails));
 
+const getResponseDataOrThrow = (
+  response: AnyRecord,
+  fallbackMessage: string
+) => {
+  if (response?.data?.success === false) {
+    const error: AnyRecord = new Error(
+      response.data?.message || fallbackMessage
+    );
+    error.response = response;
+    throw error;
+  }
+
+  return response?.data?.data || {};
+};
+
 export const fetchStripePublishableKey = async () => {
   const response = await apiClient.get("/payments/config/publishable-key");
-  return response.data?.data?.publishableKey || "";
+  return getResponseDataOrThrow(
+    response,
+    "Stripe configuration is unavailable."
+  ).publishableKey || "";
 };
 
 export const createSavedCardSetupIntent = async (payload: AnyRecord) => {
   const response = await apiClient.post("/payments/methods/setup-intent", payload);
-  return response.data?.data || {};
+  return getResponseDataOrThrow(response, "Failed to start card setup.");
 };
 
 export const confirmSavedCardSetup = async (payload: AnyRecord) => {
   const response = await apiClient.post("/payments/methods/confirm-save", payload);
-  return response.data?.data || {};
+  return getResponseDataOrThrow(response, "Failed to save the card.");
 };
 
 export const setDefaultSavedCard = async (paymentMethodId: string) => {
@@ -71,12 +89,12 @@ export const setDefaultSavedCard = async (paymentMethodId: string) => {
     `/payments/methods/${paymentMethodId}/default`,
     { isDefault: true }
   );
-  return response.data?.data || {};
+  return getResponseDataOrThrow(response, "Failed to update the default card.");
 };
 
 export const deleteSavedCard = async (paymentMethodId: string) => {
   const response = await apiClient.delete(`/payments/methods/${paymentMethodId}`);
-  return response.data?.data || {};
+  return getResponseDataOrThrow(response, "Failed to delete the card.");
 };
 
 export const syncBuyerProfilePaymentDetails = (
