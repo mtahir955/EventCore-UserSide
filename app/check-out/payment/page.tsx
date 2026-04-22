@@ -30,15 +30,46 @@ type TicketQR = {
   };
 };
 
+type CheckoutSelectionSummary = {
+  eventId?: string;
+  eventName?: string;
+  items?: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    lineTotal: number;
+  }>;
+  totalQuantity?: number;
+  totalAmount?: number;
+};
+
 export default function PaymentSuccessPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [ticketQrs, setTicketQrs] = useState<TicketQR[]>([]);
+  const [checkoutSummary, setCheckoutSummary] =
+    useState<CheckoutSelectionSummary | null>(null);
 
   const [confirming, setConfirming] = useState(false);
 
   const ticketMeta = ticketQrs?.[0]?.metadata;
+  const purchasedTicketLabel =
+    checkoutSummary?.items?.length
+      ? checkoutSummary.items
+          .map((item) => `${item.name} x ${item.quantity}`)
+          .join(", ")
+      : paymentData?.ticket?.name || "N/A";
+  const purchasedTicketCount =
+    paymentData?.issuedTickets?.length ||
+    checkoutSummary?.totalQuantity ||
+    paymentData?.ticket?.quantity ||
+    1;
+  const purchasedAmount =
+    paymentData?.payment?.totalAmount ??
+    checkoutSummary?.totalAmount?.toFixed?.(2) ??
+    "0.00";
 
   const generateTicketImage = async (params: {
     qrDataUrl: string;
@@ -163,6 +194,15 @@ export default function PaymentSuccessPage() {
     const stored = localStorage.getItem("confirmedPurchase");
     if (stored) {
       setPaymentData(JSON.parse(stored)?.data);
+    }
+
+    const storedSummary = localStorage.getItem("checkoutSelectionSummary");
+    if (storedSummary) {
+      try {
+        setCheckoutSummary(JSON.parse(storedSummary));
+      } catch {
+        setCheckoutSummary(null);
+      }
     }
   }, []);
 
@@ -415,15 +455,15 @@ export default function PaymentSuccessPage() {
                 <Line label="Item" value={paymentData?.event?.name || "N/A"} />
                 <Line
                   label="Ticket"
-                  value={paymentData?.ticket?.name || "N/A"}
+                  value={purchasedTicketLabel}
                 />
                 <Line
                   label="Quantity"
-                  value={`${paymentData?.ticket?.quantity || 1} Ticket(s)`}
+                  value={`${purchasedTicketCount} Ticket(s)`}
                 />
                 <Line
                   label="Amount"
-                  value={`$${paymentData?.payment?.totalAmount || "0.00"}`}
+                  value={`$${purchasedAmount}`}
                 />
               </div>
             </div>
@@ -469,15 +509,17 @@ export default function PaymentSuccessPage() {
                     className="h-[150px] sm:h-[200px] w-[150px] sm:w-[200px] object-contain"
                   />
                   <p className="mt-2 sm:mt-3 text-center text-[10px] sm:text-[12px] tracking-wider text-white/80">
-                    TCK-482917-AB56
+                    {paymentData?.confirmationNumber || "TCK-XXXXXX"}
                   </p>
                 </div>
 
                 <div className="text-[12px] sm:text-[14px] space-y-2 sm:space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">Tickets</span>
                     <span className="font-semibold">
-                      ${ticketQrs?.[0]?.metadata?.price || "0.00"}
+                      {purchasedTicketCount} Ticket(s)
+                    </span>
+                    <span className="font-semibold">
+                      ${purchasedAmount}
                     </span>
                   </div>
 
@@ -550,7 +592,7 @@ export default function PaymentSuccessPage() {
                 {paymentData?.event?.time}
               </p>
               <hr />
-              <p>Ticket: {paymentData?.ticket?.name}</p>
+              <p>Ticket: {purchasedTicketLabel}</p>
               <p>Ticket No: #{qr.ticketNumber}</p>
               <p>Buyer: {paymentData?.buyer?.name}</p>
             </div>

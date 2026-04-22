@@ -10,6 +10,8 @@ import { TransferSuccessModal } from "../components/transfer-success-modal";
 import { useToast } from "@/components/ui/use-toast";
 import { apiClient } from "@/lib/apiClient";
 
+type TransferMethod = "email" | "id";
+
 type TransferTicketModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,18 +40,15 @@ export function TransferTicketModal({
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
-    email: "",
+    transferMethod: "email" as TransferMethod,
+    recipientEmail: "",
+    recipientId: "",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
-
-  const fields = [
-    { label: "Full Name", name: "fullName", required: true },
-    { label: "Phone Number", name: "phone", required: true },
-    { label: "Email", name: "email", required: true },
-  ];
 
   const getToken = () =>
     localStorage.getItem("buyerToken") ||
@@ -64,32 +63,51 @@ export function TransferTicketModal({
     setTicketCount(1);
     setSubmitted(false);
     setFormData({
-      fullName: "",
+      firstName: "",
+      lastName: "",
       phone: "",
-      email: "",
+      transferMethod: "email",
+      recipientEmail: "",
+      recipientId: "",
       message: "",
     });
   }, [open]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
+  };
+
+  const handleTransferMethodChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const transferMethod = e.target.value as TransferMethod;
+
+    setFormData((p) => ({
+      ...p,
+      transferMethod,
+      recipientEmail: transferMethod === "email" ? p.recipientEmail : "",
+      recipientId: transferMethod === "id" ? p.recipientId : "",
+    }));
   };
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
 
-    const allFilled = fields.every(
-      (f) =>
-        !f.required ||
-        (formData[f.name as keyof typeof formData] &&
-          formData[f.name as keyof typeof formData].trim() !== "")
-    );
+    const requiredValues = [
+      formData.firstName,
+      formData.lastName,
+      formData.transferMethod === "email"
+        ? formData.recipientEmail
+        : formData.recipientId,
+    ];
 
-    if (!allFilled) return;
+    if (requiredValues.some((value) => value.trim() === "")) return;
 
     const token = getToken();
     if (!token) {
@@ -150,9 +168,17 @@ export function TransferTicketModal({
         ticketId: ticket.purchaseId,
         quantity: ticketCount,
         transferTo: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+          phone: formData.phone || undefined,
+          transferMethod: formData.transferMethod,
+          email:
+            formData.transferMethod === "email"
+              ? formData.recipientEmail
+              : undefined,
+          recipientId:
+            formData.transferMethod === "id" ? formData.recipientId : undefined,
           message: formData.message,
         },
       });
@@ -210,29 +236,99 @@ export function TransferTicketModal({
               onSubmit={handleTransfer}
               className="space-y-2"
             >
-              {fields.map((field) => {
-                const value = formData[field.name as keyof typeof formData];
-                const isError =
-                  submitted &&
-                  field.required &&
-                  (!value || value.trim() === "");
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
+                  <label className="text-[12px] font-medium">
+                    First Name *
+                  </label>
+                  <input
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className={`w-full h-9 rounded-lg border px-3 text-sm ${
+                      submitted && !formData.firstName.trim()
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
 
-                return (
-                  <div key={field.name}>
-                    <label className="text-[12px] font-medium">
-                      {field.label} *
-                    </label>
-                    <input
-                      name={field.name}
-                      value={value}
-                      onChange={handleChange}
-                      className={`w-full h-9 rounded-lg border px-3 text-sm ${
-                        isError ? "border-red-500" : "border-gray-300"
-                      }`}
-                    />
-                  </div>
-                );
-              })}
+                <div>
+                  <label className="text-[12px] font-medium">
+                    Last Name *
+                  </label>
+                  <input
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className={`w-full h-9 rounded-lg border px-3 text-sm ${
+                      submitted && !formData.lastName.trim()
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[12px] font-medium">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full h-9 rounded-lg border border-gray-300 px-3 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-[12px] font-medium">
+                  Transfer Method *
+                </label>
+                <select
+                  name="transferMethod"
+                  value={formData.transferMethod}
+                  onChange={handleTransferMethodChange}
+                  className="w-full h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:bg-[#181818]"
+                >
+                  <option value="email">Email</option>
+                  <option value="id">Recipient ID</option>
+                </select>
+              </div>
+
+              {formData.transferMethod === "email" ? (
+                <div>
+                  <label className="text-[12px] font-medium">Email *</label>
+                  <input
+                    type="email"
+                    name="recipientEmail"
+                    value={formData.recipientEmail}
+                    onChange={handleChange}
+                    className={`w-full h-9 rounded-lg border px-3 text-sm ${
+                      submitted && !formData.recipientEmail.trim()
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-[12px] font-medium">
+                    Recipient ID *
+                  </label>
+                  <input
+                    name="recipientId"
+                    value={formData.recipientId}
+                    onChange={handleChange}
+                    className={`w-full h-9 rounded-lg border px-3 text-sm ${
+                      submitted && !formData.recipientId.trim()
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+              )}
 
               <textarea
                 name="message"

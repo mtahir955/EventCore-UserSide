@@ -32,6 +32,8 @@ type TicketCardUI = {
   verifiedAt?: string;
   isReceived: boolean;
   canTransfer: boolean;
+  canRefund: boolean;
+  refundableQuantity: number;
   badge?: {
     variant: "IN" | "OUT";
     label: "Transferred From" | "Transferred To";
@@ -54,11 +56,26 @@ type RefundRequestListItem = {
   requestedAt: string; // YYYY-MM-DD per README
 };
 
+type TicketTab =
+  | "Active"
+  | "Used Tickets"
+  | "Event Ended"
+  | "Transferred"
+  | "Refunded Requests";
+
+const TICKET_TABS: TicketTab[] = [
+  "Active",
+  "Used Tickets",
+  "Event Ended",
+  "Transferred",
+  "Refunded Requests",
+];
+
 export default function Page() {
   const { tickets, setTickets } = useTicketsStore();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState("Active");
+  const [activeTab, setActiveTab] = useState<TicketTab>("Active");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [transferredCards, setTransferredCards] = useState<TicketCardUI[]>([]);
@@ -73,6 +90,7 @@ export default function Page() {
   const ticketsPerPage = 4;
 
   const DUMMY_TICKET: TicketCardUI = {
+    eventId: "demo-event",
     userTicketId: "demo-userTicketId",
     purchaseId: "demo-purchaseId",
     date: {
@@ -89,8 +107,11 @@ export default function Page() {
     price: "$49.99",
     highlight: true,
     ended: false,
+    status: "ACTIVE",
     isReceived: false,
     canTransfer: true,
+    canRefund: false,
+    refundableQuantity: 0,
     transferredOut: false,
   };
 
@@ -141,6 +162,166 @@ export default function Page() {
     localStorage.getItem("staffToken") ||
     localStorage.getItem("hostToken") ||
     localStorage.getItem("token");
+
+  const toDisplayPrice = (value: any) => {
+    if (typeof value === "number") {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(value);
+    }
+
+    return String(value || "$0.00");
+  };
+
+  const normalizeBadge = (badge: any) => {
+    if (!badge?.variant && !badge?.label) return undefined;
+
+    const variant = badge.variant === "OUT" ? "OUT" : "IN";
+
+    return {
+      variant,
+      label:
+        variant === "OUT" ? "Transferred To" : "Transferred From",
+      fullName: badge.fullName || badge.name || "Unknown user",
+      email: badge.email || undefined,
+    } as TicketCardUI["badge"];
+  };
+
+  const normalizeOwnedTicket = (item: any): TicketCardUI => {
+    const event = item?.event || {};
+    const ticket = item?.ticket || {};
+    const mergedTicket = { ...ticket, ...item };
+    const purchaseId = String(
+      mergedTicket.purchaseId || item?.purchaseId || mergedTicket.ticketId || ""
+    );
+    const userTicketId = String(
+      mergedTicket.userTicketId ||
+        purchaseId ||
+        crypto.randomUUID()
+    );
+
+    const fullTickets =
+      mergedTicket.issuedTickets ||
+      mergedTicket.fullTicketNumbers ||
+      mergedTicket.tickets ||
+      [];
+
+    const usedCount = Array.isArray(fullTickets)
+      ? fullTickets.filter((entry: any) => entry?.used === true).length
+      : 0;
+    const totalIssuedCount = Array.isArray(fullTickets) ? fullTickets.length : 0;
+
+    const statusValue = String(mergedTicket.status || "").toUpperCase();
+    const status: "ACTIVE" | "USED" =
+      statusValue === "USED" || (usedCount > 0 && usedCount === totalIssuedCount)
+        ? "USED"
+        : "ACTIVE";
+
+    const ended = Boolean(mergedTicket.ended ?? event?.ended ?? false);
+    const quantity = Number(mergedTicket.quantity ?? 0);
+    const originalQuantity = Number(
+      mergedTicket.originalQuantity ?? quantity ?? 0
+    );
+    const isReceived = Boolean(mergedTicket.isReceived ?? false);
+    const transferredOut = Boolean(mergedTicket.transferredOut ?? false);
+    const fallbackCanTransfer =
+      !ended && status !== "USED" && !transferredOut && !isReceived && quantity > 0;
+    const canTransfer = Boolean(
+      mergedTicket.canTransfer ?? fallbackCanTransfer
+    );
+    const refundableQuantity = Number(
+      mergedTicket.refundableQuantity ?? quantity ?? 0
+    );
+    const canRefund = Boolean(
+      mergedTicket.canRefund ??
+        mergedTicket.isRefundable ??
+        (refundableQuantity > 0 &&
+          !ended &&
+          status !== "USED" &&
+          !transferredOut)
+    );
+
+    const explicitBadge = normalizeBadge(mergedTicket.badge);
+    const transferredFrom =
+      mergedTicket.transferMetadata?.transferredFrom ||
+      mergedTicket.transferredFrom;
+    const receivedBadge =
+      !explicitBadge && isReceived && transferredFrom
+        ? {
+            variant: "IN" as const,
+            label: "Transferred From" as const,
+            fullName:
+              transferredFrom.fullName ||
+              [transferredFrom.firstName, transferredFrom.lastName]
+                .filter(Boolean)
+                .join(" ") ||
+              "Unknown user",
+            email: transferredFrom.email || undefined,
+          }
+        : undefined;
+
+    return {
+      eventId: String(mergedTicket.eventId || event?.id || ""),
+      userTicketId,
+      purchaseId,
+      date: formatEventDate(
+        mergedTicket.startDateTime ||
+          mergedTicket.eventDate ||
+          event?.startDateTime ||
+          event?.date ||
+          new Date().toISOString()
+      ),
+      title: mergedTicket.title || event?.title || "Untitled Event",
+      location: mergedTicket.location || event?.location || "Location TBD",
+      type: mergedTicket.type || mergedTicket.ticketName || ticket?.type || "Ticket",
+      quantity,
+      originalQuantity,
+      price: toDisplayPrice(mergedTicket.price),
+      highlight: !ended,
+      ended,
+      status,
+      verifiedAt:
+        mergedTicket.verifiedAt ||
+        (status === "USED" ? new Date().toISOString() : undefined),
+      isReceived,
+      canTransfer,
+      canRefund,
+      refundableQuantity,
+      badge: explicitBadge || receivedBadge,
+      transferredOut,
+    };
+  };
+
+  const normalizeTransferredTicket = (item: any): TicketCardUI => {
+    const normalized = normalizeOwnedTicket(item);
+    const transferredTo =
+      item?.transferredTo ||
+      item?.badge ||
+      item?.transferMetadata?.transferredTo ||
+      {};
+
+    return {
+      ...normalized,
+      badge:
+        normalizeBadge(item?.badge) ||
+        {
+          variant: "OUT",
+          label: "Transferred To",
+          fullName:
+            transferredTo.fullName ||
+            [transferredTo.firstName, transferredTo.lastName]
+              .filter(Boolean)
+              .join(" ") ||
+            "Unknown user",
+          email: transferredTo.email || undefined,
+        },
+      canTransfer: false,
+      canRefund: false,
+      refundableQuantity: 0,
+      transferredOut: true,
+    };
+  };
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -282,8 +463,10 @@ export default function Page() {
           }
         );
 
-        setTickets(mappedOwned as any);
-        setTransferredCards(mappedTransferred);
+        setTickets(ownedTickets.map(normalizeOwnedTicket) as any);
+        setTransferredCards(
+          transferredTickets.map(normalizeTransferredTicket)
+        );
         setExploreEvents(exploreMoreEvents);
       } catch (error) {
         console.error("❌ Error fetching tickets:", error);
@@ -328,7 +511,9 @@ export default function Page() {
 
         const res = await apiClient.get(`/tickets/refund-requests`);
 
-        const list = res.data?.data;
+        const list = Array.isArray(res.data?.data)
+          ? res.data.data
+          : res.data?.data?.items;
         if (Array.isArray(list) && list.length) {
           setRefundRequests(list);
         } else {
@@ -357,10 +542,11 @@ export default function Page() {
         (t) => t.status === "ACTIVE" && !t.ended
       );
 
-    if (activeTab === "Used")
+    if (activeTab === "Used Tickets")
       return (tickets as any[]).filter((t) => t.status === "USED");
 
-    if (activeTab === "Ended") return (tickets as any[]).filter((t) => t.ended);
+    if (activeTab === "Event Ended")
+      return (tickets as any[]).filter((t) => t.ended);
 
     if (activeTab === "Transferred") return transferredCards;
 
@@ -391,8 +577,7 @@ export default function Page() {
 
         {/* Tabs */}
         <div className="mt-6 flex flex-wrap justify-center sm:justify-start gap-2">
-          {["Active", "Used Tickets", "Event Ended", "Transferred", "Refunded Requests"].map(
-            (tab) => (
+          {TICKET_TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -408,8 +593,7 @@ export default function Page() {
               >
                 {tab}
               </button>
-            )
-          )}
+            ))}
         </div>
 
         {/* Content */}
@@ -511,6 +695,8 @@ export default function Page() {
                   ended={t.ended}
                   isReceived={t.isReceived}
                   canTransfer={t.canTransfer}
+                  canRefund={t.canRefund}
+                  refundableQuantity={t.refundableQuantity}
                   badge={t.badge}
                   transferredOut={t.transferredOut}
                   status={t.status}

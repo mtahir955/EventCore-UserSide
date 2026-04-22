@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { TransferTicketModal } from "../components/transfer-ticket-modal";
@@ -33,6 +33,8 @@ type TicketProps = {
 
   isReceived?: boolean;
   canTransfer?: boolean;
+  canRefund?: boolean;
+  refundableQuantity?: number;
 
   transferredOut?: boolean;
 
@@ -66,6 +68,8 @@ export function TicketCard({
   highlight = false,
   isReceived = false,
   canTransfer = true,
+  canRefund = false,
+  refundableQuantity = quantity,
   transferredOut = false,
   badge,
 
@@ -91,33 +95,14 @@ export function TicketCard({
     localStorage.getItem("hostToken") ||
     localStorage.getItem("token");
 
-  const canDownload = useMemo(() => {
-    return (
-      !isLocked &&
-      !transferredOut &&
-      issuedTickets.length > 0 &&
-      !!confirmationNumber
-    );
-  }, [isLocked, transferredOut, issuedTickets.length, confirmationNumber]);
-
-  const handleDownloadTickets = () => {
-    if (!canDownload) {
-      toast({
-        variant: "destructive",
-        title: "Download unavailable",
-        description: "Ticket download data is not available yet.",
-      });
-      return;
-    }
-
-    downloadTicketsZip({
-      issuedTickets,
-      confirmationNumber,
-      getToken,
-    });
-  };
-
-  const showTransferActions = !isLocked && !transferredOut && !isReceived;
+  const showTransferButton = !isLocked && !transferredOut && !isReceived;
+  const showRefundAction =
+    !isLocked &&
+    !transferredOut &&
+    !isReceived &&
+    canRefund &&
+    refundableQuantity > 0;
+  const showTicketActions = showTransferButton || showRefundAction;
   const transferDisabled = isLocked || !canTransfer || quantity <= 0;
 
   const submitRefundRequest = async (data: {
@@ -145,18 +130,6 @@ export function TicketCard({
         refundMedium: data.refundMedium,
         requestedAt: data.requestedAt,
       };
-
-      // const res = await axios.post(
-      //   `${API_BASE_URL}/tickets/refund-request`,
-      //   payload,
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //       "X-Tenant-ID": HOST_Tenant_ID,
-      //       "Content-Type": "application/json",
-      //     },
-      //   }
-      // );
 
       const res = await apiClient.post(`/tickets/refund-request`, payload);
 
@@ -476,8 +449,8 @@ export function TicketCard({
 
             {/* Price + Actions */}
             <div className="flex flex-col sm:items-end gap-3">
-              {showTransferActions && (
-                <div className="relative flex items-center gap-2">
+              {/*
+                <>
                   <button
                     disabled={transferDisabled}
                     onClick={() => setTransferModalOpen(true)}
@@ -510,6 +483,53 @@ export function TicketCard({
                         Request Refund
                       </button>
                     </div>
+                  )}
+                </>
+              */}
+
+              {showTicketActions && (
+                <div className="relative flex items-center gap-2">
+                  {showTransferButton && (
+                    <button
+                      disabled={transferDisabled}
+                      onClick={() => setTransferModalOpen(true)}
+                      className={cn(
+                        "rounded-full px-4 py-1.5 text-[11px] text-white",
+                        transferDisabled
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-black dark:bg-[#0077F7]"
+                      )}
+                    >
+                      Transfer
+                    </button>
+                  )}
+
+                  {showRefundAction && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setMenuOpen((p) => !p)}
+                        className="h-8 w-8 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                        aria-label="More ticket actions"
+                      >
+                        ...
+                      </button>
+
+                      {menuOpen && (
+                        <div className="absolute right-0 top-10 w-44 bg-white dark:bg-[#1f1f1f] border rounded-lg shadow-lg z-50">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRefundModalOpen(true);
+                              setMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+                          >
+                            Request Refund
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -567,10 +587,9 @@ export function TicketCard({
         }}
       />
 
-      {/* Refund Request Modal */}
       <RefundRequestModal
         open={refundModalOpen}
-        ticketQuantity={quantity}
+        ticketQuantity={Math.max(1, refundableQuantity)}
         onClose={() => setRefundModalOpen(false)}
         onSubmit={submitRefundRequest}
       />

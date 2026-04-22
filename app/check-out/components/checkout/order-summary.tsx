@@ -9,6 +9,12 @@ import toast from "react-hot-toast";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import {
+  getActivePaymentCard,
+  getSavedPaymentCards,
+  getSavedPaymentMethodId,
+  type SavedPaymentCard,
+} from "@/lib/paymentCards";
 
 // Stripe
 import { loadStripe } from "@stripe/stripe-js";
@@ -44,6 +50,19 @@ const getAuthToken = () => {
   }
 
   return null;
+};
+
+type StoredCardSummary = SavedPaymentCard;
+
+const readStoredCards = (): StoredCardSummary[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const profile = JSON.parse(localStorage.getItem("buyerProfile") || "{}");
+    return getSavedPaymentCards(profile?.paymentDetails);
+  } catch {
+    return [];
+  }
 };
 
 /* ─────────────────────────────────────────
@@ -161,10 +180,12 @@ function StripeUnifiedPaymentForm({
   clientSecret,
   bnplMethods = [],
   onPaymentMethodChange,
+  saveForFuture,
 }: {
   clientSecret: string;
   bnplMethods?: any[];
   onPaymentMethodChange?: (method: string) => void;
+  saveForFuture?: boolean;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -263,6 +284,12 @@ function StripeUnifiedPaymentForm({
           Select your payment method below. BNPL options will appear if
           available for your order and country.
         </p>
+        {saveForFuture && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-900/60 dark:bg-blue-900/20 dark:text-blue-100">
+            This new card will be saved through Stripe for future purchases if
+            payment completes successfully.
+          </div>
+        )}
         <div className="border rounded-lg p-4 bg-white dark:bg-[#1a1a1a]">
           <PaymentElement
             options={{
@@ -475,20 +502,32 @@ type PaymentMode = "stripe";
 /* ─────────────────────────────────────────
    MAIN ORDER SUMMARY PAGE
 ──────────────────────────────────────────*/
-export default function OrderSummary() {
+export default function OrderSummary({
+  profile,
+  selectedPaymentOption,
+  onSelectedPaymentOptionChange,
+  saveNewCardForFuture,
+  onSaveNewCardForFutureChange,
+}: {
+  profile?: {
+    paymentDetails?: Record<string, any>;
+  } | null;
+  selectedPaymentOption: string;
+  onSelectedPaymentOptionChange: (value: string) => void;
+  saveNewCardForFuture: boolean;
+  onSaveNewCardForFutureChange: (value: boolean) => void;
+}) {
   const searchParams = useSearchParams();
   const eventId = searchParams.get("id");
 
   const [eventData, setEventData] = useState<any>(null);
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingEvent, setLoadingEvent] = useState(true);
-  const [type, setType] = useState<string>("");
-  const [qty, setQty] = useState(1);
+  const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>(
+    {}
+  );
 
   const [initiatingPayment, setInitiatingPayment] = useState(false);
-
-  const selectedTicket = tickets.find((t) => t.id === type);
-  const price = selectedTicket ? selectedTicket.price : 0;
 
   // const serviceFee = 3.75;
   // const total = useMemo(() => price * qty + serviceFee, [price, qty]);
@@ -511,6 +550,20 @@ export default function OrderSummary() {
   );
   const [bnplMethods, setBnplMethods] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [storedCards, setStoredCards] = useState<StoredCardSummary[]>([]);
+  const activeStoredCard = useMemo(
+    () => getActivePaymentCard(storedCards),
+    [storedCards]
+  );
+  const selectedStoredCard = useMemo(
+    () =>
+      storedCards.find((card) => card.id === selectedPaymentOption) || null,
+    [selectedPaymentOption, storedCards]
+  );
+  const selectedStoredPaymentMethodId = useMemo(
+    () => getSavedPaymentMethodId(selectedStoredCard),
+    [selectedStoredCard]
+  );
 
   // ───────── SERVICE FEE DERIVED STATE ─────────
   const serviceFeeConfig = eventData?.features?.serviceFee;
@@ -519,6 +572,45 @@ export default function OrderSummary() {
   // Show service fee ONLY when PASS_TO_BUYER
   const showServiceFee =
     serviceFeeHandling === "PASS_TO_BUYER" && serviceFeeConfig?.enabled;
+
+  const selectedCartItems = useMemo(
+    () =>
+      tickets
+        .map((ticket: any) => {
+          const quantity = Number(ticketQuantities[ticket.id] || 0);
+          const unitPrice = Number(ticket.price || 0);
+
+          return {
+            id: ticket.id,
+            name: ticket.name || ticket.type || "Ticket",
+            quantity,
+            price: unitPrice,
+            lineTotal: unitPrice * quantity,
+          };
+        })
+        .filter((ticket) => ticket.quantity > 0),
+    [tickets, ticketQuantities]
+  );
+
+  const totalTicketCount = useMemo(
+    () =>
+      selectedCartItems.reduce((sum, ticket) => sum + Number(ticket.quantity || 0), 0),
+    [selectedCartItems]
+  );
+
+  const subtotal = useMemo(
+    () => selectedCartItems.reduce((sum, ticket) => sum + ticket.lineTotal, 0),
+    [selectedCartItems]
+  );
+
+  const cartSignature = useMemo(
+    () =>
+      selectedCartItems
+        .map((ticket) => `${ticket.id}:${ticket.quantity}`)
+        .sort()
+        .join("|"),
+    [selectedCartItems]
+  );
 
   // Calculate service fee dynamically
   const calculatedServiceFee = useMemo(() => {
@@ -529,11 +621,11 @@ export default function OrderSummary() {
     }
 
     if (serviceFeeConfig.type === "percentage") {
-      return (price * qty * serviceFeeConfig.value) / 100;
+      return (subtotal * serviceFeeConfig.value) / 100;
     }
 
     return 0;
-  }, [showServiceFee, serviceFeeConfig, price, qty]);
+  }, [showServiceFee, serviceFeeConfig, subtotal]);
 
   // ───────── PROCESSING FEE STATE (moved here for useCallback) ─────────
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -545,8 +637,8 @@ export default function OrderSummary() {
 
   // ───────── CALCULATE ORDER AMOUNT (for fee estimation) ─────────
   const orderAmount = useMemo(() => {
-    return price * qty + calculatedServiceFee;
-  }, [price, qty, calculatedServiceFee]);
+    return subtotal + calculatedServiceFee;
+  }, [subtotal, calculatedServiceFee]);
 
   // ───────── FETCH ESTIMATED PROCESSING FEE ─────────
   const fetchEstimatedProcessingFee = useCallback(
@@ -622,8 +714,8 @@ export default function OrderSummary() {
   }, [orderAmount, selectedPaymentMethod, fetchEstimatedProcessingFee]);
 
   const total = useMemo(
-    () => price * qty + calculatedServiceFee + estimatedProcessingFee,
-    [price, qty, calculatedServiceFee, estimatedProcessingFee]
+    () => subtotal + calculatedServiceFee + estimatedProcessingFee,
+    [subtotal, calculatedServiceFee, estimatedProcessingFee]
   );
 
   // ───────── BUYER CREDITS ─────────
@@ -657,6 +749,11 @@ export default function OrderSummary() {
     const token = getToken();
     setIsAuthenticated(!!token);
   }, []);
+
+  useEffect(() => {
+    const profileCards = getSavedPaymentCards(profile?.paymentDetails);
+    setStoredCards(profileCards.length ? profileCards : readStoredCards());
+  }, [profile]);
 
   /* ─────────────── FETCH BUYER CREDITS ───────────────*/
   useEffect(() => {
@@ -835,11 +932,132 @@ export default function OrderSummary() {
   // Reset payment state when user switches mode / ticket / qty
   useEffect(() => {
     setClientSecret("");
-  }, [paymentMode, type, qty]);
+  }, [paymentMode, cartSignature, selectedPaymentOption]);
 
   const shouldSendServiceFee = showServiceFee && calculatedServiceFee > 0;
 
+  const updateTicketQuantity = (ticketId: string, nextQuantity: number) => {
+    setTicketQuantities((current) => {
+      const normalizedQuantity = Math.max(0, Math.floor(nextQuantity));
+      const totalWithoutCurrent = Object.entries(current).reduce(
+        (sum, [id, quantity]) =>
+          id === ticketId ? sum : sum + Number(quantity || 0),
+        0
+      );
+
+      if (normalizedQuantity + totalWithoutCurrent > MAX_TICKETS_PER_ORDER) {
+        toast.error(
+          `You can purchase a maximum of ${MAX_TICKETS_PER_ORDER} tickets at once`
+        );
+        return current;
+      }
+
+      if (normalizedQuantity === 0) {
+        const { [ticketId]: _, ...rest } = current;
+        return rest;
+      }
+
+      return {
+        ...current,
+        [ticketId]: normalizedQuantity,
+      };
+    });
+  };
+
+  const saveCheckoutSelectionSummary = () => {
+    if (typeof window === "undefined") return;
+
+    localStorage.setItem(
+      "checkoutSelectionSummary",
+      JSON.stringify({
+        eventId,
+        eventName: eventData?.title || eventData?.name || "Event",
+        items: selectedCartItems,
+        totalQuantity: totalTicketCount,
+        subtotal,
+        totalAmount: total,
+      })
+    );
+  };
+
+  const buildPaymentPayloadCandidates = () => {
+    const commonPayload: Record<string, any> = {
+      eventId,
+      useCredits,
+    };
+
+    if (selectedStoredPaymentMethodId) {
+      commonPayload.paymentMethodId = selectedStoredPaymentMethodId;
+      commonPayload.useSavedPaymentMethod = true;
+    } else {
+      commonPayload.useSavedPaymentMethod = false;
+      commonPayload.saveForFuture = saveNewCardForFuture;
+
+      if (saveNewCardForFuture) {
+        commonPayload.setAsDefault = storedCards.length === 0;
+      }
+    }
+
+    if (shouldSendServiceFee) {
+      commonPayload.serviceFee = Number(calculatedServiceFee.toFixed(2));
+    }
+
+    if (selectedCartItems.length === 1) {
+      const [ticket] = selectedCartItems;
+
+      return [
+        {
+          ...commonPayload,
+          ticketId: ticket.id,
+          quantity: ticket.quantity,
+        },
+      ];
+    }
+
+    const multiTicketItems = selectedCartItems.map((ticket) => ({
+      ticketId: ticket.id,
+      quantity: ticket.quantity,
+    }));
+
+    return [
+      {
+        ...commonPayload,
+        items: multiTicketItems,
+        totalQuantity: totalTicketCount,
+      },
+      {
+        ...commonPayload,
+        tickets: multiTicketItems,
+        totalQuantity: totalTicketCount,
+      },
+      {
+        ...commonPayload,
+        lineItems: multiTicketItems,
+        totalQuantity: totalTicketCount,
+      },
+      {
+        ...commonPayload,
+        ticketSelections: multiTicketItems,
+        totalQuantity: totalTicketCount,
+      },
+    ];
+  };
+
   /* ─────────────── INITIATE DIRECT / BNPL PAYMENT ───────────────*/
+  const confirmCompletedPayment = async (paymentIntentId: string) => {
+    const confirmResponse = await apiClient.post(`/payments/confirm`, {
+      paymentIntentId,
+    });
+
+    localStorage.setItem(
+      "confirmedPurchase",
+      JSON.stringify(confirmResponse.data)
+    );
+
+    toast.success("Payment successful!");
+    window.location.href = "/check-out/payment";
+  };
+
   const handlePaymentInitiate = async () => {
     const token = getToken();
     if (!token) {
@@ -853,17 +1071,17 @@ export default function OrderSummary() {
       return;
     }
 
-    if (!type) {
-      toast.error("Please select a ticket");
+    if (selectedCartItems.length === 0) {
+      toast.error("Please choose at least one ticket");
       return;
     }
 
-    if (qty < 1) {
+    if (totalTicketCount < 1) {
       toast.error("Quantity must be at least 1");
       return;
     }
 
-    if (qty > MAX_TICKETS_PER_ORDER) {
+    if (totalTicketCount > MAX_TICKETS_PER_ORDER) {
       toast.error(
         `Maximum ${MAX_TICKETS_PER_ORDER} tickets are allowed per purchase`
       );
@@ -890,18 +1108,22 @@ export default function OrderSummary() {
       }
 
       setStripePromise(loadStripe(publishableKey));
+      saveCheckoutSelectionSummary();
 
       // 2) Initiate payment (ONLY required fields)
-      const body: any = {
-        ticketId: type,
-        quantity: qty,
+      const body: any = buildPaymentPayloadCandidates()[0] || {}; /*
         useCredits: useCredits, // 👈 THIS IS THE KEY LINE
-      };
+      */
 
       // ✅ Send serviceFee ONLY when included in subtotal
       if (shouldSendServiceFee) {
         body.serviceFee = Number(calculatedServiceFee.toFixed(2));
       }
+
+      const paymentPayloadCandidates = [
+        body,
+        ...buildPaymentPayloadCandidates().slice(1),
+      ];
 
       // if (paymentMode === "card") {
       //   body.paymentMethodType = fullPaymentProvider;
@@ -935,7 +1157,28 @@ export default function OrderSummary() {
       //     "Content-Type": "application/json",
       //   },
       // });
-      const res = await apiClient.post(`/payments/initiate`, body);
+      let res: any = null;
+      let lastError: any = null;
+
+      for (const candidate of paymentPayloadCandidates) {
+        try {
+          res = await apiClient.post(`/payments/initiate`, candidate);
+          break;
+        } catch (error: any) {
+          lastError = error;
+          const status = Number(error?.response?.status);
+          const canTryAnotherShape =
+            selectedCartItems.length > 1 && [400, 404, 422].includes(status);
+
+          if (!canTryAnotherShape) {
+            throw error;
+          }
+        }
+      }
+
+      if (!res) {
+        throw lastError;
+      }
 
       const responseData = res.data?.data;
 
@@ -961,6 +1204,26 @@ export default function OrderSummary() {
       /* ─────────────────────────────────────────
    ✅ CASE 2: STRIPE PAYMENT REQUIRED
 ──────────────────────────────────────────*/
+      if (
+        selectedStoredPaymentMethodId &&
+        responseData?.paymentIntentId &&
+        responseData?.requiresAction === false
+      ) {
+        try {
+          await confirmCompletedPayment(responseData.paymentIntentId);
+          return;
+        } catch (confirmError: any) {
+          if (!responseData?.clientSecret) {
+            throw confirmError;
+          }
+
+          toast.error(
+            confirmError?.response?.data?.message ||
+              "The saved card payment needs one more secure confirmation step."
+          );
+        }
+      }
+
       const secret = responseData?.clientSecret;
       if (!secret) {
         toast.error("Payment initialization failed. Please try again.");
@@ -968,7 +1231,11 @@ export default function OrderSummary() {
       }
 
       setClientSecret(secret);
-      toast.success("Payment session created");
+      toast.success(
+        selectedStoredPaymentMethodId
+          ? "Secure verification is required for your saved card."
+          : "Payment session created"
+      );
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Payment initiation failed", {
         id: "init-payment",
@@ -1002,61 +1269,64 @@ export default function OrderSummary() {
           <fieldset className="space-y-3">
             {tickets.length > 0 ? (
               tickets.map((ticket: any) => (
-                <label
+                <div
                   key={ticket.id}
-                  className="flex justify-between cursor-pointer"
+                  className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
                 >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="ticket"
-                      checked={type === ticket.id}
-                      onChange={() => setType(ticket.id)}
-                      required
-                    />
-                    <span>{ticket.name}</span>
+                  <div>
+                    <p className="font-medium">{ticket.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatter.format(Number(ticket.price || 0))} each
+                    </p>
                   </div>
 
-                  <span>{formatter.format(ticket.price)}</span>
-                </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateTicketQuantity(
+                          ticket.id,
+                          Number(ticketQuantities[ticket.id] || 0) - 1
+                        )
+                      }
+                    >
+                      <Image
+                        src="/images/icon-minus.png"
+                        alt="-"
+                        width={20}
+                        height={20}
+                      />
+                    </button>
+                    <span className="min-w-4 text-center">
+                      {Number(ticketQuantities[ticket.id] || 0)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateTicketQuantity(
+                          ticket.id,
+                          Number(ticketQuantities[ticket.id] || 0) + 1
+                        )
+                      }
+                    >
+                      <Image
+                        src="/images/icon-plus.png"
+                        alt="+"
+                        width={20}
+                        height={20}
+                      />
+                    </button>
+                  </div>
+                </div>
               ))
             ) : (
               <p className="text-sm text-gray-500">Loading tickets...</p>
             )}
           </fieldset>
 
-          {/* Quantity */}
-          <div className="mt-4 flex justify-between items-center">
-            <span>No of Tickets</span>
-            <div className="flex items-center gap-3">
-              <button onClick={() => setQty(Math.max(1, qty - 1))}>
-                <Image
-                  src="/images/icon-minus.png"
-                  alt="-"
-                  width={20}
-                  height={20}
-                />
-              </button>
-              <span>{qty}</span>
-              <button
-                onClick={() => {
-                  if (qty >= MAX_TICKETS_PER_ORDER) {
-                    toast.error(
-                      `You can purchase a maximum of ${MAX_TICKETS_PER_ORDER} tickets at once`
-                    );
-                    return;
-                  }
-                  setQty(qty + 1);
-                }}
-              >
-                <Image
-                  src="/images/icon-plus.png"
-                  alt="+"
-                  width={20}
-                  height={20}
-                />
-              </button>
-            </div>
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <span>Total tickets selected</span>
+            <span className="font-semibold">{totalTicketCount}</span>
           </div>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             You may purchase up to {MAX_TICKETS_PER_ORDER} tickets per order.
@@ -1259,6 +1529,109 @@ export default function OrderSummary() {
         <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4 space-y-3">
           <p className="font-medium mb-2">Payment Options</p>
 
+          {storedCards.length > 0 && (
+            <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm dark:border-blue-900/60 dark:bg-blue-900/20">
+              <p className="font-medium text-blue-900 dark:text-blue-100">
+                Saved card available
+              </p>
+              <div className="space-y-2">
+                {storedCards.map((card) => (
+                  <label
+                    key={card.id}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                      selectedPaymentOption === card.id
+                        ? "border-[#0077F7] bg-white dark:bg-[#101010]"
+                        : "border-blue-200/70 bg-transparent dark:border-blue-900/60"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="orderSummaryPaymentCard"
+                      className="mt-1"
+                      checked={selectedPaymentOption === card.id}
+                      onChange={() => onSelectedPaymentOptionChange(card.id)}
+                    />
+                    <div className="min-w-0 flex-1 text-blue-900 dark:text-blue-100">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="capitalize">{card.brand}</span>
+                        {card.last4 ? (
+                          <span>ending in {card.last4}</span>
+                        ) : null}
+                        {card.id === activeStoredCard?.id ? (
+                          <span className="rounded-full bg-[#0077F7] px-2 py-0.5 text-[11px] text-white">
+                            Default
+                          </span>
+                        ) : null}
+                        {card.isDefault && card.id !== activeStoredCard?.id ? (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-800 dark:bg-blue-900/50 dark:text-blue-100">
+                            Default
+                          </span>
+                        ) : null}
+                      </div>
+                        <p className="mt-1 text-xs text-blue-800 dark:text-blue-200">
+                          {[
+                            card.expiry ? `Expires ${card.expiry}` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" / ")}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-blue-700 dark:text-blue-200">
+                Saved-card charging will use the selected payment method when the
+                backend supports it. Stripe may still request secure
+                confirmation when you continue.
+              </p>
+            </div>
+          )}
+
+          {!storedCards.length && (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-white p-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-[#101010] dark:text-gray-400">
+              No saved cards were found for this account.
+            </div>
+          )}
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-300 bg-white p-3 dark:border-gray-700 dark:bg-[#101010]">
+            <input
+              type="radio"
+              name="orderSummaryPaymentCard"
+              className="mt-1"
+              checked={selectedPaymentOption === "new"}
+              onChange={() => onSelectedPaymentOptionChange("new")}
+            />
+            <div>
+              <p className="text-sm font-semibold">Use another payment method</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Stripe will securely collect a new card, wallet, or buy now pay
+                later method after you continue.
+              </p>
+            </div>
+          </label>
+
+          {selectedPaymentOption === "new" && (
+            <label className="flex items-start gap-3 rounded-lg border border-dashed border-gray-300 bg-white p-3 text-sm dark:border-gray-700 dark:bg-[#101010]">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={saveNewCardForFuture}
+                onChange={(event) =>
+                  onSaveNewCardForFutureChange(event.target.checked)
+                }
+              />
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Save this card for future purchases
+                </p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Stripe will vault the card. We only store Stripe references
+                  and safe display metadata.
+                </p>
+              </div>
+            </label>
+          )}
+
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="radio"
@@ -1406,15 +1779,35 @@ export default function OrderSummary() {
               clientSecret={clientSecret}
               bnplMethods={bnplMethods}
               onPaymentMethodChange={setSelectedPaymentMethod}
+              saveForFuture={
+                selectedPaymentOption === "new" && saveNewCardForFuture
+              }
             />
           </Elements>
         )}
 
         {/* Summary */}
         <div className="rounded-xl border bg-white dark:bg-[#1a1a1a] p-4">
+          {selectedCartItems.length > 0 ? (
+            <div className="mb-3 space-y-2">
+              {selectedCartItems.map((ticket) => (
+                <p key={ticket.id} className="flex justify-between text-sm">
+                  <span>
+                    {ticket.name} x {ticket.quantity}
+                  </span>
+                  <span>{formatter.format(ticket.lineTotal)}</span>
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+              Select one or more ticket types to continue.
+            </p>
+          )}
+
           <p className="flex justify-between">
             <span>Ticket Subtotal:</span>
-            <span>{formatter.format(price * qty)}</span>
+            <span>{formatter.format(subtotal)}</span>
           </p>
 
           {/* SERVICE FEE — ONLY WHEN PASS_TO_BUYER */}

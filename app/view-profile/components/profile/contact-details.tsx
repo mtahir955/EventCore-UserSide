@@ -22,6 +22,8 @@ export default function ContactDetails({ data }: any) {
   if (!data) return null;
 
   const phone = getPhoneParts(data);
+  const city = data.city || data.town || "";
+  const pincode = data.pincode || data.postalCode || data.zipCode || "";
 
   return (
     <div className="space-y-6 text-gray-900 dark:text-gray-100">
@@ -37,14 +39,14 @@ export default function ContactDetails({ data }: any) {
         <div className="space-y-2">
           <label className="text-sm">City/Town:</label>
           <div className="h-12 flex items-center rounded-lg border px-4 bg-gray-50 dark:bg-[#181818]">
-            {data.city}
+            {city}
           </div>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm"> Postal Code:</label>
           <div className="h-12 flex items-center rounded-lg border px-4 bg-gray-50 dark:bg-[#181818]">
-            {data.pincode}
+            {pincode}
           </div>
         </div>
       </div>
@@ -55,6 +57,22 @@ export default function ContactDetails({ data }: any) {
           {data.address}
         </div>
       </div>
+
+      {data.website ? (
+        <div className="space-y-2">
+          <label className="text-sm">Website (Optional):</label>
+          <div className="flex min-h-12 items-center rounded-lg border px-4 py-3 bg-gray-50 dark:bg-[#181818]">
+            <a
+              href={data.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-all text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              {data.website}
+            </a>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

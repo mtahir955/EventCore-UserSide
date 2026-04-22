@@ -9,6 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Sidebar } from "../components/sidebar";
+import StaffSidebar from "@/app/staff-dashboard/components/sidebar";
 import { MoreVertical, X, LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -31,10 +32,12 @@ type TicketManagerProps = {
   eventId?: string;
   eventTitle?: string;
   eventScoped?: boolean;
+  dashboardMode?: "host" | "staff";
 };
 
 type TenantTicketAction =
   | "Check In"
+  | "Uncheck"
   | "Transfer"
   | "Cancel / Refund"
   | "Change Ticket Type"
@@ -71,6 +74,10 @@ type EventTicketCustomer = {
   lastHistoryStatus: string;
   permissions: {
     canCheckIn?: boolean;
+    canUncheck?: boolean;
+    canViewTicket?: boolean;
+    canViewReceipt?: boolean;
+    canViewHistory?: boolean;
     canTransfer?: boolean;
     canCancelRefund?: boolean;
     canChangeTicketType?: boolean;
@@ -86,8 +93,19 @@ type TicketHistoryItem = {
   id: string;
   label: string;
   description: string;
+  ticketId: string;
+  eventId: string;
+  orderId: string;
+  actionType: string;
+  fieldChanged: string;
+  oldValue: string;
+  newValue: string;
+  reason: string;
+  performedByUserId: string;
   performedBy: string;
   performedByRole: string;
+  performedAt: string;
+  source: string;
   createdAt: string;
 };
 
@@ -122,10 +140,13 @@ type TenantActionFields = {
   paymentMethodId: string;
   claimForCustomerId: string;
   editNoteId: string;
+  uncheckByRole: string;
+  uncheckAt: string;
 };
 
 const tenantTicketActions: TenantTicketAction[] = [
   "Check In",
+  "Uncheck",
   "Transfer",
   "Cancel / Refund",
   "Change Ticket Type",
@@ -140,20 +161,36 @@ const tenantTicketActions: TenantTicketAction[] = [
   "Force Claim",
 ];
 
+const staffTicketActions: TenantTicketAction[] = [
+  "Check In",
+  "Uncheck",
+  "View Ticket",
+  "View Receipt",
+  "View History",
+  "Add Note",
+  "Edit Note",
+];
+
+const uncheckRoleOptions = ["Host/Tenant", "Staff"] as const;
+
 const TICKET_RANK_OPTIONS = [
-  "Standard",
-  "VIP",
-  "Guest",
-  "Staff",
-  "Speaker",
-  "Sponsor",
-  "Exhibitor",
-  "Internal",
+  { label: "Bronze", apiValue: "Standard" },
+  { label: "Silver", apiValue: "VIP" },
+  { label: "Gold", apiValue: "Guest" },
+  { label: "Emerald", apiValue: "Staff" },
+  { label: "Executive Emerald", apiValue: "Speaker" },
+  { label: "Diamond", apiValue: "Sponsor" },
+  { label: "Blue Diamond", apiValue: "Exhibitor" },
+  { label: "Red Diamond", apiValue: "Internal" },
+  { label: "Purple Diamond", apiValue: "Internal" },
+  { label: "Black Diamond", apiValue: "Internal" },
 ] as const;
 
-type TicketRankOption = (typeof TICKET_RANK_OPTIONS)[number];
+type TicketRankOption = (typeof TICKET_RANK_OPTIONS)[number]["label"];
+type BackendTicketRank = (typeof TICKET_RANK_OPTIONS)[number]["apiValue"];
 
-const DEFAULT_TICKET_RANK: TicketRankOption = "Standard";
+const DEFAULT_TICKET_RANK: TicketRankOption = "Bronze";
+const DEFAULT_BACKEND_TICKET_RANK: BackendTicketRank = "Standard";
 
 const getTicketEventId = (ticket: any) =>
   String(ticket?.eventId ?? ticket?.event?.id ?? ticket?.event?._id ?? "");
@@ -161,13 +198,46 @@ const getTicketEventId = (ticket: any) =>
 const getStringValue = (value: any, fallback = "") =>
   value === null || value === undefined ? fallback : String(value);
 
-const getAllowedTicketRank = (rank: any): TicketRankOption => {
-  const rankValue = getStringValue(rank).trim();
-  const allowedRank = TICKET_RANK_OPTIONS.find(
-    (option) => option.toLowerCase() === rankValue.toLowerCase()
-  );
+const getTicketRankOption = (rank: any) => {
+  const normalizedRank = getStringValue(rank).trim().toLowerCase();
 
-  return allowedRank ?? DEFAULT_TICKET_RANK;
+  return TICKET_RANK_OPTIONS.find(
+    (option) =>
+      option.label.toLowerCase() === normalizedRank ||
+      option.apiValue.toLowerCase() === normalizedRank
+  );
+};
+
+const getAllowedTicketRank = (rank: any): TicketRankOption =>
+  getTicketRankOption(rank)?.label ?? DEFAULT_TICKET_RANK;
+
+const getBackendTicketRankValue = (rank: any): BackendTicketRank =>
+  getTicketRankOption(rank)?.apiValue ?? DEFAULT_BACKEND_TICKET_RANK;
+
+const formatTicketRankLabel = (rank: any) =>
+  getTicketRankOption(rank)?.label || getStringValue(rank, "Not set");
+
+const formatDateTime = (value: any) => {
+  const dateValue = getStringValue(value);
+  if (!dateValue) return "N/A";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return dateValue;
+
+  return date.toLocaleString();
+};
+
+const getAuditValue = (value: any) => {
+  if (value === null || value === undefined || value === "") return "N/A";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  return String(value);
 };
 
 const formatReceiptAmount = (currency: any, amount: any) => {
@@ -386,8 +456,11 @@ export default function TicketManager({
   eventId,
   eventTitle,
   eventScoped = false,
+  dashboardMode = "host",
 }: TicketManagerProps = {}) {
   const isEventScoped = Boolean(eventScoped && eventId);
+  const isStaffDashboard = dashboardMode === "staff";
+  const actionOptions = isStaffDashboard ? staffTicketActions : tenantTicketActions;
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -442,6 +515,8 @@ export default function TicketManager({
     paymentMethodId: "",
     claimForCustomerId: "",
     editNoteId: "",
+    uncheckByRole: isStaffDashboard ? "Staff" : "Host/Tenant",
+    uncheckAt: "",
   });
   const [tenantActionLoadingKey, setTenantActionLoadingKey] = useState<
     string | null
@@ -692,32 +767,46 @@ export default function TicketManager({
     null
   );
 
-  const [hostName, setHostName] = useState("Host");
+  const [hostName, setHostName] = useState(
+    isStaffDashboard ? "Staff" : "Host"
+  );
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("hostUser");
+    const userStorageKey = isStaffDashboard ? "staffUser" : "hostUser";
+    const tokenStorageKey = isStaffDashboard ? "staffToken" : "hostToken";
+    const loginPath = isStaffDashboard ? "/sign-in-staff" : "/sign-in-host";
+    const fallbackName = isStaffDashboard ? "Staff" : "Host";
+    const savedUser = localStorage.getItem(userStorageKey);
+    const savedToken =
+      localStorage.getItem(tokenStorageKey) || localStorage.getItem("token");
+
+    if (!savedUser && !savedToken) {
+      window.location.href = loginPath;
+      return;
+    }
 
     if (savedUser) {
-      const user = JSON.parse(savedUser);
+      try {
+        const user = JSON.parse(savedUser);
 
-      // Host Name
-      setHostName(user.userName || user.fullName || "Host");
+        setHostName(user.userName || user.fullName || user.name || fallbackName);
 
-      // Subdomain (optional)
-      // setHostSubdomain(user.subDomain || "");
+        console.log(
+          `${isStaffDashboard ? "STAFF" : "HOST"} TICKET MANAGER USER:`,
+          user
+        );
+        console.log("USER SUBDOMAIN:", user?.subDomain);
 
-      console.log("HOST DASHBOARD USER:", user);
-      console.log("HOST SUBDOMAIN:", user?.subDomain);
-
-      // Theme (optional)
-      if (user.theme) {
-        // syncThemeWithBackend(user);
+        if (user.theme) {
+          // syncThemeWithBackend(user);
+        }
+      } catch {
+        setHostName(fallbackName);
       }
     } else {
-      // Force redirect if no host session found
-      window.location.href = "/sign-in-host";
+      setHostName(fallbackName);
     }
-  }, []);
+  }, [isStaffDashboard]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 5;
@@ -986,6 +1075,25 @@ export default function TicketManager({
       permissions: {
         canCheckIn:
           permissions.canCheckIn ?? availableActions.checkIn ?? ticket.canCheckIn,
+        canUncheck:
+          permissions.canUncheck ??
+          permissions.canUncheckIn ??
+          availableActions.uncheck ??
+          availableActions.uncheckIn ??
+          ticket.canUncheck ??
+          ticket.canUncheckIn,
+        canViewTicket:
+          permissions.canViewTicket ??
+          availableActions.viewTicket ??
+          ticket.canViewTicket,
+        canViewReceipt:
+          permissions.canViewReceipt ??
+          availableActions.viewReceipt ??
+          ticket.canViewReceipt,
+        canViewHistory:
+          permissions.canViewHistory ??
+          availableActions.viewHistory ??
+          ticket.canViewHistory,
         canTransfer:
           permissions.canTransfer ?? availableActions.transfer ?? ticket.canTransfer,
         canCancelRefund:
@@ -1134,6 +1242,8 @@ export default function TicketManager({
       paymentMethodId: "",
       claimForCustomerId: displayTicket.customerId,
       editNoteId: "",
+      uncheckByRole: isStaffDashboard ? "Staff" : "Host/Tenant",
+      uncheckAt: action === "Uncheck" ? new Date().toISOString() : "",
     });
     loadTenantActionData(action, displayTicket);
   };
@@ -1152,10 +1262,15 @@ export default function TicketManager({
     ticket: EventTicketCustomer
   ) => {
     const permissions = ticket.permissions ?? {};
+    const status = ticket.status.toLowerCase();
+    const isUnused = status === "unused";
+    const isCancelled = status === "cancelled" || status === "canceled";
 
     switch (action) {
       case "Check In":
-        return permissionEnabled(permissions.canCheckIn);
+        return !ticket.checkedIn && !isCancelled && permissionEnabled(permissions.canCheckIn);
+      case "Uncheck":
+        return !isUnused && permissionEnabled(permissions.canUncheck);
       case "Transfer":
         return allowTransfers && permissionEnabled(permissions.canTransfer);
       case "Cancel / Refund":
@@ -1169,8 +1284,12 @@ export default function TicketManager({
       case "Add Note":
       case "Edit Note":
         return allowTicketNotes && permissionEnabled(permissions.canAddNote);
+      case "View Ticket":
+        return permissionEnabled(permissions.canViewTicket);
+      case "View Receipt":
+        return permissionEnabled(permissions.canViewReceipt);
       case "View History":
-        return allowTicketHistory;
+        return allowTicketHistory && permissionEnabled(permissions.canViewHistory);
       case "Reclaim Ticket":
         return allowReclaimTicket && permissionEnabled(permissions.canReclaim);
       case "Force Claim":
@@ -1254,9 +1373,28 @@ export default function TicketManager({
               ),
               label: formatHistoryLabel(item),
               description: formatHistoryDescription(item),
-              performedBy: getStringValue(item.performedBy),
-              performedByRole: getStringValue(item.performedByRole),
-              createdAt: getStringValue(item.createdAt),
+              ticketId: getStringValue(
+                item.ticketId ?? item.ticketPurchaseId ?? item.ticket?.id
+              ),
+              eventId: getStringValue(item.eventId ?? item.event?.id),
+              orderId: getStringValue(item.orderId ?? item.order?.id),
+              actionType: getStringValue(item.actionType ?? item.action ?? item.type),
+              fieldChanged: getStringValue(
+                item.fieldChanged ?? item.field ?? item.changedField
+              ),
+              oldValue: getAuditValue(item.oldValue ?? item.oldValues),
+              newValue: getAuditValue(item.newValue ?? item.newValues),
+              reason: getStringValue(item.reason ?? item.note),
+              performedByUserId: getStringValue(
+                item.performedByUserId ?? item.userId ?? item.performedBy?.id
+              ),
+              performedBy: getStringValue(
+                item.performedBy?.name ?? item.performedBy
+              ),
+              performedByRole: getStringValue(item.performedByRole ?? item.role),
+              performedAt: getStringValue(item.performedAt ?? item.createdAt),
+              source: getStringValue(item.source),
+              createdAt: getStringValue(item.createdAt ?? item.performedAt),
             }))
           : [];
       }
@@ -1312,17 +1450,36 @@ export default function TicketManager({
       setTenantActionError("");
 
       let response;
+      const actionSource = isStaffDashboard ? "staff-dashboard" : "tenant-dashboard";
 
       if (activeTenantAction === "Check In") {
         response = await apiClient.post(
           `/events/${eventId}/tickets/${ticketPurchaseId}/check-in`,
           {
             checkedInBy: getCurrentTenantUserId() || undefined,
-            source: "tenant-dashboard",
+            source: actionSource,
             note:
               tenantActionFields.note ||
               tenantActionFields.reason ||
               "Checked in manually by tenant",
+          }
+        );
+      }
+
+      if (activeTenantAction === "Uncheck") {
+        if (!tenantActionFields.reason.trim()) {
+          toast.error("Enter a reason before unchecking this ticket.");
+          return;
+        }
+
+        response = await apiClient.post(
+          `/events/${eventId}/tickets/${ticketPurchaseId}/uncheck`,
+          {
+            status: "unused",
+            uncheckByRole: tenantActionFields.uncheckByRole,
+            uncheckAt: tenantActionFields.uncheckAt || new Date().toISOString(),
+            reason: tenantActionFields.reason.trim(),
+            source: actionSource,
           }
         );
       }
@@ -1376,7 +1533,7 @@ export default function TicketManager({
         response = await apiClient.patch(
           `/events/${eventId}/customers/${selectedEventTicket.customerId}/rank`,
           {
-            rank: tenantActionFields.rank,
+            rank: getBackendTicketRankValue(tenantActionFields.rank),
             reason: tenantActionFields.reason || "Tenant updated customer rank",
           }
         );
@@ -1445,6 +1602,20 @@ export default function TicketManager({
       toast.success(
         response?.data?.message || `${activeTenantAction} completed successfully`
       );
+      if (activeTenantAction === "Uncheck") {
+        setEventTicketRows((rows) =>
+          rows.map((ticket) =>
+            ticket.id === selectedEventTicket.id
+              ? {
+                  ...ticket,
+                  checkedIn: false,
+                  status: "Unused",
+                  lastHistoryStatus: "Unused",
+                }
+              : ticket
+          )
+        );
+      }
       await fetchEventTicketRows();
       closeTenantAction();
     } catch (err: any) {
@@ -1462,17 +1633,23 @@ export default function TicketManager({
     : null;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen w-full sm:w-[1175px] sm:ml-[250px] bg-white font-sans dark:bg-[#101010]">
-      <div className="md:block">
-        <Sidebar active="Ticket Manager" />
+    <div
+      className={`min-h-screen w-full bg-white font-sans dark:bg-[#101010] ${
+        isStaffDashboard
+          ? "flex flex-col md:flex-row"
+          : "flex flex-col md:block md:pl-64"
+      }`}
+    >
+      <div className="md:block md:shrink-0">
+        {isStaffDashboard ? <StaffSidebar /> : <Sidebar active="Ticket Manager" />}
       </div>
 
-      <div className="flex-1 bg-gray-50 dark:bg-[#101010] w-full">
+      <div className="min-w-0 flex-1 bg-gray-50 pt-16 dark:bg-[#101010] md:pt-0">
         {/* ✅ Header visible on tablet/desktop only */}
         <div className="hidden sm:block">
           {/* Desktop Header */}
-          <header className="hidden md:flex items-center justify-between px-8 pt-8 pb-4">
-            <h1 className="text-[32px] font-semibold tracking-[-0.02em]">
+          <header className="hidden md:flex items-center justify-between gap-4 px-4 pt-6 pb-4 sm:px-6 lg:px-8">
+            <h1 className="min-w-0 text-2xl font-semibold tracking-[-0.02em] sm:text-[32px]">
               {isEventScoped ? "Event Tickets" : "Ticket Manager"}
             </h1>
             {/* Right section */}
@@ -1529,10 +1706,10 @@ export default function TicketManager({
                   className="relative flex items-center gap-2"
                   ref={profileRef}
                 >
-                  {/* Host Name */}
-                  <span className="hidden sm:block font-semibold text-black dark:text-white">
-                    {hostName}
-                  </span>
+                    {/* Profile Name */}
+                    <span className="hidden sm:block font-semibold text-black dark:text-white">
+                      {isStaffDashboard ? "Staff" : hostName}
+                    </span>
 
                   {/* Profile Icon Wrapper */}
                   <div className="relative">
@@ -1553,29 +1730,35 @@ export default function TicketManager({
                     {/* Dropdown */}
                     {showProfileDropdown && (
                       <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-[#101010] shadow-lg border border-gray-200 dark:border-gray-800 rounded-xl z-50 py-2">
-                        <Link href="/my-events">
+                        <Link href={isStaffDashboard ? "/my-events-staff" : "/my-events"}>
                           <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
                             My Events
                           </button>
                         </Link>
 
-                        <Link href="/ticket-manager">
-                          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                            Ticket Manager
-                          </button>
-                        </Link>
+                        {!isStaffDashboard && (
+                          <Link href="/ticket-manager">
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                              Ticket Manager
+                            </button>
+                          </Link>
+                        )}
 
-                        <Link href="/host-payments">
-                          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                            Payments
-                          </button>
-                        </Link>
+                        {!isStaffDashboard && (
+                          <Link href="/host-payments">
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                              Payments
+                            </button>
+                          </Link>
+                        )}
 
-                        <Link href="/host-settings">
-                          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
-                            System Settings
-                          </button>
-                        </Link>
+                        {!isStaffDashboard && (
+                          <Link href="/host-settings">
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white dark:hover:bg-gray-900 hover:bg-gray-100 rounded-lg">
+                              System Settings
+                            </button>
+                          </Link>
+                        )}
 
                         <button
                           onClick={() => setShowLogoutModal(true)}
@@ -1623,12 +1806,14 @@ export default function TicketManager({
             tenantActionLoadingKey={tenantActionLoadingKey}
             tickets={tickets}
             applyTenantAction={applyTenantAction}
+            actionOptions={actionOptions}
+            dashboardMode={dashboardMode}
           />
         ) : (
           <>
 
         {/* 🔍 Search & Filters */}
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mt-18 sm:mt-6 mx-8 p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="mx-4 mb-8 mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-6 sm:mt-6 sm:p-6 lg:mx-8">
           <h2 className="text-lg font-semibold mb-4">Search Tickets</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <select
@@ -1992,7 +2177,7 @@ export default function TicketManager({
           onClose={() => setShowLogoutModal(false)}
           onLogout={() => {
             localStorage.clear();
-            window.location.href = "/sign-in-host";
+            window.location.href = isStaffDashboard ? "/sign-in-staff" : "/sign-in-host";
           }}
         />
 
@@ -2275,9 +2460,11 @@ function TicketExportControls({
 
 function EventScopedTicketOperations({
   activeTenantAction,
+  actionOptions,
   applyTenantAction,
   canRunTenantAction,
   closeTenantAction,
+  dashboardMode,
   eventCustomersPage,
   eventCustomersTotalPages,
   eventId,
@@ -2302,12 +2489,14 @@ function EventScopedTicketOperations({
   tickets,
 }: {
   activeTenantAction: TenantTicketAction | null;
+  actionOptions: TenantTicketAction[];
   applyTenantAction: () => Promise<void>;
   canRunTenantAction: (
     action: TenantTicketAction,
     ticket: EventTicketCustomer
   ) => boolean;
   closeTenantAction: () => void;
+  dashboardMode: "host" | "staff";
   eventCustomersPage: number;
   eventCustomersTotalPages: number;
   eventId?: string;
@@ -2334,6 +2523,7 @@ function EventScopedTicketOperations({
   tenantActionLoadingKey: string | null;
   tickets: any[];
 }) {
+  const isStaffDashboard = dashboardMode === "staff";
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
   const [actionMenuPosition, setActionMenuPosition] = useState<{
     left: number;
@@ -2409,28 +2599,30 @@ function EventScopedTicketOperations({
 
   return (
     <>
-      <div className="mx-4 mt-6 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-8">
+      <div className="mx-3 mt-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-6 sm:mt-6 sm:p-5 lg:mx-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <button
               onClick={() => window.history.back()}
               className="mb-3 text-sm font-semibold text-[#D19537]"
             >
               Back to events
             </button>
-            <h2 className="text-xl font-semibold">
+            <h2 className="break-words text-lg font-semibold sm:text-xl">
               {eventTitle || "Selected event"} tickets
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
-              Event scoped tenant operations only apply to event ID{" "}
-              <span className="font-semibold text-gray-900 dark:text-white">
+              {isStaffDashboard
+                ? "Staff scoped operations only apply to event ID"
+                : "Event scoped tenant operations only apply to event ID"}{" "}
+              <span className="break-all font-semibold text-gray-900 dark:text-white">
                 {eventId}
               </span>
               .
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm sm:min-w-[360px]">
+          <div className="grid w-full grid-cols-2 gap-3 text-sm lg:w-auto lg:min-w-[360px]">
             <div className="rounded-lg bg-[#FAFAFB] p-3 dark:bg-[#101010]">
               <p className="text-gray-500 dark:text-gray-400">Loaded rows</p>
               <p className="mt-1 text-lg font-semibold">
@@ -2444,7 +2636,7 @@ function EventScopedTicketOperations({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           <input
             type="text"
             placeholder="Search name, email, or ticket ID"
@@ -2460,6 +2652,7 @@ function EventScopedTicketOperations({
             <option>All</option>
             <option>Registered</option>
             <option>Checked In</option>
+            <option>Unused</option>
             <option>Transfer Pending</option>
             <option>Cancelled</option>
             <option>Reclaimed</option>
@@ -2481,61 +2674,135 @@ function EventScopedTicketOperations({
               );
             })}
           </select>
-          <Link href="/ticket-manager">
-            <button className="h-11 w-full rounded-lg border border-[#D19537] px-4 text-sm font-semibold text-[#D19537]">
-              Open global ticket manager
-            </button>
-          </Link>
-          <TicketExportControls
-            rows={filteredEventTicketRows.map((row) => ({
-              ...row,
-              eventId,
-              eventName: eventTitle,
-            }))}
-            filename={`event-${eventId || "tickets"}-export`}
-            backendExport={
-              eventId
-                ? {
-                    endpoint: `/events/${eventId}/tickets/export`,
-                    exportDataEndpoint: `/events/${eventId}/tickets/export-data`,
-                    buildPayload: (columnKeys, format) => ({
-                      format,
-                      ...getDefaultExportTimeframeParams(),
-                      filters: {
+          {!isStaffDashboard && (
+            <Link className="md:col-span-2 xl:col-span-1" href="/ticket-manager">
+              <button className="h-11 w-full rounded-lg border border-[#D19537] px-4 text-sm font-semibold text-[#D19537]">
+                Open global ticket manager
+              </button>
+            </Link>
+          )}
+          <div className="md:col-span-2 xl:col-span-2">
+            <TicketExportControls
+              rows={filteredEventTicketRows.map((row) => ({
+                ...row,
+                eventId,
+                eventName: eventTitle,
+              }))}
+              filename={`event-${eventId || "tickets"}-export`}
+              backendExport={
+                eventId
+                  ? {
+                      endpoint: `/events/${eventId}/tickets/export`,
+                      exportDataEndpoint: `/events/${eventId}/tickets/export-data`,
+                      buildPayload: (columnKeys, format) => ({
+                        format,
+                        ...getDefaultExportTimeframeParams(),
+                        filters: {
+                          status: eventTicketStatus,
+                          search: eventTicketSearch.trim(),
+                          ticketType: selectedTicketTypeFilter,
+                        },
+                        columns: columnKeys,
+                      }),
+                      buildExportDataParams: () => ({
+                        ...getDefaultExportTimeframeParams(),
                         status: eventTicketStatus,
                         search: eventTicketSearch.trim(),
                         ticketType: selectedTicketTypeFilter,
-                      },
-                      columns: columnKeys,
-                    }),
-                    buildExportDataParams: () => ({
-                      ...getDefaultExportTimeframeParams(),
-                      status: eventTicketStatus,
-                      search: eventTicketSearch.trim(),
-                      ticketType: selectedTicketTypeFilter,
-                    }),
-                  }
-                : undefined
-            }
-            buttonClassName="h-11 w-full"
-          />
+                      }),
+                    }
+                  : undefined
+              }
+              buttonClassName="h-11 w-full"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mx-3 mt-6 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-8 sm:p-6">
+      <div className="mx-3 mt-5 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-[#1a1a1a] sm:mx-6 sm:p-5 lg:mx-8 lg:p-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold">Event ticket operations</h2>
             <p className="text-sm text-gray-500 dark:text-gray-300">
-              Tenant-only actions are shown per ticket row.
+              {isStaffDashboard
+                ? "Staff actions are shown per ticket row."
+                : "Tenant-only actions are shown per ticket row."}
             </p>
           </div>
           <span className="rounded-full bg-[#D19537]/15 px-3 py-1 text-xs font-semibold text-[#D19537]">
-            Event scoped
+            {isStaffDashboard ? "Staff scoped" : "Event scoped"}
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="space-y-3 md:hidden">
+          {eventTicketsLoading ? (
+            <div className="rounded-lg border border-gray-100 p-4 text-center text-sm text-gray-500 dark:border-gray-800">
+              Loading event tickets...
+            </div>
+          ) : filteredEventTicketRows.length === 0 ? (
+            <div className="rounded-lg border border-gray-100 p-4 text-center text-sm text-gray-500 dark:border-gray-800">
+              No tickets found for this event.
+            </div>
+          ) : (
+            filteredEventTicketRows.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="rounded-lg border border-gray-100 p-4 dark:border-gray-800"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold">{ticket.name}</p>
+                    <p className="break-all text-xs text-gray-500">{ticket.email}</p>
+                  </div>
+                  <button
+                    aria-label={`Open actions for ${ticket.name}`}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) =>
+                      toggleActionMenu(ticket, event.currentTarget)
+                    }
+                    className="inline-flex shrink-0 items-center justify-center p-1 text-gray-600 hover:text-[#D19537] dark:text-gray-200 dark:hover:text-[#D19537]"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Ticket</p>
+                    <p className="break-words font-medium">{ticket.ticketName || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Qty</p>
+                    <p className="font-medium">{ticket.quantity}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Status</p>
+                    <p className="font-medium">{ticket.status || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Rank</p>
+                    <p className="font-medium">{formatTicketRankLabel(ticket.rank)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Agent ID</p>
+                    <p className="break-words font-medium">
+                      {ticket.agentId || "Not assigned"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Type</p>
+                    <p className="break-words font-medium">{ticket.ticketType || "N/A"}</p>
+                  </div>
+                </div>
+                <p className="mt-3 break-all text-xs text-gray-500">
+                  {ticket.ticketId}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[860px] text-left text-sm xl:min-w-0">
             <thead>
               <tr className="border-b border-gray-200 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
@@ -2590,7 +2857,7 @@ function EventScopedTicketOperations({
                       </span>
                     </td>
                     <td className="py-4 pr-4 text-sm">
-                      {ticket.rank || "Not set"}
+                      {formatTicketRankLabel(ticket.rank)}
                     </td>
                     <td className="py-4 pr-4 text-sm">
                       {ticket.agentId || "Not assigned"}
@@ -2626,7 +2893,7 @@ function EventScopedTicketOperations({
             }}
             className="fixed z-[80] max-h-72 w-56 overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-[#1a1a1a]"
           >
-            {tenantTicketActions.map((action) => {
+            {actionOptions.map((action) => {
               const disabled =
                 !canRunTenantAction(action, openActionTicket) ||
                 tenantActionLoadingKey ===
@@ -2655,7 +2922,7 @@ function EventScopedTicketOperations({
         )}
 
         {eventCustomersTotalPages > 1 && (
-          <div className="mt-6 flex justify-center gap-2">
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
             <button
               disabled={eventCustomersPage === 1}
               onClick={() => setEventCustomersPage((p) => p - 1)}
@@ -2745,6 +3012,50 @@ function EventScopedTicketOperations({
                   placeholder="Checked in manually by tenant"
                 />
               </ActionField>
+            )}
+
+            {activeTenantAction === "Uncheck" && (
+              <>
+                <ActionField label="Who can uncheck this">
+                  <select
+                    value={tenantActionFields.uncheckByRole}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        uncheckByRole: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                  >
+                    {uncheckRoleOptions.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </ActionField>
+                <ActionField label="Date and time">
+                  <input
+                    type="text"
+                    value={formatDateTime(tenantActionFields.uncheckAt)}
+                    readOnly
+                    className="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-[#101010] dark:text-gray-200"
+                  />
+                </ActionField>
+                <ActionField label="Reason">
+                  <textarea
+                    value={tenantActionFields.reason}
+                    onChange={(e) =>
+                      setTenantActionFields((fields) => ({
+                        ...fields,
+                        reason: e.target.value,
+                      }))
+                    }
+                    className="min-h-[100px] w-full rounded-lg border px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#101010]"
+                    placeholder="Explain why this ticket is being marked unused"
+                  />
+                </ActionField>
+              </>
             )}
 
             {activeTenantAction === "Transfer" && (
@@ -2947,11 +3258,15 @@ function EventScopedTicketOperations({
                     className="h-10 w-full rounded-lg border px-3 text-sm dark:border-gray-700 dark:bg-[#101010]"
                   >
                     {TICKET_RANK_OPTIONS.map((rank) => (
-                      <option key={rank} value={rank}>
-                        {rank}
+                      <option key={rank.label} value={rank.label}>
+                        {rank.label}
                       </option>
                     ))}
                   </select>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Saved to API as "{getBackendTicketRankValue(tenantActionFields.rank)}"
+                    for backend compatibility.
+                  </p>
                 </ActionField>
                 <ActionField label="Reason">
                   <input
@@ -3184,6 +3499,43 @@ function EventScopedTicketOperations({
                         : "No",
                     ],
                     [
+                      "Checked In At",
+                      getStringValue(
+                        tenantActionDetails.ticket?.checkedInAt ??
+                          tenantActionDetails.ticket?.usedAt,
+                        "N/A"
+                      ),
+                    ],
+                    [
+                      "Checked In By",
+                      getStringValue(
+                        tenantActionDetails.ticket?.checkedInBy ??
+                          tenantActionDetails.ticket?.usedBy,
+                        "N/A"
+                      ),
+                    ],
+                    [
+                      "Status",
+                      getStringValue(
+                        tenantActionDetails.ticket?.status,
+                        selectedDisplayTicket.status
+                      ),
+                    ],
+                    [
+                      "Event ID",
+                      getStringValue(
+                        tenantActionDetails.ticket?.eventId,
+                        selectedDisplayTicket.eventId ?? eventId ?? "N/A"
+                      ),
+                    ],
+                    [
+                      "Order ID",
+                      getStringValue(
+                        tenantActionDetails.ticket?.orderId,
+                        selectedDisplayTicket.orderId
+                      ),
+                    ],
+                    [
                       "QR Code",
                       getStringValue(tenantActionDetails.ticket?.qrCodeUrl, "N/A"),
                     ],
@@ -3278,14 +3630,35 @@ function EventScopedTicketOperations({
                           {item.label}
                         </p>
                         {item.description && <p>{item.description}</p>}
-                        {[item.performedByRole, item.performedBy, item.createdAt]
-                          .filter(Boolean).length > 0 && (
-                          <p className="text-xs text-gray-500">
-                            {[item.performedByRole, item.performedBy, item.createdAt]
-                              .filter(Boolean)
-                              .join(" - ")}
-                          </p>
-                        )}
+                        <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                          <InfoField label="Ticket ID" value={item.ticketId || "N/A"} />
+                          <InfoField label="Event ID" value={item.eventId || "N/A"} />
+                          <InfoField label="Order ID" value={item.orderId || "N/A"} />
+                          <InfoField
+                            label="Action Type"
+                            value={item.actionType || "N/A"}
+                          />
+                          <InfoField
+                            label="Field Changed"
+                            value={item.fieldChanged || "N/A"}
+                          />
+                          <InfoField label="Old Value" value={item.oldValue || "N/A"} />
+                          <InfoField label="New Value" value={item.newValue || "N/A"} />
+                          <InfoField label="Reason" value={item.reason || "N/A"} />
+                          <InfoField
+                            label="Performed By User ID"
+                            value={item.performedByUserId || "N/A"}
+                          />
+                          <InfoField
+                            label="Performed By Role"
+                            value={item.performedByRole || "N/A"}
+                          />
+                          <InfoField
+                            label="Performed At"
+                            value={formatDateTime(item.performedAt || item.createdAt)}
+                          />
+                          <InfoField label="Source" value={item.source || "N/A"} />
+                        </div>
                       </div>
                     ))
                   )}

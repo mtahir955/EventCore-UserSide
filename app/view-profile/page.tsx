@@ -12,6 +12,7 @@ import PaymentDetails from "./components/profile/payment-details";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import { sanitizeProfilePaymentDetails } from "@/lib/paymentCards";
 
 function mergeProfileData(serverData: any, savedData: any) {
   return {
@@ -73,14 +74,14 @@ export default function Page() {
         let savedData = null;
         const savedProfile = localStorage.getItem("buyerProfile");
         if (savedProfile) {
-          savedData = JSON.parse(savedProfile);
+          savedData = sanitizeProfilePaymentDetails(JSON.parse(savedProfile));
           setProfile(savedData);
         }
 
         const res = await apiClient.get("/users/buyer/profile");
-        const mergedProfile = savedData
-          ? mergeProfileData(res.data.data, savedData)
-          : res.data.data;
+        const mergedProfile = sanitizeProfilePaymentDetails(
+          savedData ? mergeProfileData(res.data.data, savedData) : res.data.data
+        );
 
         setProfile(mergedProfile);
         localStorage.setItem("buyerProfile", JSON.stringify(mergedProfile));
@@ -109,9 +110,9 @@ export default function Page() {
               <ContactDetails data={profile?.contactDetails} />
             </SectionCard>
 
-            {/* <SectionCard title="Payment Details">
+            <SectionCard title="Payment Details">
               <PaymentDetails data={profile?.paymentDetails} />
-            </SectionCard> */}
+            </SectionCard>
           </div>
         </div>
 

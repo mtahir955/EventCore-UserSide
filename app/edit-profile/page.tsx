@@ -16,6 +16,7 @@ import { CheckCircle } from "lucide-react";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import { sanitizeProfilePaymentDetails } from "@/lib/paymentCards";
 
 function mergeProfileData(serverData: any, payload: any) {
   return {
@@ -80,7 +81,6 @@ export default function Page() {
   // refs to call getValues / getFile from children
   const basicInfoRef = useRef<any>(null);
   const contactDetailsRef = useRef<any>(null);
-  const paymentDetailsRef = useRef<any>(null);
   const profileHeaderRef = useRef<any>(null);
 
   // ⭐ Fetch existing profile data for autofill
@@ -116,14 +116,14 @@ export default function Page() {
         let savedData = null;
         const savedProfile = localStorage.getItem("buyerProfile");
         if (savedProfile) {
-          savedData = JSON.parse(savedProfile);
+          savedData = sanitizeProfilePaymentDetails(JSON.parse(savedProfile));
           setProfileData(savedData);
         }
 
         const res = await apiClient.get("/users/buyer/profile");
-        const mergedProfile = savedData
-          ? mergeProfileData(res.data.data, savedData)
-          : res.data.data;
+        const mergedProfile = sanitizeProfilePaymentDetails(
+          savedData ? mergeProfileData(res.data.data, savedData) : res.data.data
+        );
 
         setProfileData(mergedProfile);
         localStorage.setItem("buyerProfile", JSON.stringify(mergedProfile));
@@ -135,11 +135,22 @@ export default function Page() {
     loadProfile();
   }, []);
 
+  const handlePaymentDetailsChange = (paymentDetails: Record<string, any>) => {
+    setProfileData((prev: any) => {
+      const nextProfile = {
+        ...(prev || {}),
+        paymentDetails,
+      };
+
+      localStorage.setItem("buyerProfile", JSON.stringify(nextProfile));
+      return nextProfile;
+    });
+  };
+
   const handleSave = async () => {
     try {
       const basicInfo = basicInfoRef.current?.getValues();
       const contactDetails = contactDetailsRef.current?.getValues();
-      const paymentDetails = paymentDetailsRef.current?.getValues();
       const profileFile = profileHeaderRef.current?.getFile?.();
 
       // const token = localStorage.getItem("buyerToken");
@@ -151,7 +162,6 @@ export default function Page() {
       const payload = {
         basicInfo,
         contactDetails,
-        paymentDetails,
       };
 
       const formData = new FormData();
@@ -172,7 +182,9 @@ export default function Page() {
       //   }
       // );
       const response = await apiClient.put("/users/buyer/profile", formData);
-      const mergedProfile = mergeProfileData(response.data.data, payload);
+      const mergedProfile = sanitizeProfilePaymentDetails(
+        mergeProfileData(response.data.data, payload)
+      );
 
       // ⭐ UPDATE STATE WITH NEW PHOTO URL
       setProfileData(mergedProfile);
@@ -215,12 +227,12 @@ export default function Page() {
               />
             </SectionCard>
 
-            {/* <SectionCard title="Payment Details">
+            <SectionCard title="Payment Details">
               <PaymentDetails
-                ref={paymentDetailsRef}
                 existing={profileData?.paymentDetails}
+                onPaymentDetailsChange={handlePaymentDetailsChange}
               />
-            </SectionCard> */}
+            </SectionCard>
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row justify-center sm:justify-end gap-4 pt-2 mb-10">

@@ -1,20 +1,72 @@
 "use client";
 
 import SectionShell from "./section-shell";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export default function BasicInformation() {
+type BasicInformationProps = {
+  profile?: {
+    basicInfo?: Record<string, any>;
+  } | null;
+};
+
+function splitFullName(fullName?: string) {
+  const parts = (fullName || "").trim().split(" ").filter(Boolean);
+
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+  };
+}
+
+function getPrefillValues(profile?: BasicInformationProps["profile"]) {
+  const basicInfo = profile?.basicInfo || {};
+  const fallbackName = splitFullName(
+    basicInfo.fullName || basicInfo.name || basicInfo.userName
+  );
+
+  return {
+    firstName: basicInfo.firstName || fallbackName.firstName || "",
+    lastName: basicInfo.lastName || fallbackName.lastName || "",
+    gender: basicInfo.gender || "",
+    email: basicInfo.email || basicInfo.username || "",
+  };
+}
+
+export default function BasicInformation({ profile }: BasicInformationProps) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     gender: "",
     email: "",
   });
+  const touchedFieldsRef = useRef<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!profile) return;
+
+    const prefill = getPrefillValues(profile);
+    const hasPrefill = Object.values(prefill).some(Boolean);
+
+    if (hasPrefill) {
+      setForm((prev) => ({
+        ...prev,
+        firstName: touchedFieldsRef.current.firstName
+          ? prev.firstName
+          : prefill.firstName,
+        lastName: touchedFieldsRef.current.lastName
+          ? prev.lastName
+          : prefill.lastName,
+        gender: touchedFieldsRef.current.gender ? prev.gender : prefill.gender,
+        email: touchedFieldsRef.current.email ? prev.email : prefill.email,
+      }));
+    }
+  }, [profile]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    touchedFieldsRef.current[name] = true;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 

@@ -103,8 +103,9 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
           phoneCountryCode: phoneParts.phoneCountryCode,
           phoneCountryIso: phoneParts.phoneCountryIso,
           phoneNumber: phoneParts.phoneNumber,
-          city: existing.city || "",
-          pincode: existing.pincode || "",
+          city: existing.city || existing.town || "",
+          pincode:
+            existing.pincode || (existing as any).postalCode || (existing as any).zipCode || "",
           address: existing.address || "",
           website: existing.website || "",
         });
@@ -261,6 +262,21 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
               {form.address}
             </div>
           ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm text-gray-700 dark:text-gray-200">
+            Website (Optional):
+          </label>
+          <input
+            placeholder="Enter website URL"
+            value={form.website}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, website: e.target.value }))
+            }
+            className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-[#101010] dark:text-gray-100"
+            aria-label="Website"
+          />
         </div>
       </div>
     );

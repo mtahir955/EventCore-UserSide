@@ -183,9 +183,12 @@ export default function MyEvents() {
           {/* Events Grid */}
           {!loading && paginatedEvents.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 justify-items-center">
-              {paginatedEvents.map((event) => (
+              {paginatedEvents.map((event) => {
+                const eventId = event.id ?? event._id;
+
+                return (
                 <div
-                  key={event.id}
+                  key={eventId}
                   className="bg-white dark:bg-[#101010] rounded-2xl shadow-sm overflow-hidden flex flex-col sm:flex-row max-w-[520px] w-full border border-gray-100 dark:border-gray-800"
                 >
                   {/* Image */}
@@ -246,14 +249,26 @@ export default function MyEvents() {
                     </div>
 
                     {/* Button */}
-                    <Link href={`/ticket-check-staff?id=${event.id}`}>
-                      <button className="mt-auto w-full rounded-md bg-[#D19537] text-white text-[14px] font-medium py-2.5 hover:bg-[#b67e2c] transition-all">
-                        Check Ticket
-                      </button>
-                    </Link>
+                    <div className="mt-auto grid grid-cols-1 gap-2">
+                      <Link href={`/ticket-check-staff?id=${eventId}`}>
+                        <button className="w-full rounded-md bg-[#D19537] text-white text-[14px] font-medium py-2.5 hover:bg-[#b67e2c] transition-all">
+                          Check Ticket
+                        </button>
+                      </Link>
+                      <Link
+                        href={`/my-events-staff/${eventId}/tickets?title=${encodeURIComponent(
+                          event.title ?? "Event"
+                        )}`}
+                      >
+                        <button className="w-full rounded-md border border-[#D19537] text-[#D19537] text-[14px] font-medium py-2.5 hover:bg-[#D19537]/10 transition-all">
+                          Manage Tickets
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

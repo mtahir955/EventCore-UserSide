@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import SectionShell from "./section-shell";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 {
   /* Phone Number */
@@ -25,7 +25,52 @@ const countryOptions = [
   },
 ];
 
-export default function ContactDetails() {
+type ContactDetailsProps = {
+  profile?: {
+    contactDetails?: Record<string, any>;
+  } | null;
+};
+
+const getKnownCountryCode = (value?: string) =>
+  countryOptions.find((country) => country.code === value)?.code || "+1";
+
+function getPhoneParts(contactDetails: Record<string, any>) {
+  const rawPhone = String(contactDetails.phone || "").trim();
+  const explicitCode = contactDetails.phoneCountryCode;
+  const inferredCode = countryOptions.find((country) =>
+    rawPhone.startsWith(country.code)
+  )?.code;
+  const countryCode = getKnownCountryCode(explicitCode || inferredCode);
+  const phoneNumber =
+    contactDetails.phoneNumber ||
+    rawPhone.replace(countryCode, "").trim() ||
+    "";
+
+  return {
+    countryCode,
+    phoneNumber,
+  };
+}
+
+function getPrefillValues(profile?: ContactDetailsProps["profile"]) {
+  const contactDetails = profile?.contactDetails || {};
+  const phone = getPhoneParts(contactDetails);
+
+  return {
+    phone: phone.phoneNumber,
+    city: contactDetails.city || contactDetails.town || "",
+    pincode:
+      contactDetails.pincode ||
+      contactDetails.postalCode ||
+      contactDetails.zipCode ||
+      "",
+    address: contactDetails.address || "",
+    website: contactDetails.website || "",
+    countryCode: phone.countryCode,
+  };
+}
+
+export default function ContactDetails({ profile }: ContactDetailsProps) {
   const [form, setForm] = useState({
     phone: "",
     city: "",
@@ -34,15 +79,46 @@ export default function ContactDetails() {
     website: "",
     countryCode: "+1",
   });
+  const touchedFieldsRef = useRef<Record<string, boolean>>({});
 
   const selectedCountry = countryOptions.find(
     (c) => c.code === form.countryCode
   );
 
+  useEffect(() => {
+    if (!profile) return;
+
+    const prefill = getPrefillValues(profile);
+    const hasPrefill = Object.entries(prefill).some(
+      ([key, value]) => key !== "countryCode" && !!value
+    );
+
+    if (hasPrefill) {
+      setForm((prev) => ({
+        ...prev,
+        phone: touchedFieldsRef.current.phone ? prev.phone : prefill.phone,
+        city: touchedFieldsRef.current.city ? prev.city : prefill.city,
+        pincode: touchedFieldsRef.current.pincode
+          ? prev.pincode
+          : prefill.pincode,
+        address: touchedFieldsRef.current.address
+          ? prev.address
+          : prefill.address,
+        website: touchedFieldsRef.current.website
+          ? prev.website
+          : prefill.website,
+        countryCode: touchedFieldsRef.current.countryCode
+          ? prev.countryCode
+          : prefill.countryCode,
+      }));
+    }
+  }, [profile]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    touchedFieldsRef.current[name] = true;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -76,9 +152,10 @@ export default function ContactDetails() {
             {/* Dropdown */}
             <select
               value={form.countryCode}
-              onChange={(e) =>
-                setForm({ ...form, countryCode: e.target.value })
-              }
+              onChange={(e) => {
+                touchedFieldsRef.current.countryCode = true;
+                setForm({ ...form, countryCode: e.target.value });
+              }}
               className="bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none cursor-pointer"
             >
               {countryOptions.map((country) => (
@@ -159,7 +236,6 @@ export default function ContactDetails() {
           />
         </div>
 
-        {/* Website */}
         <div className="space-y-2">
           <label className="text-sm text-gray-700 dark:text-gray-200">
             Website (Optional):
@@ -168,8 +244,8 @@ export default function ContactDetails() {
             name="website"
             value={form.website}
             onChange={handleChange}
-            placeholder="Enter website url"
-            className="h-11 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] px-3 text-[15px] outline-none focus:ring-2 focus:ring-primary transition-colors"
+            placeholder="Enter website URL"
+            className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-[15px] outline-none transition-colors focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-[#101010]"
           />
         </div>
       </div>
