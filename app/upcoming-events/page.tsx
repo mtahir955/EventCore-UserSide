@@ -13,6 +13,7 @@ import Explore from "../upcoming-events/components/explore";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import { normalizeEvent } from "@/lib/event-publishing";
 
 // 🔥 TOKEN HELPER
 // function getAuthToken() {
@@ -53,6 +54,89 @@ export default function CalendarPage() {
   // -----------------------------------------------------
   // 🔥 FETCH USER EVENTS (/users/events/mine)
   // -----------------------------------------------------
+  const buildTicketCalendarData = (payload: any) => {
+    const ownedTickets = payload?.ownedTickets || [];
+    const transferredTickets = payload?.transferredTickets || [];
+    const uniqueEvents = new Map<string, any>();
+
+    [...ownedTickets, ...transferredTickets].forEach((entry: any) => {
+      const normalizedEvent = normalizeEvent(entry?.event || entry);
+      const eventKey = normalizedEvent.id || normalizedEvent.slug;
+      const eventDate =
+        normalizedEvent.startAt ||
+        (normalizedEvent.startDate
+          ? new Date(`${normalizedEvent.startDate}T12:00:00`)
+          : null);
+
+      if (
+        !eventKey ||
+        uniqueEvents.has(eventKey) ||
+        !eventDate ||
+        Number.isNaN(eventDate.getTime())
+      ) {
+        return;
+      }
+
+      uniqueEvents.set(eventKey, {
+        id: eventKey,
+        slug: normalizedEvent.slug,
+        title: normalizedEvent.title,
+        type:
+          normalizedEvent.mode === "hybrid"
+            ? "hybrid"
+            : normalizedEvent.mode === "virtual"
+            ? "virtual"
+            : "in-person",
+        date: eventDate.getDate(),
+        location:
+          normalizedEvent.mode === "virtual"
+            ? "Online"
+            : normalizedEvent.locationLabel,
+        description:
+          normalizedEvent.shortDescription || normalizedEvent.description,
+        time: normalizedEvent.startTime,
+        purchased: true,
+        cta: "View Ticket",
+        startsAt: eventDate.toISOString(),
+      });
+    });
+
+    const now = new Date();
+    const nextCalendarEvents: Record<string, Record<string, any[]>> = {};
+    const nextEventsGrid = {
+      upcoming: [] as any[],
+      previous: [] as any[],
+    };
+
+    uniqueEvents.forEach((event) => {
+      const eventDate = new Date(event.startsAt);
+      const year = String(eventDate.getFullYear());
+      const month = String(eventDate.getMonth() + 1);
+
+      if (!nextCalendarEvents[year]) nextCalendarEvents[year] = {};
+      if (!nextCalendarEvents[year][month]) nextCalendarEvents[year][month] = [];
+
+      nextCalendarEvents[year][month].push({
+        id: event.id,
+        title: event.title,
+        type: event.type,
+        date: event.date,
+        location: event.location,
+      });
+
+      if (eventDate >= now) {
+        nextEventsGrid.upcoming.push(event);
+      } else {
+        nextEventsGrid.previous.push(event);
+      }
+    });
+
+    return {
+      calendarEvents: nextCalendarEvents,
+      eventsGrid: nextEventsGrid,
+    };
+  };
+
   const fetchEvents = async () => {
     try {
       // const token = getAuthToken();
@@ -65,12 +149,12 @@ export default function CalendarPage() {
       //   },
       // });
 
-      const res = await apiClient.get("/users/events/mine");
+      const res = await apiClient.get("/users/tickets/mine");
 
-      const data = res.data?.data;
+      const data = buildTicketCalendarData(res.data?.data || {});
 
-      setCalendarEvents(data.calendarEvents || {});
-      setEventsGrid(data.eventsGrid || {});
+      setCalendarEvents(data.calendarEvents);
+      setEventsGrid(data.eventsGrid);
     } catch (err: any) {
       console.error("❌ Error fetching events:", err.response);
 
@@ -78,6 +162,9 @@ export default function CalendarPage() {
         localStorage.removeItem("buyerToken");
         localStorage.removeItem("userToken");
       }
+
+      setCalendarEvents({});
+      setEventsGrid({ upcoming: [], previous: [] });
     }
   };
 

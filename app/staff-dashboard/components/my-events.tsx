@@ -10,6 +10,12 @@ import toast from "react-hot-toast";
 import { API_BASE_URL } from "@/config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import { formatGoLiveLabel, normalizeEvent } from "@/lib/event-publishing";
+import {
+  EventLifecycleBadge,
+  EventModeBadge,
+  EventPrivacyBadge,
+} from "@/components/events/event-badges";
 
 const safeImageUrl = (url?: string) => {
   if (!url || typeof url !== "string") return "/placeholder.svg";
@@ -185,6 +191,7 @@ export default function MyEvents() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 justify-items-center">
               {paginatedEvents.map((event) => {
                 const eventId = event.id ?? event._id;
+                const normalizedEvent = normalizeEvent(event);
 
                 return (
                 <div
@@ -205,12 +212,18 @@ export default function MyEvents() {
                   {/* Content */}
                   <div className="flex flex-col justify-between p-4 sm:p-5 sm:w-[300px]">
                     <div>
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <EventLifecycleBadge status={normalizedEvent.lifecycleStatus} />
+                        <EventModeBadge mode={normalizedEvent.mode} />
+                        <EventPrivacyBadge privacyType={normalizedEvent.privacyType} />
+                      </div>
+
                       <h3 className="text-[16px] font-semibold text-gray-900 dark:text-white leading-tight mb-2">
-                        {event.title}
+                        {normalizedEvent.title}
                       </h3>
 
                       <p className="text-[13px] text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
-                        {event.description}
+                        {normalizedEvent.shortDescription || normalizedEvent.description}
                       </p>
 
                       {/* Meta Info */}
@@ -222,7 +235,11 @@ export default function MyEvents() {
                             width={15}
                             height={15}
                           />
-                          <span>{event.location}</span>
+                          <span>
+                            {normalizedEvent.mode === "virtual"
+                              ? "Online"
+                              : normalizedEvent.locationLabel}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -232,7 +249,7 @@ export default function MyEvents() {
                             width={15}
                             height={15}
                           />
-                          <span>{event.date}</span>
+                          <span>{event.date || normalizedEvent.startDate}</span>
                         </div>
                       </div>
 
@@ -244,8 +261,11 @@ export default function MyEvents() {
                           width={15}
                           height={15}
                         />
-                        <span>{event.time}</span>
+                        <span>{event.time || normalizedEvent.startTime}</span>
                       </div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-4">
+                        Go live: {formatGoLiveLabel(normalizedEvent)}
+                      </p>
                     </div>
 
                     {/* Button */}

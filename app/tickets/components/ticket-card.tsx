@@ -13,6 +13,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import QRCode from "qrcode";
 import { apiClient } from "@/lib/apiClient";
+import { PurchaserStreamAccess } from "@/components/events/purchaser-stream-access";
 
 type TicketProps = {
   eventId: string;
@@ -51,6 +52,8 @@ type TicketProps = {
 
   issuedTickets?: { id: string; ticketNumber: number }[];
   confirmationNumber?: string;
+  streamUrl?: string;
+  attendanceMode?: string;
 };
 
 export function TicketCard({
@@ -79,6 +82,8 @@ export function TicketCard({
 
   issuedTickets = [],
   confirmationNumber = "",
+  streamUrl = "",
+  attendanceMode = "",
 }: TicketProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -445,6 +450,15 @@ export function TicketCard({
                   </div>
                 )}
               </div>
+
+              {!ended && eventId ? (
+                <PurchaserStreamAccess
+                  eventId={eventId}
+                  streamUrl={streamUrl}
+                  attendanceMode={attendanceMode}
+                  title="Purchaser-only watch link"
+                />
+              ) : null}
             </div>
 
             {/* Price + Actions */}

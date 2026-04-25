@@ -112,6 +112,10 @@ export default function CalendarView({
           </span>
 
           <span className="inline-flex items-center gap-1">
+            <span className="h-3 w-3 rounded-full bg-[#F59E0B]" /> Hybrid
+          </span>
+
+          <span className="inline-flex items-center gap-1">
             <span className="h-3 w-3 rounded-full bg-[#FC1100]" /> Pinned
           </span>
 
@@ -188,6 +192,8 @@ export default function CalendarView({
                               ? "bg-[#6D10F5] text-white"
                               : event.type === "virtual"
                               ? "bg-[#89FC00] text-black"
+                              : event.type === "hybrid"
+                              ? "bg-[#F59E0B] text-white"
                               : event.type === "purchased"
                               ? "bg-[#0077F7] text-white"
                               : event.type === "pinned"

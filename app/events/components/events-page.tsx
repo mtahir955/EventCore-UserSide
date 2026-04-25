@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/config/apiConfig";
 import { apiClient } from "@/lib/apiClient";
+import { canAppearInPublicListings, normalizeEvent } from "@/lib/event-publishing";
 
 import {
   Select,
@@ -147,19 +148,30 @@ export function EventsPage() {
     const set = new Set<string>();
 
     apiEvents
-      .filter((ev) =>
-        filters.market === "all" ? true : ev?.marketSlug === filters.market
+      .map((event) => ({ event, normalizedEvent: normalizeEvent(event) }))
+      .filter(({ event }) =>
+        filters.market === "all" ? true : event?.marketSlug === filters.market
       )
-      .forEach((ev) => {
-        if (ev?.location) set.add(ev.location);
+      .forEach(({ event, normalizedEvent }) => {
+        const locationLabel =
+          event?.location || event?.eventLocation || normalizedEvent.locationLabel;
+        if (locationLabel) set.add(locationLabel);
       });
 
     return Array.from(set);
   }, [apiEvents, filters.market]);
 
   const filteredEvents = useMemo(() => {
-    return apiEvents.filter((event) => {
-      const rawStatus = String(event?.status ?? "").toLowerCase();
+    return apiEvents
+      .map((event) => ({
+        ...event,
+        normalizedEvent: normalizeEvent(event),
+      }))
+      .filter((event) => canAppearInPublicListings(event.normalizedEvent))
+      .filter((event) => {
+      const rawStatus = String(
+        event?.eventCategory ?? event?.status ?? event.normalizedEvent.category ?? ""
+      ).toLowerCase();
       const statusKey = rawStatus.replace(/\s+/g, "");
       const mappedStatus = backendStatusToFilter[statusKey];
 
@@ -172,10 +184,17 @@ export function EventsPage() {
       const matchesLocation =
         filters.location === "all"
           ? true
-          : event?.location === filters.location;
+          : event?.location === filters.location ||
+            event?.eventLocation === filters.location ||
+            event.normalizedEvent.locationLabel === filters.location;
 
-      const matchesMode =
-        filters.mode === "all" ? true : event?.mode === filters.mode;
+      const normalizedMode =
+        event.normalizedEvent.mode === "virtual"
+          ? "online"
+          : event.normalizedEvent.mode === "hybrid"
+          ? "hybrid"
+          : "offline";
+      const matchesMode = filters.mode === "all" ? true : normalizedMode === filters.mode;
 
       const numericPrice = parsePrice(event?.price);
       let matchesPrice = true;

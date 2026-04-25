@@ -20,30 +20,25 @@ import {
 } from "@/components/ui/select";
 import LogoutModalHost from "@/components/modals/LogoutModalHost";
 import EventSettingsPageInline from "./event-settings-inline";
-import { City } from "country-state-city";
-import { countries as countriesList } from "countries-list";
-
+import { StructuredLocationEditor } from "@/components/events/structured-location-editor";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  EventCategoryOption,
+  fetchTenantEventCategories,
+} from "@/lib/event-categories";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import { ChevronDown } from "lucide-react";
+  EMPTY_STRUCTURED_EVENT_LOCATION,
+  StructuredEventLocation,
+  normalizeStructuredEventLocation,
+} from "@/lib/google-places";
 
 const STORAGE_KEY = "eventDraft";
 
 export default function CreateEventPage() {
-  const [eventType, setEventType] = useState<"in-person" | "virtual">(
+  const [eventType, setEventType] = useState<"in-person" | "virtual" | "hybrid">(
     "in-person",
   );
   const [eventTitle, setEventTitle] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [eventCategory, setEventCategory] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -51,10 +46,11 @@ export default function CreateEventPage() {
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");
   const [eventLocation, setEventLocation] = useState("");
+  const [locationData, setLocationData] = useState<StructuredEventLocation>(
+    EMPTY_STRUCTURED_EVENT_LOCATION,
+  );
+  const [categoryOptions, setCategoryOptions] = useState<EventCategoryOption[]>([]);
   const [ActivePage, setActivePage] = useState("create");
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEndOpen, setIsEndOpen] = useState(false);
-  const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [error, setError] = useState("");
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -85,30 +81,14 @@ export default function CreateEventPage() {
     { id: 3, message: "New user message received." },
   ];
 
-  type CountryMeta = {
-    iso2: string;
-    name: string;
-    callingCode: string;
-    flag: string;
-  };
+  useEffect(() => {
+    fetchTenantEventCategories()
+      .then((categories) => setCategoryOptions(categories))
+      .catch(() => setCategoryOptions([]));
+  }, []);
 
-  type LocationOption = {
-    key: string;
-    label: string; // "City, Country"
-    countryIso2: string;
-    callingCode: string;
-    flag: string;
-  };
-
-  const [openLocation, setOpenLocation] = useState(false);
-  const [locationQuery, setLocationQuery] = useState("");
-  const [locationResults, setLocationResults] = useState<LocationOption[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  // cache cities per country (performance)
-  const cityCacheRef = useRef<Map<string, string[]>>(new Map());
-
-  const allCountries: CountryMeta[] = useMemo(() => {
+  /* legacy location search replaced by Google Places
+  const allCountries: never[] = useMemo(() => {
     const entries = Object.entries(countriesList) as Array<
       [string, { name: string; phone: string | string[] }]
     >;
@@ -202,7 +182,7 @@ export default function CreateEventPage() {
     setEventLocation(opt.label); // ✅ saves FULL "City, Country"
     setIsLocationOpen(false); // (optional: you had this state)
     setOpenLocation(false);
-  };
+  }; */
 
   // Click outside handler
   useEffect(() => {
@@ -225,11 +205,6 @@ export default function CreateEventPage() {
   }, []);
 
   const router = useRouter();
-
-  const handleSelect = (time: string) => {
-    setStartTime(time);
-    setIsOpen(false);
-  };
 
   const stepOrder = [
     "create",
@@ -266,16 +241,22 @@ export default function CreateEventPage() {
 
   const saveEventDetailsToLocalStorage = () => {
     if (typeof window === "undefined") return;
+    const normalizedLocation = normalizeStructuredEventLocation(locationData);
 
     const details = {
       eventTitle,
+      shortDescription,
       eventDescription,
       eventCategory,
       startDate,
       endDate,
       startTime,
       endTime,
-      eventLocation,
+      eventLocation:
+        eventType === "virtual"
+          ? eventLocation || "Online"
+          : normalizedLocation.displayLocation || eventLocation,
+      locationData: normalizedLocation,
       eventType,
     };
 
@@ -296,6 +277,7 @@ export default function CreateEventPage() {
   };
 
   const handleSaveAndContinue = () => {
+    const normalizedLocation = normalizeStructuredEventLocation(locationData);
     // validation
     if (
       !eventTitle ||
@@ -304,7 +286,12 @@ export default function CreateEventPage() {
       !endDate ||
       !startTime ||
       !endTime ||
-      !eventLocation
+      (eventType !== "virtual" &&
+        !(
+          normalizedLocation.displayLocation ||
+          normalizedLocation.addressLine1 ||
+          eventLocation
+        ))
     ) {
       setError("Please fill all required fields before continuing.");
       return;
@@ -355,6 +342,7 @@ export default function CreateEventPage() {
       const data = JSON.parse(saved);
       if (data.details) {
         setEventTitle(data.details.eventTitle || "");
+        setShortDescription(data.details.shortDescription || "");
         setEventDescription(data.details.eventDescription || "");
         setEventCategory(data.details.eventCategory || "");
         setStartDate(data.details.startDate || "");
@@ -362,8 +350,13 @@ export default function CreateEventPage() {
         setStartTime(data.details.startTime || "00:00");
         setEndTime(data.details.endTime || "00:00");
         setEventLocation(data.details.eventLocation || "");
+        setLocationData(
+          normalizeStructuredEventLocation(data.details.locationData || {}),
+        );
         if (data.details.eventType === "virtual") {
           setEventType("virtual");
+        } else if (data.details.eventType === "hybrid") {
+          setEventType("hybrid");
         } else if (data.details.eventType === "in-person") {
           setEventType("in-person");
         }
@@ -578,32 +571,17 @@ export default function CreateEventPage() {
                 <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
                   Event Details
                 </h4>
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-[14px] font-medium mb-2">
-                      Event Title <span className="text-[#D6111A]">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Write title here..."
-                      value={eventTitle}
-                      onChange={(e) => setEventTitle(e.target.value)}
-                      className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[14px] font-medium mb-2">
-                      Event Description{" "}
-                      {/* <span className="text-[#D6111A]">*</span> */}
-                    </label>
-                    <textarea
-                      placeholder="Describe here..."
-                      value={eventDescription}
-                      onChange={(e) => setEventDescription(e.target.value)}
-                      className="w-full h-32 px-4 py-3 rounded-lg border text-[14px] outline-none resize-none dark:bg-[#101010] bg-[#FAFAFB] border-[#E5E5E5]"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[14px] font-medium mb-2">
+                    Event Title <span className="text-[#D6111A]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Write title here..."
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    className="w-full h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
+                  />
                 </div>
               </div>
 
@@ -623,23 +601,69 @@ export default function CreateEventPage() {
                     <Select
                       value={eventCategory}
                       onValueChange={setEventCategory}
+                      disabled={categoryOptions.length === 0}
                     >
                       <SelectTrigger className="bg-gray-50 dark:bg-[#181818] w-full rounded-lg border border-gray-200 dark:border-gray-700 text-black dark:text-gray-200 font-semibold">
-                        <SelectValue placeholder="Select Category" />
+                        <SelectValue
+                          placeholder={
+                            categoryOptions.length === 0
+                              ? "No tenant categories available"
+                              : "Select Category"
+                          }
+                        />
                       </SelectTrigger>
 
                       <SelectContent className="bg-white dark:bg-[#1a1a1a] text-black dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <SelectItem value="trainings">Trainings</SelectItem>
-                        <SelectItem value="escapes">Escapes</SelectItem>
-                        <SelectItem value="traincations">
-                          Traincations
-                        </SelectItem>
-                        <SelectItem value="excursions">Excursions</SelectItem>
-                        <SelectItem value="roomBlocks">
-                          Training Room Blocks
-                        </SelectItem>
+                        {categoryOptions.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {categoryOptions.length === 0 ? (
+                      <p className="mt-2 text-[12px] text-[#D6111A]">
+                        No tenant categories are available from `/categories/tenant` yet.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-10">
+                <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
+                  Event Summary
+                </h4>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[14px] font-medium mb-2">
+                      Short Description
+                    </label>
+                    <textarea
+                      placeholder="Add a short summary for cards, listings, and share previews..."
+                      value={shortDescription}
+                      onChange={(e) => setShortDescription(e.target.value.slice(0, 220))}
+                      className="w-full h-24 px-4 py-3 rounded-lg border text-[14px] outline-none resize-none dark:bg-[#101010] bg-[#FAFAFB] border-[#E5E5E5]"
+                    />
+                    <p className="mt-2 text-[12px] text-gray-500">
+                      Recommended for published events. {shortDescription.length}/220
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-medium mb-2">
+                      Full Description
+                    </label>
+                    <textarea
+                      placeholder="Describe here..."
+                      value={eventDescription}
+                      onChange={(e) => setEventDescription(e.target.value)}
+                      className="w-full h-32 px-4 py-3 rounded-lg border text-[14px] outline-none resize-none dark:bg-[#101010] bg-[#FAFAFB] border-[#E5E5E5]"
+                    />
+                    <p className="mt-2 text-[12px] text-gray-500">
+                      Drafts can stay blank for now. Full descriptions will be required before publish.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -674,6 +698,16 @@ export default function CreateEventPage() {
                           className="w-5 h-5 accent-black"
                         />
                         <span className="text-[14px]">Virtual</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="eventType"
+                          checked={eventType === "hybrid"}
+                          onChange={() => setEventType("hybrid")}
+                          className="w-5 h-5 accent-black"
+                        />
+                        <span className="text-[14px]">Hybrid</span>
                       </label>
                     </div>
                   </div>
@@ -758,82 +792,50 @@ export default function CreateEventPage() {
               {/* Location */}
               <div className="mb-10 w-full">
                 <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
-                  Select Location
+                  Event Location
                 </h4>
 
                 <div className="w-full">
                   <label className="block text-[14px] font-medium mb-2">
-                    Event Location <span className="text-[#D6111A]">*</span>
+                    {eventType === "virtual"
+                      ? "Display Location"
+                      : "Event Location"}{" "}
+                    {eventType !== "virtual" ? (
+                      <span className="text-[#D6111A]">*</span>
+                    ) : null}
                   </label>
 
-                  <Popover open={openLocation} onOpenChange={setOpenLocation}>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="
-        w-full 
-        sm:w-[510px]
-        h-12 
-        px-4 
-        rounded-lg 
-        border 
-        text-[14px] 
-        outline-none 
-        bg-[#FAFAFB] 
-        dark:bg-[#101010] 
-        border-[#E5E5E5]
-        flex items-center justify-between
-      "
-                      >
-                        <span
-                          className={
-                            eventLocation
-                              ? "text-black dark:text-white"
-                              : "text-gray-400"
-                          }
-                        >
-                          {eventLocation
-                            ? eventLocation
-                            : "Search city or country..."}
-                        </span>
-                        <ChevronDown size={16} className="opacity-70" />
-                      </button>
-                    </PopoverTrigger>
+                  {eventType === "virtual" ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={eventLocation || "Online"}
+                        onChange={(e) => setEventLocation(e.target.value)}
+                        placeholder="Online"
+                        className="w-full sm:w-[510px] h-12 px-4 rounded-lg border text-[14px] outline-none bg-[#FAFAFB] dark:bg-[#101010] border-[#E5E5E5]"
+                      />
+                      <p className="text-[12px] text-gray-500">
+                        Virtual event times will be shown in the purchaser&apos;s local timezone.
+                      </p>
+                    </div>
+                  ) : (
+                    <StructuredLocationEditor
+                      label="Search and confirm venue"
+                      required
+                      value={locationData}
+                      onChange={(nextLocation) => {
+                        setLocationData(nextLocation);
+                        setEventLocation(nextLocation.displayLocation);
+                      }}
+                      helperText="Google Places autofills the structured location. You can adjust venue, address, city, state, postal code, and country before moving on."
+                    />
+                  )}
 
-                    <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
-                      <Command>
-                        <CommandInput
-                          placeholder="Type: City / Country..."
-                          value={locationQuery}
-                          onValueChange={setLocationQuery}
-                        />
-
-                        <CommandEmpty>
-                          {isSearching
-                            ? "Searching..."
-                            : "No results found (type 2+ letters)."}
-                        </CommandEmpty>
-
-                        <CommandGroup className="max-h-64 overflow-y-auto">
-                          {locationResults.map((opt) => (
-                            <CommandItem
-                              key={opt.key}
-                              value={opt.label}
-                              onSelect={() => handleSelectLocation(opt)}
-                              className="flex items-center gap-2"
-                            >
-                              <img
-                                src={opt.flag}
-                                alt="flag"
-                                className="h-4 w-6 object-cover rounded-sm"
-                              />
-                              <span>{opt.label}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  {eventType === "hybrid" && (
+                    <p className="mt-2 text-[12px] text-gray-500">
+                      Hybrid events will also capture the full street address and livestream setup in the next step.
+                    </p>
+                  )}
                 </div>
               </div>
 

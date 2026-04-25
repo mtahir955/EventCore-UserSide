@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 // import { API_BASE_URL } from "../../../config/apiConfig";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import { saveTenantId } from "@/config/tenantConfig";
 
 type AuthView = "signin" | "signup" | "forgot-password" | "reset-password";
 
@@ -127,6 +128,9 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       localStorage.setItem("staffToken", token);
       localStorage.setItem("token", token); // keep only if other screens depend on it
       if (user) localStorage.setItem("staffUser", JSON.stringify(user));
+      if (user?.tenantId) {
+        saveTenantId(user.tenantId);
+      }
 
       window.location.href = "/staff-dashboard";
     } catch (error: any) {

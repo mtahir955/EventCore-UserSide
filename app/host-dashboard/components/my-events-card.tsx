@@ -4,6 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { MoreVertical, Trash2, PencilLine } from "lucide-react";
 import { ConfirmationModal } from "./confirmation-modal";
 import { EventRevenueModal } from "./EventRevenueModal";
+import { formatGoLiveLabel, normalizeEvent } from "@/lib/event-publishing";
+import {
+  EventLifecycleBadge,
+  EventModeBadge,
+  EventPrivacyBadge,
+} from "@/components/events/event-badges";
 
 type Props = {
   id: string;
@@ -15,6 +21,11 @@ type Props = {
   location: string;
   date: string;
   time: string;
+  status?: string;
+  mode?: string;
+  privacyType?: string;
+  goLiveAt?: string;
+  slug?: string;
 
   // 🔥 Needed for revenue modal
   ticketsSold?: number;
@@ -31,6 +42,11 @@ export function MyEventsCard({
   location,
   date,
   time,
+  status = "DRAFT",
+  mode = "in-person",
+  privacyType = "public",
+  goLiveAt,
+  slug,
   ticketsSold = 0,
   ticketPrice = Number(price),
 }: Props) {
@@ -73,6 +89,18 @@ export function MyEventsCard({
     ticketsSold,
     ticketPrice,
   };
+  const normalizedEvent = normalizeEvent({
+    id,
+    title,
+    eventLocation: location,
+    startDate: date,
+    startTime: time,
+    lifecycleStatus: status,
+    eventType: mode,
+    privateEventType: privacyType,
+    goLiveAt,
+    slug,
+  });
 
   return (
     <>
@@ -154,6 +182,11 @@ export function MyEventsCard({
 
         {/* Bottom Content */}
         <div className="absolute left-4 right-4 bottom-4 text-white z-10">
+          <div className="mb-3 flex flex-wrap gap-2">
+            <EventLifecycleBadge status={normalizedEvent.lifecycleStatus} />
+            <EventModeBadge mode={normalizedEvent.mode} />
+            <EventPrivacyBadge privacyType={normalizedEvent.privacyType} />
+          </div>
           <div className="font-semibold text-[18px] line-clamp-2">{title}</div>
           <div className="mt-1 text-[12px] opacity-90 line-clamp-2">
             {description}
@@ -179,6 +212,13 @@ export function MyEventsCard({
               {time}
             </span>
           </div>
+
+          <div className="mt-3 text-[12px] text-white/90">
+            Go live: {formatGoLiveLabel(normalizedEvent)}
+          </div>
+          {slug ? (
+            <div className="mt-1 text-[12px] text-white/80">/event/{slug}</div>
+          ) : null}
 
           <button
             onClick={handleViewTickets}

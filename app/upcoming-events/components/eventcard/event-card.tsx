@@ -5,11 +5,16 @@ import Pill from "../eventcard/pill";
 import TicketDialog from "../eventcard/ticket-dialog";
 import SharePopover from "../eventcard/share-popover";
 import { MapPin, Calendar, Users, Clock } from "lucide-react";
+import {
+  formatEventDateLabel,
+  formatEventTimeLabel,
+  normalizeEvent,
+} from "@/lib/event-publishing";
 
 export interface EventType {
   id: number;
   title: string;
-  type: "in-person" | "virtual";
+  type: "in-person" | "virtual" | "hybrid";
   date: number;
   location: string;
   description?: string;
@@ -29,19 +34,20 @@ export default function EventCard({
   purchased?: boolean;
 }) {
   const router = useRouter();
+  const normalizedEvent = normalizeEvent({
+    ...event,
+    mode: event.type,
+    eventType: event.type,
+    eventLocation: event.location,
+    eventDescription: event.description,
+    startTime: event.time,
+  });
 
-  const handleCardClick = () => router.push("/details");
+  const handleCardClick = () => router.push(normalizedEvent.urlPath);
   const handleCTAClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (cta === "Join Event") router.push("/events");
   };
-
-  // ✅ Format date (for readability)
-  const monthName = new Date(2025, new Date().getMonth(), 1).toLocaleString(
-    "default",
-    { month: "long" }
-  );
-  const formattedDate = `${event.date} ${monthName} 2025`;
 
   return (
     <article
@@ -67,22 +73,28 @@ export default function EventCard({
           </div>
 
           <h3 className="mt-1 text-base sm:text-xl font-semibold">
-            {event.title}
+            {normalizedEvent.title}
           </h3>
 
           <p className="mt-1 text-[12px] sm:text-sm text-foreground/70 line-clamp-2">
-            {event.description ||
+            {normalizedEvent.shortDescription ||
               "Join this amazing event to connect, learn, and have fun!"}
           </p>
 
           <InfoRow>
             <Pill>
               <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span className="text-[11px] sm:text-sm">{event.location}</span>
+              <span className="text-[11px] sm:text-sm">
+                {normalizedEvent.mode === "virtual"
+                  ? "Online"
+                  : normalizedEvent.locationLabel}
+              </span>
             </Pill>
             <Pill>
               <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span className="text-[11px] sm:text-sm">{formattedDate}</span>
+              <span className="text-[11px] sm:text-sm">
+                {formatEventDateLabel(normalizedEvent)}
+              </span>
             </Pill>
             
           </InfoRow>
@@ -90,7 +102,7 @@ export default function EventCard({
           <InfoRow>
             <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span className="text-[11px] sm:text-sm">
-              {event.time || "08:00 PM - 09:00 PM"}
+              {formatEventTimeLabel(normalizedEvent)}
             </span>
           </InfoRow>
 

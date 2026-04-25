@@ -49,6 +49,13 @@ const menuItems = [
     whiteicon: "/icons/sidebar-white/4.png",
     href: "/tenant-management",
   },
+  {
+    name: "Event Categories",
+    icon: "/icons/sidebar/12.png",
+    orangeicon: "/icons/sidebar-orange/3.png",
+    whiteicon: "/icons/sidebar-white/4.png",
+    href: "/category-management",
+  },
 
   // {
   //   name: "Profile & Settings",

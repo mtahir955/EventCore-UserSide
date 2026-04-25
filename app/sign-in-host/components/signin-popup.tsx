@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { syncThemeWithBackend } from "@/utils/themeManager";
 // import { HOST_Tenant_ID } from "../../../config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
+import { saveTenantId } from "@/config/tenantConfig";
 
 type AuthView = "signin";
 
@@ -91,6 +92,9 @@ export default function SigninPopup({ onNavigate }: SigninPopupProps) {
       localStorage.setItem("hostUser", JSON.stringify(user));
       localStorage.setItem("hostTheme", user.theme);
       localStorage.setItem("hostTenantId", user.tenantId);
+      if (user.tenantId) {
+        saveTenantId(user.tenantId);
+      }
 
       // Apply Theme
       syncThemeWithBackend(user);

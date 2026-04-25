@@ -17,7 +17,17 @@ export const saveTenantId = (tenantId: string) => {
 
 export const getSavedTenantId = (): string | null => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(USER_TENANT_STORAGE_KEY);
+
+  const storedTenantId =
+    localStorage.getItem(USER_TENANT_STORAGE_KEY) ||
+    localStorage.getItem("hostTenantId") ||
+    localStorage.getItem("currentTenantId");
+
+  if (storedTenantId && !localStorage.getItem(USER_TENANT_STORAGE_KEY)) {
+    localStorage.setItem(USER_TENANT_STORAGE_KEY, storedTenantId);
+  }
+
+  return storedTenantId;
 };
 
 export const saveAdminTenantId = (tenantId: string) => {

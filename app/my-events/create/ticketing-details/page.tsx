@@ -10,7 +10,8 @@ interface Ticket {
   id: string;
   name: string;
   price: string;
-  type: "general" | "vip";
+  type: string;
+  attendanceMode?: "in-person" | "virtual";
   transferable: boolean;
 }
 
@@ -24,11 +25,16 @@ export default function TicketingDetailsPage({
   setActivePage,
 }: SetImagesPageProps) {
   const [eventType, setEventType] = useState<"ticketed" | "free">("ticketed");
+  const [eventMode, setEventMode] = useState<"in-person" | "virtual" | "hybrid">(
+    "in-person"
+  );
+  const [isStreamingEvent, setIsStreamingEvent] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [currentTicket, setCurrentTicket] = useState({
     name: "",
     price: "",
     type: "",
+    attendanceMode: "in-person" as "in-person" | "virtual",
     transferable: true,
   });
   const [error, setError] = useState("");
@@ -110,6 +116,11 @@ export default function TicketingDetailsPage({
   /* ================= ACTIONS ================= */
 
   const handleSaveAndContinue = () => {
+    if (isStreamingEvent && eventType !== "ticketed") {
+      setError("Livestreamed virtual and hybrid events must have at least one ticket.");
+      return;
+    }
+
     if (eventType === "ticketed" && tickets.length === 0) {
       setError("Please add at least one ticket before continuing.");
       return;
@@ -134,7 +145,8 @@ export default function TicketingDetailsPage({
       id: Date.now().toString(),
       name: currentTicket.name,
       price: currentTicket.price,
-      type: currentTicket.type as "general" | "vip",
+      type: currentTicket.type,
+      attendanceMode: eventMode === "hybrid" ? currentTicket.attendanceMode : undefined,
       transferable: allowTransfers ? currentTicket.transferable : false,
     };
 
@@ -147,6 +159,7 @@ export default function TicketingDetailsPage({
       name: "",
       price: "",
       type: "",
+      attendanceMode: "in-person",
       transferable: true,
     });
 
@@ -162,11 +175,31 @@ export default function TicketingDetailsPage({
       if (!saved) return;
 
       const data = JSON.parse(saved);
+      const details = data.details || {};
+      const eventSettings = data.eventSettings || {};
+
+      if (details.eventType === "virtual" || details.eventType === "hybrid") {
+        setEventMode(details.eventType);
+      }
+
+      const streamingEnabled = Boolean(
+        eventSettings.streamUrl || eventSettings.vimeoUrl
+      );
+      setIsStreamingEvent(
+        streamingEnabled &&
+          (details.eventType === "virtual" || details.eventType === "hybrid")
+      );
+
       if (Array.isArray(data.tickets)) {
         setTickets(data.tickets);
       }
       if (data.eventType === "free" || data.eventType === "ticketed") {
-        setEventType(data.eventType);
+        setEventType(
+          streamingEnabled &&
+            (details.eventType === "virtual" || details.eventType === "hybrid")
+            ? "ticketed"
+            : data.eventType
+        );
       }
     } catch (e) {
       console.error("Failed to load tickets from localStorage", e);
@@ -194,6 +227,13 @@ export default function TicketingDetailsPage({
           <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
             What type of event are you running?
           </h4>
+
+          {isStreamingEvent && (
+            <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-100">
+              This {eventMode} event includes an on-platform livestream, so it
+              must stay ticketed to unlock viewing access.
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Ticketed */}
@@ -235,10 +275,12 @@ export default function TicketingDetailsPage({
                 setEventType("free");
                 saveTicketsToLocalStorage(tickets, "free");
               }}
+              disabled={isStreamingEvent}
               className="rounded-xl border-2 p-6 sm:p-8 flex flex-col items-center bg-white dark:bg-[#101010] justify-center gap-3 sm:gap-4 transition-all"
               style={{
                 borderColor: eventType === "free" ? "#D19537" : "#E8E8E8",
                 minHeight: 160,
+                opacity: isStreamingEvent ? 0.55 : 1,
               }}
             >
               <img
@@ -257,7 +299,9 @@ export default function TicketingDetailsPage({
                   className="text-[13px] sm:text-[14px]"
                   style={{ color: "#666666" }}
                 >
-                  I'm running a free event
+                  {isStreamingEvent
+                    ? "Unavailable for livestreamed events"
+                    : "I'm running a free event"}
                 </div>
               </div>
             </button>
@@ -292,22 +336,40 @@ export default function TicketingDetailsPage({
               />
             </div>
 
-            <select
-              value={currentTicket.type}
-              onChange={(e) =>
-                setCurrentTicket({ ...currentTicket, type: e.target.value })
-              }
-              className="
-    w-full h-12 px-4 rounded-lg border mb-6 outline-none
-    bg-white text-black border-gray-200
-    focus:ring-2 focus:ring-[#D19537] focus:border-transparent
-    dark:bg-[#101010] dark:text-white dark:border-gray-700
-  "
-            >
-              <option value="">Select Ticket Type</option>
-              <option value="general">General</option>
-              <option value="vip">VIP</option>
-            </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <input
+                type="text"
+                placeholder="Ticket label e.g. General, VIP, Early Bird"
+                value={currentTicket.type}
+                onChange={(e) =>
+                  setCurrentTicket({ ...currentTicket, type: e.target.value })
+                }
+                className="h-12 px-4 rounded-lg border"
+              />
+
+              {eventMode === "hybrid" ? (
+                <select
+                  value={currentTicket.attendanceMode}
+                  onChange={(e) =>
+                    setCurrentTicket({
+                      ...currentTicket,
+                      attendanceMode: e.target.value as "in-person" | "virtual",
+                    })
+                  }
+                  className="h-12 px-4 rounded-lg border bg-white text-black dark:bg-[#101010] dark:text-white dark:border-gray-700"
+                >
+                  <option value="in-person">In-person access</option>
+                  <option value="virtual">Virtual access</option>
+                </select>
+              ) : null}
+            </div>
+
+            {eventMode === "hybrid" ? (
+              <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-100">
+                Hybrid events can now separate ticket rules by attendance mode. Add
+                distinct in-person and virtual tickets as needed.
+              </div>
+            ) : null}
 
             {/* TRANSFERABLE TOGGLE (FEATURE CONTROLLED) */}
             {allowTransfers && (
@@ -370,6 +432,11 @@ export default function TicketingDetailsPage({
                         <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase">
                           {ticket.type}
                         </span>
+                        {ticket.attendanceMode ? (
+                          <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-blue-100 text-blue-700 uppercase">
+                            {ticket.attendanceMode}
+                          </span>
+                        ) : null}
                       </div>
 
                       {/* Price */}

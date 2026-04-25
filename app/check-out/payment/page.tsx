@@ -15,6 +15,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import QRCode from "qrcode";
 import { apiClient } from "@/lib/apiClient";
+import { normalizeEvent } from "@/lib/event-publishing";
+import { PurchaserStreamAccess } from "@/components/events/purchaser-stream-access";
 
 type TicketQR = {
   ticketId: string;
@@ -33,6 +35,7 @@ type TicketQR = {
 type CheckoutSelectionSummary = {
   eventId?: string;
   eventName?: string;
+  attendanceMode?: string;
   items?: Array<{
     id: string;
     name: string;
@@ -70,6 +73,7 @@ export default function PaymentSuccessPage() {
     paymentData?.payment?.totalAmount ??
     checkoutSummary?.totalAmount?.toFixed?.(2) ??
     "0.00";
+  const purchasedEvent = normalizeEvent(paymentData?.event || paymentData || {});
 
   const generateTicketImage = async (params: {
     qrDataUrl: string;
@@ -483,6 +487,18 @@ export default function PaymentSuccessPage() {
                 />
               </div>
             </div>
+
+            {purchasedEvent.id &&
+            (purchasedEvent.mode === "virtual" || purchasedEvent.mode === "hybrid") ? (
+              <div className="mb-8">
+                <PurchaserStreamAccess
+                  eventId={purchasedEvent.id}
+                  title="Virtual access"
+                  streamUrl={purchasedEvent.streamUrl}
+                  attendanceMode={(checkoutSummary as any)?.attendanceMode}
+                />
+              </div>
+            ) : null}
 
             <p className="text-[16px] sm:text-[20px]">
               Thank you for choosing us

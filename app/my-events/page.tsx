@@ -25,6 +25,11 @@ type Props = {
   date: string;
   audience: number;
   time: string;
+  status?: string;
+  mode?: string;
+  privacyType?: string;
+  goLiveAt?: string;
+  slug?: string;
 };
 
 const safeImage = (img?: string) => {
@@ -232,6 +237,11 @@ export default function MyEventsPage() {
           date: ev.startDate,
           time: ev.startTime,
           audience: ev.audienceCount || 0,
+          status: ev.lifecycleStatus || ev.publishStatus || ev.status,
+          mode: ev.eventType || ev.mode,
+          privacyType: ev.privateEventType || ev.privacyType,
+          goLiveAt: ev.goLiveAt || ev.publishAt,
+          slug: ev.slug || ev.customSlug,
         })) || [];
 
       setEvents(mapped);
@@ -545,6 +555,11 @@ export default function MyEventsPage() {
                 location={event.location}
                 date={event.date}
                 time={event.time}
+                status={event.status}
+                mode={event.mode}
+                privacyType={event.privacyType}
+                goLiveAt={event.goLiveAt}
+                slug={event.slug}
               />
             ))
           ) : (

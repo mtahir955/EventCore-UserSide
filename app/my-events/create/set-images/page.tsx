@@ -59,19 +59,38 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
   };
 
   const handleFile = (file: File) => {
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setError("Please upload a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        if (img.width < 1200) {
+          setError(
+            "Banner images must be at least 1200px wide. Recommended size is 1600 x 900."
+          );
+          return;
+        }
+
+        const ratio = img.width / img.height;
+        if (Math.abs(ratio - 16 / 9) > 0.08) {
+          setError(
+            "Use a 16:9 banner image whenever possible. This image can still be saved, but it may crop on smaller screens."
+          );
+        } else {
+          setError("");
+        }
+
         setBannerImage(result);
-        setError("");
-        // ✅ Save immediately to localStorage
         saveBannerToLocalStorage(result);
       };
-      reader.readAsDataURL(file);
-    } else {
-      setError("Please upload a valid image file.");
-    }
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUploadClick = () => {
@@ -130,8 +149,13 @@ export default function SetImagesPage({ setActivePage }: SetImagesPageProps) {
         {/* Upload Image Section */}
         <div className="mb-10">
           <h4 className="text-[18px] sm:text-[20px] font-bold mb-6">
-            Upload Image "1329 * 400 px"
+            Upload Image
           </h4>
+          <p className="mb-4 max-w-3xl text-[13px] text-[#666666] dark:text-gray-300">
+            Use a high-quality 16:9 image (recommended: 1600 x 900 px, minimum
+            width: 1200 px). Keep important content centered, since images may
+            crop slightly on mobile and smaller screens. JPG or PNG recommended.
+          </p>
 
           {/* Upload Area */}
           <div

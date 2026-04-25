@@ -32,6 +32,28 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
+import {
+  DEFAULT_EVENT_TIMEZONE,
+  normalizeEvent,
+  slugifyEventSlug,
+} from "@/lib/event-publishing";
+import { StructuredLocationEditor } from "@/components/events/structured-location-editor";
+import {
+  EventCategoryOption,
+  fetchTenantEventCategories,
+} from "@/lib/event-categories";
+import {
+  EMPTY_STRUCTURED_EVENT_LOCATION,
+  StructuredEventLocation,
+  buildStructuredAddress,
+  normalizeStructuredEventLocation,
+} from "@/lib/google-places";
+import {
+  fetchTrainerLibrary,
+  normalizeTrainerRecord,
+  serializeEventTrainersForFormData,
+  TrainerLibraryRecord,
+} from "@/lib/trainer-library";
 
 const getFileUrl = (path?: string | null) => {
   if (!path) return "";
@@ -303,12 +325,52 @@ export default function EditEventPage() {
 
   const [eventData, setEventData] = useState<any>(null);
   const [eventTitle, setEventTitle] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [eventCategory, setEventCategory] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<EventCategoryOption[]>([]);
   const [eventLocation, setEventLocation] = useState("");
+  const [locationData, setLocationData] = useState<StructuredEventLocation>(
+    EMPTY_STRUCTURED_EVENT_LOCATION
+  );
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [eventMode, setEventMode] = useState<"in-person" | "virtual" | "hybrid">(
+    "in-person"
+  );
+  const [lifecycleStatus, setLifecycleStatus] = useState("DRAFT");
+  const [customSlug, setCustomSlug] = useState("");
+  const [goLiveDate, setGoLiveDate] = useState("");
+  const [goLiveTime, setGoLiveTime] = useState("");
+  const [eventTimezone, setEventTimezone] = useState(DEFAULT_EVENT_TIMEZONE);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [privacyType, setPrivacyType] = useState("link-only");
+  const [accessPassword, setAccessPassword] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [stateRegion, setStateRegion] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("United States");
+  const [streamProvider, setStreamProvider] = useState("Vimeo");
+  const [streamUrl, setStreamUrl] = useState("");
+  const [requiresTicketToWatch, setRequiresTicketToWatch] = useState(true);
+  const [selectedTrainers, setSelectedTrainers] = useState<TrainerLibraryRecord[]>([]);
+  const [trainerLibrary, setTrainerLibrary] = useState<TrainerLibraryRecord[]>([]);
+  const [sendingVirtualLinks, setSendingVirtualLinks] = useState(false);
+  const [showSendVirtualLinksPrompt, setShowSendVirtualLinksPrompt] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchTenantEventCategories()
+      .then((categories) => setCategoryOptions(categories))
+      .catch(() => setCategoryOptions([]));
+
+    fetchTrainerLibrary()
+      .then((trainers) => setTrainerLibrary(trainers))
+      .catch(() => setTrainerLibrary([]));
+  }, []);
 
   // const getToken = () => {
   //   let rawToken =
@@ -344,6 +406,21 @@ export default function EditEventPage() {
       const response = await apiClient.get(`/events/${eventId}`);
 
       const data = response.data?.data || response.data;
+      const normalizedEvent = normalizeEvent(data);
+      const normalizedLocation = normalizeStructuredEventLocation({
+        ...(data.locationData || {}),
+        venueName: data.venueName || data.locationData?.venueName,
+        displayLocation:
+          data.displayLocation ||
+          data.eventLocation ||
+          data.locationData?.displayLocation,
+        addressLine1: data.addressLine1 || data.locationData?.addressLine1,
+        addressLine2: data.addressLine2 || data.locationData?.addressLine2,
+        city: data.city || data.locationData?.city,
+        state: data.state || data.locationData?.state,
+        postalCode: data.postalCode || data.zipCode || data.locationData?.postalCode,
+        country: data.country || data.locationData?.country,
+      });
 
       console.log("EVENT DETAILS:", data);
 
@@ -352,12 +429,52 @@ export default function EditEventPage() {
 
       setEventData(data);
 
-      setEventTitle(data.eventTitle || "");
-      setEventLocation(data.eventLocation || "");
-      setEventDate(data.startDate || "");
+      setEventTitle(data.eventTitle || normalizedEvent.title || "");
+      setShortDescription(
+        data.shortDescription || data.summary || normalizedEvent.shortDescription || ""
+      );
+      setEventCategory(data.eventCategory || data.category || normalizedEvent.category || "");
+      setEventLocation(data.eventLocation || normalizedEvent.locationLabel || "");
+      setLocationData(normalizedLocation);
+      setEventDate(normalizedEvent.startDate || data.startDate || "");
 
-      setStartTime(data.startTime?.slice(0, 5) || "");
-      setEndTime(data.endTime?.slice(0, 5) || "");
+      setStartTime(normalizedEvent.startTime || data.startTime?.slice(0, 5) || "");
+      setEndTime(normalizedEvent.endTime || data.endTime?.slice(0, 5) || "");
+      setEventMode(normalizedEvent.mode || data.eventType || data.mode || "in-person");
+      setLifecycleStatus(
+        normalizedEvent.lifecycleStatus ||
+          data.lifecycleStatus ||
+          data.publishStatus ||
+          data.status ||
+          "DRAFT"
+      );
+      setCustomSlug(data.slug || data.customSlug || normalizedEvent.slug || slugifyEventSlug(data.eventTitle || ""));
+      setGoLiveDate(normalizedEvent.goLiveDate || data.goLiveDate || data.publishDate || "");
+      setGoLiveTime(normalizedEvent.goLiveTime || data.goLiveTime || data.publishTime || "");
+      setEventTimezone(normalizedEvent.eventTimezone || data.eventTimezone || data.timezone || DEFAULT_EVENT_TIMEZONE);
+      setIsPrivate(normalizedEvent.isPrivate);
+      setPrivacyType(
+        normalizedEvent.privacyType === "public"
+          ? "link-only"
+          : normalizedEvent.privacyType
+      );
+      setAccessPassword(data.accessPassword || data.password || "");
+      setAddressLine1(normalizedLocation.addressLine1 || "");
+      setAddressLine2(normalizedLocation.addressLine2 || "");
+      setCity(normalizedLocation.city || "");
+      setStateRegion(normalizedLocation.state || "");
+      setPostalCode(normalizedLocation.postalCode || "");
+      setCountry(normalizedLocation.country || "United States");
+      setStreamProvider(data.streamProvider || "Vimeo");
+      setStreamUrl(data.streamUrl || data.vimeoUrl || "");
+      setRequiresTicketToWatch(
+        data.requiresTicketToWatch !== undefined
+          ? Boolean(data.requiresTicketToWatch)
+          : true
+      );
+      setSelectedTrainers(
+        Array.isArray(data.trainers) ? data.trainers.map(normalizeTrainerRecord) : []
+      );
 
       // if (data?.bannerImage) {
       //   setPreviewImage(data.bannerImage);
@@ -384,15 +501,89 @@ export default function EditEventPage() {
     if (!eventId) return toast.error("Missing Event ID");
 
     try {
+      const normalizedLocation = normalizeStructuredEventLocation({
+        ...locationData,
+        addressLine1,
+        addressLine2,
+        city,
+        state: stateRegion,
+        postalCode,
+        country,
+        displayLocation: eventLocation || locationData.displayLocation,
+      });
+      const fullAddress = buildStructuredAddress(normalizedLocation);
+      const eventPrivacyType = isPrivate ? privacyType : "public";
+      const eventDescription =
+        eventData?.eventDescription || eventData?.description || "";
+      const eventSettingsPayload = {
+        eventTimezone,
+        goLiveDate,
+        goLiveTime,
+        lifecycleStatus,
+        isPrivate,
+        privateEventType: eventPrivacyType,
+        accessPassword,
+        venueName: normalizedLocation.venueName || "",
+        displayLocation: normalizedLocation.displayLocation || eventLocation || "",
+        addressLine1: normalizedLocation.addressLine1 || "",
+        addressLine2: normalizedLocation.addressLine2 || "",
+        city: normalizedLocation.city || "",
+        state: normalizedLocation.state || "",
+        postalCode: normalizedLocation.postalCode || "",
+        country: normalizedLocation.country || "",
+        locationData: normalizedLocation,
+        streamProvider,
+        streamUrl,
+        requiresTicketToWatch,
+      };
+
       // const token = getToken();
 
       const formData = new FormData();
       formData.append("eventTitle", eventTitle);
-      formData.append("eventLocation", eventLocation);
+      formData.append("shortDescription", shortDescription);
+      formData.append("eventDescription", eventDescription);
+      formData.append(
+        "eventCategory",
+        eventCategory
+      );
+      formData.append(
+        "eventLocation",
+        eventMode === "virtual"
+          ? eventLocation || "Online"
+          : normalizedLocation.displayLocation || eventLocation
+      );
       formData.append("startDate", eventDate);
       formData.append("endDate", eventDate);
       formData.append("startTime", startTime);
       formData.append("endTime", endTime);
+      formData.append("eventType", eventMode);
+      formData.append("lifecycleStatus", lifecycleStatus);
+      formData.append("customSlug", customSlug);
+      formData.append("goLiveDate", goLiveDate);
+      formData.append("goLiveTime", goLiveTime);
+      formData.append("eventTimezone", eventTimezone);
+      formData.append("isPrivate", String(isPrivate));
+      formData.append("privateEventType", eventPrivacyType);
+      formData.append("accessPassword", accessPassword);
+      formData.append("venueName", normalizedLocation.venueName || "");
+      formData.append(
+        "displayLocation",
+        normalizedLocation.displayLocation || eventLocation || ""
+      );
+      formData.append("addressLine1", normalizedLocation.addressLine1 || "");
+      formData.append("addressLine2", normalizedLocation.addressLine2 || "");
+      formData.append("city", normalizedLocation.city || "");
+      formData.append("state", normalizedLocation.state || "");
+      formData.append("postalCode", normalizedLocation.postalCode || "");
+      formData.append("country", normalizedLocation.country || "");
+      formData.append("fullAddress", fullAddress);
+      formData.append("locationData", JSON.stringify(normalizedLocation));
+      formData.append("streamProvider", streamProvider);
+      formData.append("streamUrl", streamUrl);
+      formData.append("requiresTicketToWatch", String(requiresTicketToWatch));
+      formData.append("eventSettings", JSON.stringify(eventSettingsPayload));
+      serializeEventTrainersForFormData(formData, selectedTrainers);
 
       if (selectedBannerFile) {
         formData.append("bannerImage", selectedBannerFile);
@@ -420,6 +611,40 @@ export default function EditEventPage() {
     } catch (err) {
       console.error("Update failed:", err);
       toast.error("Failed to update event. Try again.");
+    }
+  };
+
+  const addTrainerToEvent = (trainer: TrainerLibraryRecord) => {
+    setSelectedTrainers((current) => {
+      if (current.some((entry) => entry.id === trainer.id)) return current;
+      return [...current, trainer];
+    });
+  };
+
+  const removeTrainerFromEvent = (trainerId: string) => {
+    setSelectedTrainers((current) => current.filter((trainer) => trainer.id !== trainerId));
+  };
+
+  const handleSendVirtualLinks = async () => {
+    if (!eventId) return;
+
+    try {
+      setSendingVirtualLinks(true);
+      const response = await apiClient.post(`/events/${eventId}/virtual-links/send`, {});
+      const queued = response.data?.data?.recipientsQueued;
+      toast.success(
+        queued
+          ? `Virtual links queued for ${queued} purchaser(s).`
+          : "Virtual link send started for purchasers."
+      );
+      setShowSendVirtualLinksPrompt(false);
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Backend support for sending virtual links is not available yet."
+      );
+    } finally {
+      setSendingVirtualLinks(false);
     }
   };
 
@@ -724,7 +949,7 @@ export default function EditEventPage() {
                 onClick={handleUpdateEvent}
                 className="flex-shrink-0 px-4 sm:px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-[#D19537] whitespace-nowrap"
               >
-                Mark as Complete
+                Save Event Updates
               </button>
             </div>
           </div>
@@ -792,62 +1017,126 @@ export default function EditEventPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Short Description
+              </label>
+              <textarea
+                value={shortDescription}
+                onChange={(e) => setShortDescription(e.target.value.slice(0, 220))}
+                className="w-full min-h-[96px] px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                placeholder="Used for cards, listings, and previews"
+              />
+              <p className="mt-2 text-xs text-gray-500">{shortDescription.length}/220</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Category</label>
+              <select
+                value={eventCategory}
+                onChange={(e) => setEventCategory(e.target.value)}
+                disabled={categoryOptions.length === 0}
+                className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+              >
+                <option value="">
+                  {categoryOptions.length === 0
+                    ? "No tenant categories available"
+                    : "Select category"}
+                </option>
+                {categoryOptions.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+              {categoryOptions.length === 0 ? (
+                <p className="mt-2 text-xs text-[#D6111A]">
+                  No tenant categories are available from `/categories/tenant` yet.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Location
-                </label>
+                <label className="block text-sm font-medium mb-2">Event Mode</label>
+                <select
+                  value={eventMode}
+                  onChange={(e) =>
+                    setEventMode(e.target.value as "in-person" | "virtual" | "hybrid")
+                  }
+                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                >
+                  <option value="in-person">In-person</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="hybrid">Hybrid</option>
+                </select>
+              </div>
 
-                <Popover open={openLocation} onOpenChange={setOpenLocation}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5]
-      bg-white dark:bg-[#101010] text-sm flex items-center justify-between"
-                    >
-                      <span className={eventLocation ? "" : "text-gray-400"}>
-                        {eventLocation
-                          ? eventLocation
-                          : "Search city or country..."}
-                      </span>
-                      <ChevronDown size={16} className="opacity-70" />
-                    </button>
-                  </PopoverTrigger>
+              <div>
+                <label className="block text-sm font-medium mb-2">Lifecycle Status</label>
+                <select
+                  value={lifecycleStatus}
+                  onChange={(e) => setLifecycleStatus(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                >
+                  <option value="DRAFT">Draft</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="UNPUBLISHED">Unpublished</option>
+                </select>
+              </div>
 
-                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
-                    <Command>
-                      <CommandInput
-                        placeholder="Type: lahore / pakistan / london..."
-                        value={locationQuery}
-                        onValueChange={setLocationQuery}
-                      />
+              <div>
+                <label className="block text-sm font-medium mb-2">Timezone</label>
+                <input
+                  type="text"
+                  value={eventTimezone}
+                  onChange={(e) => setEventTimezone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                />
+              </div>
+            </div>
 
-                      <CommandEmpty>
-                        {isSearching
-                          ? "Searching..."
-                          : "No results found (type 2+ letters)."}
-                      </CommandEmpty>
-
-                      <CommandGroup className="max-h-64 overflow-y-auto">
-                        {locationResults.map((opt) => (
-                          <CommandItem
-                            key={opt.key}
-                            value={opt.label}
-                            onSelect={() => handleSelectLocation(opt)}
-                            className="flex items-center gap-2"
-                          >
-                            <img
-                              src={opt.flag}
-                              alt="flag"
-                              className="h-4 w-6 object-cover rounded-sm"
-                            />
-                            <span>{opt.label}</span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-1">
+                {eventMode === "virtual" ? (
+                  <>
+                    <label className="block text-sm font-medium mb-2">
+                      Display Location
+                    </label>
+                    <input
+                      type="text"
+                      value={eventLocation || "Online"}
+                      onChange={(e) => setEventLocation(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                    />
+                  </>
+                ) : (
+                  <StructuredLocationEditor
+                    label="Venue and structured address"
+                    required
+                    value={normalizeStructuredEventLocation({
+                      ...locationData,
+                      displayLocation: eventLocation || locationData.displayLocation,
+                      addressLine1,
+                      addressLine2,
+                      city,
+                      state: stateRegion,
+                      postalCode,
+                      country,
+                    })}
+                    onChange={(nextLocation) => {
+                      setLocationData(nextLocation);
+                      setEventLocation(nextLocation.displayLocation);
+                      setAddressLine1(nextLocation.addressLine1);
+                      setAddressLine2(nextLocation.addressLine2);
+                      setCity(nextLocation.city);
+                      setStateRegion(nextLocation.state);
+                      setPostalCode(nextLocation.postalCode);
+                      setCountry(nextLocation.country);
+                    }}
+                    helperText="Google Places now drives the edit flow too, with manual overrides for every location field."
+                  />
+                )}
               </div>
 
               <div>
@@ -893,6 +1182,245 @@ export default function EditEventPage() {
                  bg-white dark:bg-[#101010] text-sm pr-10"
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Custom URL slug</label>
+                <input
+                  type="text"
+                  value={customSlug}
+                  onChange={(e) => setCustomSlug(slugifyEventSlug(e.target.value))}
+                  className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                  placeholder="summer-gala-2026"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Go-live Date</label>
+                  <input
+                    type="date"
+                    value={goLiveDate}
+                    onChange={(e) => setGoLiveDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Go-live Time</label>
+                  <input
+                    type="time"
+                    value={goLiveTime}
+                    onChange={(e) => setGoLiveTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#F5EDE5] bg-white dark:bg-[#101010] p-4 space-y-4">
+              <label className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-sm">Private Event</p>
+                  <p className="text-xs text-gray-500">
+                    Hidden from public listings when enabled.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isPrivate}
+                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  className="h-5 w-5 accent-[#D19537]"
+                />
+              </label>
+
+              {isPrivate && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Private Type</label>
+                    <select
+                      value={privacyType}
+                      onChange={(e) => setPrivacyType(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                    >
+                      <option value="link-only">Link only</option>
+                      <option value="password-protected">Password protected</option>
+                      <option value="invite-only">Invite only</option>
+                    </select>
+                  </div>
+
+                  {privacyType === "password-protected" && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Access Password</label>
+                      <input
+                        type="text"
+                        value={accessPassword}
+                        onChange={(e) => setAccessPassword(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {(eventMode === "in-person" || eventMode === "hybrid") && (
+              <div className="rounded-xl border border-[#F5EDE5] bg-white dark:bg-[#101010] p-4 space-y-4">
+                <h3 className="text-sm font-semibold">Venue Address</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  The structured address above is now the source of truth for venue,
+                  address, city, state, postal code, and country.
+                </p>
+                <div className="rounded-lg bg-[#FAFAFB] p-4 text-sm dark:bg-[#161616]">
+                  {buildStructuredAddress(
+                    normalizeStructuredEventLocation({
+                      ...locationData,
+                      addressLine1,
+                      addressLine2,
+                      city,
+                      state: stateRegion,
+                      postalCode,
+                      country,
+                    })
+                  ) || "No venue address selected yet."}
+                </div>
+              </div>
+            )}
+
+            {(eventMode === "virtual" || eventMode === "hybrid") && (
+              <div className="rounded-xl border border-[#F5EDE5] bg-white dark:bg-[#101010] p-4 space-y-4">
+                <h3 className="text-sm font-semibold">Livestream</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Provider</label>
+                    <select
+                      value={streamProvider}
+                      onChange={(e) => setStreamProvider(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                    >
+                      <option value="Vimeo">Vimeo</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Stream URL</label>
+                    <input
+                      type="url"
+                      value={streamUrl}
+                      onChange={(e) => setStreamUrl(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-[#F5EDE5] bg-white dark:bg-[#101010] text-sm"
+                      placeholder="https://vimeo.com/..."
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-medium text-sm">Require ticket to watch</p>
+                    <p className="text-xs text-gray-500">
+                      Keeps the stream gated for logged-in ticket holders.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={requiresTicketToWatch}
+                    onChange={(e) => setRequiresTicketToWatch(e.target.checked)}
+                    className="h-5 w-5 accent-[#D19537]"
+                  />
+                </label>
+
+                <div className="rounded-lg bg-[#FAFAFB] p-4 dark:bg-[#161616]">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-medium text-sm">Send virtual link to purchasers</p>
+                      <p className="text-xs text-gray-500">
+                        This is a manual host action. The public event page no longer shows the watch link.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSendVirtualLinksPrompt(true)}
+                      disabled={!streamUrl}
+                      className="h-10 rounded-lg bg-[#D19537] px-4 text-sm font-semibold text-white disabled:opacity-50"
+                    >
+                      Send Virtual Link
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-xl border border-[#F5EDE5] bg-white dark:bg-[#101010] p-4 space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold">Event Trainers</h3>
+                  <p className="text-xs text-gray-500">
+                    Select trainers from your library to update the live event page after save.
+                  </p>
+                </div>
+                <Link href="/host-trainers" className="text-sm font-semibold text-[#D19537]">
+                  Manage Library
+                </Link>
+              </div>
+
+              {trainerLibrary.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {trainerLibrary.map((trainer) => {
+                    const alreadySelected = selectedTrainers.some(
+                      (entry) => entry.id === trainer.id
+                    );
+
+                    return (
+                      <div
+                        key={trainer.id}
+                        className="rounded-lg border border-[#F5EDE5] p-3"
+                      >
+                        <p className="font-medium text-sm">{trainer.name}</p>
+                        <p className="text-xs text-[#D19537]">{trainer.title}</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            alreadySelected
+                              ? removeTrainerFromEvent(trainer.id)
+                              : addTrainerToEvent(trainer)
+                          }
+                          className={`mt-3 h-9 rounded-lg px-4 text-xs font-semibold ${
+                            alreadySelected
+                              ? "bg-red-50 text-[#D6111A]"
+                              : "bg-[#FFF5E6] text-[#D19537]"
+                          }`}
+                        >
+                          {alreadySelected ? "Remove" : "Add to Event"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  No trainer library entries found yet. Create them from the trainer dashboard first.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {selectedTrainers.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    No trainers selected for this event.
+                  </p>
+                ) : (
+                  selectedTrainers.map((trainer) => (
+                    <div
+                      key={trainer.id || trainer.name}
+                      className="rounded-lg bg-[#FAFAFB] p-4 dark:bg-[#161616]"
+                    >
+                      <p className="font-medium">{trainer.name}</p>
+                      <p className="text-sm text-[#D19537]">{trainer.title}</p>
+                      <p className="mt-1 text-sm text-gray-500">{trainer.bio}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -1004,6 +1532,36 @@ export default function EditEventPage() {
           )}
         </div>
       </main>
+
+      {showSendVirtualLinksPrompt ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-[#101010]">
+            <h3 className="text-lg font-semibold">Send virtual link now?</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              This manual action will send the current livestream access link to
+              purchasers once backend support is available.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSendVirtualLinksPrompt(false)}
+                className="h-10 rounded-lg bg-[#FFF5E6] px-4 text-sm font-semibold text-[#D19537]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendVirtualLinks}
+                disabled={sendingVirtualLinks}
+                className="h-10 rounded-lg bg-[#D19537] px-4 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {sendingVirtualLinks ? "Sending..." : "Send Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Logout Modal */}
       <LogoutModalHost

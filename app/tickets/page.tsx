@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { apiClient } from "@/lib/apiClient"; // use your real path
+import { normalizeEvent } from "@/lib/event-publishing";
 
 type TicketCardUI = {
   eventId: string;
@@ -34,6 +35,8 @@ type TicketCardUI = {
   canTransfer: boolean;
   canRefund: boolean;
   refundableQuantity: number;
+  streamUrl?: string;
+  attendanceMode?: string;
   badge?: {
     variant: "IN" | "OUT";
     label: "Transferred From" | "Transferred To";
@@ -192,6 +195,7 @@ export default function Page() {
     const event = item?.event || {};
     const ticket = item?.ticket || {};
     const mergedTicket = { ...ticket, ...item };
+    const normalizedEvent = normalizeEvent(event);
     const purchaseId = String(
       mergedTicket.purchaseId || item?.purchaseId || mergedTicket.ticketId || ""
     );
@@ -288,6 +292,21 @@ export default function Page() {
       canTransfer,
       canRefund,
       refundableQuantity,
+      streamUrl:
+        mergedTicket.streamUrl ||
+        ticket?.streamUrl ||
+        event?.streamUrl ||
+        normalizedEvent.streamUrl,
+      attendanceMode:
+        mergedTicket.attendanceMode ||
+        ticket?.attendanceMode ||
+        mergedTicket.deliveryMode ||
+        ticket?.deliveryMode ||
+        (normalizedEvent.mode === "virtual"
+          ? "virtual"
+          : normalizedEvent.mode === "hybrid"
+          ? "hybrid"
+          : "in-person"),
       badge: explicitBadge || receivedBadge,
       transferredOut,
     };
@@ -701,6 +720,8 @@ export default function Page() {
                   transferredOut={t.transferredOut}
                   status={t.status}
                   verifiedAt={t.verifiedAt}
+                  streamUrl={t.streamUrl}
+                  attendanceMode={t.attendanceMode}
                 />
               ))}
             </div>

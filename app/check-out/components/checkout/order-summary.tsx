@@ -11,6 +11,11 @@ import toast from "react-hot-toast";
 // import { HOST_Tenant_ID } from "@/config/hostTenantId";
 import { apiClient } from "@/lib/apiClient";
 import {
+  fetchBuyerOwnedEvents,
+  getStoredEventAccessGrant,
+  hasBuyerOwnedEvent,
+} from "@/lib/event-access";
+import {
   getActivePaymentCard,
   getSavedPaymentCards,
   getSavedPaymentMethodId,
@@ -36,6 +41,96 @@ const formatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
+
+const normalizeAttendanceValue = (value: any): "in-person" | "virtual" | null => {
+  const raw = String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[_\s]+/g, "-");
+
+  if (!raw) return null;
+
+  if (
+    raw.includes("virtual") ||
+    raw.includes("online") ||
+    raw.includes("livestream") ||
+    raw.includes("live-stream") ||
+    raw.includes("stream") ||
+    raw.includes("remote") ||
+    raw.includes("digital")
+  ) {
+    return "virtual";
+  }
+
+  if (
+    raw.includes("in-person") ||
+    raw.includes("inperson") ||
+    raw.includes("person") ||
+    raw.includes("venue") ||
+    raw.includes("onsite") ||
+    raw.includes("on-site") ||
+    raw.includes("physical")
+  ) {
+    return "in-person";
+  }
+
+  return null;
+};
+
+const getTicketAttendanceMode = (ticket: any): "in-person" | "virtual" | null => {
+  const candidateValues = [
+    ticket?.attendanceMode,
+    ticket?.deliveryMode,
+    ticket?.accessMode,
+    ticket?.mode,
+    ticket?.ticketMode,
+    ticket?.eventMode,
+    ticket?.metadata?.attendanceMode,
+    ticket?.metadata?.deliveryMode,
+    ticket?.metadata?.accessMode,
+    ticket?.details?.attendanceMode,
+    ticket?.details?.deliveryMode,
+    ticket?.details?.accessMode,
+    ticket?.ticketDetails?.attendanceMode,
+    ticket?.ticketDetails?.deliveryMode,
+    ticket?.ticketDetails?.accessMode,
+    ticket?.name,
+    ticket?.title,
+    ticket?.ticketName,
+    ticket?.type,
+    ticket?.ticketType,
+    ticket?.category,
+  ];
+
+  for (const candidate of candidateValues) {
+    const normalized = normalizeAttendanceValue(candidate);
+    if (normalized) return normalized;
+  }
+
+  return null;
+};
+
+const getEffectiveTicketAttendanceMode = (
+  ticket: any,
+  eventMode?: string | null
+): "in-person" | "virtual" | null => {
+  const explicitMode = getTicketAttendanceMode(ticket);
+  if (explicitMode) return explicitMode;
+
+  if (eventMode === "virtual") return "virtual";
+  if (eventMode === "in-person") return "in-person";
+
+  // For hybrid checkout, unlabeled tickets are currently treated as venue tickets.
+  if (eventMode === "hybrid") return "in-person";
+
+  return null;
+};
+
+const formatAttendanceLabel = (mode?: string | null) => {
+  if (mode === "virtual") return "Virtual";
+  if (mode === "in-person") return "In-Person";
+  return "";
+};
 
 const getAuthToken = () => {
   if (typeof window === "undefined") return null;
@@ -71,8 +166,6 @@ const readStoredCards = (): StoredCardSummary[] => {
   }
 };
 
-const checkoutPasswordStorageKey = (eventKey: string) => `event-access:${eventKey}`;
-
 async function fetchCheckoutEventByIdentifiers(
   eventId?: string | null,
   eventSlug?: string | null
@@ -85,7 +178,6 @@ async function fetchCheckoutEventByIdentifiers(
 
   if (eventSlug) {
     attempts.push(() => apiClient.get(`/events/public/slug/${eventSlug}`));
-    attempts.push(() => apiClient.get(`/events/public/by-slug/${eventSlug}`));
   }
 
   let lastError: any = null;
@@ -97,13 +189,6 @@ async function fetchCheckoutEventByIdentifiers(
     } catch (error) {
       lastError = error;
     }
-  }
-
-  if (eventSlug) {
-    const fallback = await apiClient.get("/events/upcoming");
-    const events = fallback.data?.data?.events || fallback.data?.events || [];
-    const matched = events.find((entry: any) => normalizeEvent(entry).slug === eventSlug);
-    if (matched) return matched;
   }
 
   throw lastError;
@@ -572,7 +657,12 @@ export default function OrderSummary({
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>(
     {}
   );
+  const [selectedAttendanceMode, setSelectedAttendanceMode] = useState<
+    "in-person" | "virtual" | ""
+  >("");
   const [hasPasswordAccess, setHasPasswordAccess] = useState(false);
+  const [hasTicketAccess, setHasTicketAccess] = useState(false);
+  const [accessSnapshot, setAccessSnapshot] = useState<any>(null);
 
   const [initiatingPayment, setInitiatingPayment] = useState(false);
 
@@ -620,9 +710,50 @@ export default function OrderSummary({
   const showServiceFee =
     serviceFeeHandling === "PASS_TO_BUYER" && serviceFeeConfig?.enabled;
 
+  // Calculate service fee dynamically
+  const legacyCalculatedServiceFee = useMemo(() => 0, []);
+
+  // ───────── PROCESSING FEE STATE (moved here for useCallback) ─────────
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("card");
+  const [estimatedProcessingFee, setEstimatedProcessingFee] =
+    useState<number>(0);
+  const [loadingProcessingFee, setLoadingProcessingFee] =
+    useState<boolean>(false);
+  const normalizedEvent = useMemo(() => normalizeEvent(eventData), [eventData]);
+  const resolvedEventId = normalizedEvent.id || eventId || "";
+  const hybridModeOptions = useMemo(() => {
+    if (normalizedEvent.mode !== "hybrid") return [];
+
+    const options = new Set<"in-person" | "virtual">();
+    const ticketModes = tickets
+      .map((ticket) => getEffectiveTicketAttendanceMode(ticket, normalizedEvent.mode))
+      .filter(Boolean) as Array<"in-person" | "virtual">;
+
+    if (ticketModes.length === 0) {
+      options.add("in-person");
+      options.add("virtual");
+    } else {
+      ticketModes.forEach((mode) => options.add(mode));
+    }
+
+    return Array.from(options);
+  }, [normalizedEvent.mode, tickets]);
+  const filteredCheckoutTickets = useMemo(() => {
+    if (normalizedEvent.mode !== "hybrid") return tickets;
+    if (!selectedAttendanceMode) return [];
+
+    return tickets.filter((ticket) => {
+      const ticketMode = getEffectiveTicketAttendanceMode(
+        ticket,
+        normalizedEvent.mode
+      );
+      return ticketMode === selectedAttendanceMode;
+    });
+  }, [normalizedEvent.mode, selectedAttendanceMode, tickets]);
   const selectedCartItems = useMemo(
     () =>
-      tickets
+      filteredCheckoutTickets
         .map((ticket: any) => {
           const quantity = Number(ticketQuantities[ticket.id] || 0);
           const unitPrice = Number(ticket.price || 0);
@@ -630,36 +761,27 @@ export default function OrderSummary({
           return {
             id: ticket.id,
             name: ticket.name || ticket.type || "Ticket",
+            attendanceMode: getEffectiveTicketAttendanceMode(
+              ticket,
+              normalizedEvent.mode
+            ),
             quantity,
             price: unitPrice,
             lineTotal: unitPrice * quantity,
           };
         })
         .filter((ticket) => ticket.quantity > 0),
-    [tickets, ticketQuantities]
+    [filteredCheckoutTickets, ticketQuantities]
   );
-
   const totalTicketCount = useMemo(
     () =>
       selectedCartItems.reduce((sum, ticket) => sum + Number(ticket.quantity || 0), 0),
     [selectedCartItems]
   );
-
   const subtotal = useMemo(
     () => selectedCartItems.reduce((sum, ticket) => sum + ticket.lineTotal, 0),
     [selectedCartItems]
   );
-
-  const cartSignature = useMemo(
-    () =>
-      selectedCartItems
-        .map((ticket) => `${ticket.id}:${ticket.quantity}`)
-        .sort()
-        .join("|"),
-    [selectedCartItems]
-  );
-
-  // Calculate service fee dynamically
   const calculatedServiceFee = useMemo(() => {
     if (!showServiceFee || !serviceFeeConfig) return 0;
 
@@ -673,25 +795,28 @@ export default function OrderSummary({
 
     return 0;
   }, [showServiceFee, serviceFeeConfig, subtotal]);
-
-  // ───────── PROCESSING FEE STATE (moved here for useCallback) ─────────
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<string>("card");
-  const [estimatedProcessingFee, setEstimatedProcessingFee] =
-    useState<number>(0);
-  const [loadingProcessingFee, setLoadingProcessingFee] =
-    useState<boolean>(false);
-  const normalizedEvent = useMemo(() => normalizeEvent(eventData), [eventData]);
-  const resolvedEventId = normalizedEvent.id || eventId || "";
+  const cartSignature = useMemo(
+    () =>
+      selectedCartItems
+        .map((ticket) => `${ticket.id}:${ticket.quantity}`)
+        .sort()
+        .join("|"),
+    [selectedCartItems]
+  );
   const checkoutAccessState = useMemo(
     () =>
       getEventAccessState(normalizedEvent, {
         hasPasswordAccess,
         isAuthorizedInvitee: Boolean(
-          eventData?.isAuthorizedInvitee || eventData?.accessGranted
+          accessSnapshot?.isAuthorizedInvitee ||
+            accessSnapshot?.hasTicket ||
+            hasTicketAccess ||
+            eventData?.isAuthorizedInvitee ||
+            eventData?.accessGranted
         ),
+        accessOverride: accessSnapshot,
       }),
-    [eventData, hasPasswordAccess, normalizedEvent]
+    [accessSnapshot, eventData, hasPasswordAccess, hasTicketAccess, normalizedEvent]
   );
 
   // ───────── CALCULATE ORDER AMOUNT (for fee estimation) ─────────
@@ -856,9 +981,14 @@ export default function OrderSummary({
   useEffect(() => {
     if (!eventId && !eventSlug) return;
 
+    setHasPasswordAccess(false);
+    setHasTicketAccess(false);
+    setAccessSnapshot(null);
+
     fetchCheckoutEventByIdentifiers(eventId, eventSlug)
       .then((data) => {
         setEventData(data);
+        setAccessSnapshot(data?.access || null);
         setCheckoutEventError("");
       })
       .catch(() => {
@@ -869,20 +999,61 @@ export default function OrderSummary({
   }, [eventId, eventSlug]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const eventKey =
-      normalizedEvent.slug || normalizedEvent.id || eventSlug || eventId || "";
-    if (!eventKey) return;
-
-    const storedPassword = localStorage.getItem(
-      checkoutPasswordStorageKey(eventKey)
-    );
-    if (!storedPassword) return;
-
-    if (!normalizedEvent.accessPassword || storedPassword === normalizedEvent.accessPassword) {
+    const storedGrant = getStoredEventAccessGrant({
+      eventId: normalizedEvent.id || eventId,
+      eventSlug: normalizedEvent.slug || eventSlug,
+    });
+    if (storedGrant) {
       setHasPasswordAccess(true);
     }
-  }, [eventId, eventSlug, normalizedEvent.accessPassword, normalizedEvent.id, normalizedEvent.slug]);
+  }, [eventId, eventSlug, normalizedEvent.id, normalizedEvent.slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAccessState = async () => {
+      if (!normalizedEvent.id || !getAuthToken()) return;
+
+      try {
+        const entries = await fetchBuyerOwnedEvents();
+        const hasAccess = hasBuyerOwnedEvent(entries, {
+          eventId: normalizedEvent.id,
+          eventSlug: normalizedEvent.slug,
+        });
+
+        if (!cancelled) {
+          setAccessSnapshot((current: any) => ({
+            ...(current || {}),
+            hasTicket: hasAccess,
+          }));
+          setHasTicketAccess(hasAccess);
+        }
+      } catch (error) {
+        console.error("Failed to load checkout access", error);
+      }
+    };
+
+    loadAccessState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedEvent.id, normalizedEvent.slug]);
+
+  useEffect(() => {
+    if (normalizedEvent.mode !== "hybrid") {
+      setSelectedAttendanceMode("");
+      return;
+    }
+
+    if (hybridModeOptions.length === 1) {
+      setSelectedAttendanceMode(hybridModeOptions[0]);
+    }
+  }, [hybridModeOptions, normalizedEvent.mode]);
+
+  useEffect(() => {
+    setTicketQuantities({});
+  }, [selectedAttendanceMode]);
 
   /* ─────────────── FETCH TICKETS ───────────────*/
   useEffect(() => {
@@ -1042,7 +1213,8 @@ export default function OrderSummary({
       JSON.stringify({
         eventId: resolvedEventId,
         eventSlug: normalizedEvent.slug,
-        eventName: eventData?.title || eventData?.name || "Event",
+        eventName: normalizedEvent.title || "Event",
+        attendanceMode: selectedAttendanceMode || undefined,
         items: selectedCartItems,
         totalQuantity: totalTicketCount,
         subtotal,
@@ -1051,65 +1223,40 @@ export default function OrderSummary({
     );
   };
 
-  const buildPaymentPayloadCandidates = () => {
-    const commonPayload: Record<string, any> = {
+  const buildCanonicalPaymentPayload = () => {
+    const payload: Record<string, any> = {
       eventId: resolvedEventId,
       eventSlug: normalizedEvent.slug || eventSlug,
       useCredits,
+      items: selectedCartItems.map((ticket) => ({
+        ticketId: ticket.id,
+        quantity: ticket.quantity,
+        attendanceMode: ticket.attendanceMode || selectedAttendanceMode || undefined,
+      })),
+      totalQuantity: totalTicketCount,
     };
 
+    if (selectedAttendanceMode) {
+      payload.attendanceMode = selectedAttendanceMode;
+    }
+
     if (selectedStoredPaymentMethodId) {
-      commonPayload.paymentMethodId = selectedStoredPaymentMethodId;
-      commonPayload.useSavedPaymentMethod = true;
+      payload.paymentMethodId = selectedStoredPaymentMethodId;
+      payload.useSavedPaymentMethod = true;
     } else {
-      commonPayload.useSavedPaymentMethod = false;
-      commonPayload.saveForFuture = saveNewCardForFuture;
+      payload.useSavedPaymentMethod = false;
+      payload.saveForFuture = saveNewCardForFuture;
 
       if (saveNewCardForFuture) {
-        commonPayload.setAsDefault = storedCards.length === 0;
+        payload.setAsDefault = storedCards.length === 0;
       }
     }
 
     if (shouldSendServiceFee) {
-      commonPayload.serviceFee = Number(calculatedServiceFee.toFixed(2));
+      payload.serviceFee = Number(calculatedServiceFee.toFixed(2));
     }
 
-    const checkoutItems = selectedCartItems.map((ticket) => ({
-      ticketId: ticket.id,
-      quantity: ticket.quantity,
-    }));
-
-    return [
-      {
-        ...commonPayload,
-        items: checkoutItems,
-        totalQuantity: totalTicketCount,
-      },
-      ...(selectedCartItems.length === 1
-        ? [
-            {
-              ...commonPayload,
-              ticketId: checkoutItems[0].ticketId,
-              quantity: checkoutItems[0].quantity,
-            },
-          ]
-        : []),
-      {
-        ...commonPayload,
-        tickets: checkoutItems,
-        totalQuantity: totalTicketCount,
-      },
-      {
-        ...commonPayload,
-        lineItems: checkoutItems,
-        totalQuantity: totalTicketCount,
-      },
-      {
-        ...commonPayload,
-        ticketSelections: checkoutItems,
-        totalQuantity: totalTicketCount,
-      },
-    ];
+    return payload;
   };
 
   /* ─────────────── INITIATE DIRECT / BNPL PAYMENT ───────────────*/
@@ -1137,6 +1284,11 @@ export default function OrderSummary({
       toast.error(
         checkoutAccessState.message || "This event is not available for purchase."
       );
+      return;
+    }
+
+    if (normalizedEvent.mode === "hybrid" && !selectedAttendanceMode) {
+      toast.error("Choose whether you are attending virtually or in person.");
       return;
     }
 
@@ -1191,20 +1343,8 @@ export default function OrderSummary({
       setStripePromise(loadStripe(publishableKey));
       saveCheckoutSelectionSummary();
 
-      // 2) Initiate payment (ONLY required fields)
-      const body: any = buildPaymentPayloadCandidates()[0] || {}; /*
-        useCredits: useCredits, // 👈 THIS IS THE KEY LINE
-      */
-
-      // ✅ Send serviceFee ONLY when included in subtotal
-      if (shouldSendServiceFee) {
-        body.serviceFee = Number(calculatedServiceFee.toFixed(2));
-      }
-
-      const paymentPayloadCandidates = [
-        body,
-        ...buildPaymentPayloadCandidates().slice(1),
-      ];
+      // 2) Initiate payment using the canonical backend contract
+      const body = buildCanonicalPaymentPayload();
 
       // if (paymentMode === "card") {
       //   body.paymentMethodType = fullPaymentProvider;
@@ -1238,28 +1378,7 @@ export default function OrderSummary({
       //     "Content-Type": "application/json",
       //   },
       // });
-      let res: any = null;
-      let lastError: any = null;
-
-      for (const candidate of paymentPayloadCandidates) {
-        try {
-          res = await apiClient.post(`/payments/initiate`, candidate);
-          break;
-        } catch (error: any) {
-          lastError = error;
-          const status = Number(error?.response?.status);
-          const canTryAnotherShape =
-            selectedCartItems.length > 1 && [400, 404, 422].includes(status);
-
-          if (!canTryAnotherShape) {
-            throw error;
-          }
-        }
-      }
-
-      if (!res) {
-        throw lastError;
-      }
+      const res = await apiClient.post(`/payments/initiate`, body);
 
       const responseData = res.data?.data;
 
@@ -1347,6 +1466,11 @@ export default function OrderSummary({
               ? "Online"
               : normalizedEvent.locationLabel}
           </p>
+          {selectedAttendanceMode ? (
+            <p className="mt-2 text-xs font-semibold text-[#0077F7]">
+              Attendance: {formatAttendanceLabel(selectedAttendanceMode)}
+            </p>
+          ) : null}
           {normalizedEvent.slug ? (
             <p className="mt-2 text-xs text-gray-500">/event/{normalizedEvent.slug}</p>
           ) : null}
@@ -1371,9 +1495,31 @@ export default function OrderSummary({
 
         {/* Ticket selection */}
         <div className="rounded-[12px] border bg-white dark:bg-[#1a1a1a] p-4">
+          {normalizedEvent.mode === "hybrid" ? (
+            <div className="mb-4 space-y-3">
+              <p className="text-sm font-semibold">How will you attend?</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {hybridModeOptions.map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSelectedAttendanceMode(mode)}
+                    className={`rounded-lg border px-4 py-3 text-left text-sm ${
+                      selectedAttendanceMode === mode
+                        ? "border-[#0077F7] bg-blue-50 text-[#0077F7] dark:bg-blue-950/20"
+                        : "border-gray-200 dark:border-gray-800"
+                    }`}
+                  >
+                    {formatAttendanceLabel(mode)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <fieldset className="space-y-3">
-            {tickets.length > 0 ? (
-              tickets.map((ticket: any) => (
+            {filteredCheckoutTickets.length > 0 ? (
+              filteredCheckoutTickets.map((ticket: any) => (
                 <div
                   key={ticket.id}
                   className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
@@ -1383,6 +1529,11 @@ export default function OrderSummary({
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {formatter.format(Number(ticket.price || 0))} each
                     </p>
+                    {getTicketAttendanceMode(ticket) ? (
+                      <p className="mt-1 text-xs font-medium text-[#0077F7]">
+                        {formatAttendanceLabel(getTicketAttendanceMode(ticket))}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -1425,7 +1576,11 @@ export default function OrderSummary({
                 </div>
               ))
             ) : (
-              <p className="text-sm text-gray-500">Loading tickets...</p>
+              <p className="text-sm text-gray-500">
+                {normalizedEvent.mode === "hybrid" && !selectedAttendanceMode
+                  ? "Choose an attendance mode to see matching tickets."
+                  : "Loading tickets..."}
+              </p>
             )}
           </fieldset>
 
@@ -1840,7 +1995,8 @@ export default function OrderSummary({
             disabled={
               initiatingPayment ||
               !isAuthenticated ||
-              !checkoutAccessState.canPurchase
+              !checkoutAccessState.canPurchase ||
+              (normalizedEvent.mode === "hybrid" && !selectedAttendanceMode)
             }
           >
             {initiatingPayment ? (
@@ -1902,7 +2058,12 @@ export default function OrderSummary({
               {selectedCartItems.map((ticket) => (
                 <p key={ticket.id} className="flex justify-between text-sm">
                   <span>
-                    {ticket.name} x {ticket.quantity}
+                    {ticket.name}
+                    {ticket.attendanceMode
+                      ? ` (${formatAttendanceLabel(ticket.attendanceMode)})`
+                      : ""}
+                    {" x "}
+                    {ticket.quantity}
                   </span>
                   <span>{formatter.format(ticket.lineTotal)}</span>
                 </p>
