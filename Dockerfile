@@ -19,14 +19,25 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 # Prefer the npm lockfile when both npm and pnpm lockfiles are committed.
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
-RUN \
+RUN --mount=type=cache,target=/root/.npm \
+  set -eux; \
+  install_cmd=""; \
   if [ -f package-lock.json ]; then \
-    npm ci; \
+    install_cmd="npm ci --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000 --fetch-timeout=300000"; \
   elif [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
+    corepack enable pnpm; \
+    install_cmd="pnpm install --frozen-lockfile"; \
   else \
-    npm install; \
-  fi
+    install_cmd="npm install --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000 --fetch-timeout=300000"; \
+  fi; \
+  for attempt in 1 2 3; do \
+    sh -c "$install_cmd" && exit 0; \
+    if [ "$attempt" -eq 3 ]; then \
+      exit 1; \
+    fi; \
+    echo "Dependency install failed on attempt $attempt, retrying..."; \
+    sleep $((attempt * 5)); \
+  done
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
