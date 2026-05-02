@@ -17,12 +17,13 @@
 FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
+# Prefer the npm lockfile when both npm and pnpm lockfiles are committed.
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
 RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
+  if [ -f package-lock.json ]; then \
     npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then \
+    corepack enable pnpm && pnpm install --frozen-lockfile; \
   else \
     npm install; \
   fi
