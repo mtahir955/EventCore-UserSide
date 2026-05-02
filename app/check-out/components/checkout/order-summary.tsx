@@ -26,6 +26,14 @@ import {
   getEventAccessState,
   normalizeEvent,
 } from "@/lib/event-publishing";
+import {
+  formatSalesDateTime,
+  getAddOnEligibility,
+  normalizeCommerceTicket,
+  normalizeEventAddOns,
+  resolveCheckoutFields,
+  type CheckoutFieldConfig,
+} from "@/lib/event-commerce";
 
 // Stripe
 import { loadStripe } from "@stripe/stripe-js";
@@ -633,6 +641,9 @@ type PaymentMode = "stripe";
 ──────────────────────────────────────────*/
 export default function OrderSummary({
   profile,
+  checkoutFields,
+  checkoutAnswers,
+  onSelectedTicketCheckoutConfigsChange,
   selectedPaymentOption,
   onSelectedPaymentOptionChange,
   saveNewCardForFuture,
@@ -641,6 +652,9 @@ export default function OrderSummary({
   profile?: {
     paymentDetails?: Record<string, any>;
   } | null;
+  checkoutFields: CheckoutFieldConfig[];
+  checkoutAnswers: Record<string, any>;
+  onSelectedTicketCheckoutConfigsChange?: (configs: any[]) => void;
   selectedPaymentOption: string;
   onSelectedPaymentOptionChange: (value: string) => void;
   saveNewCardForFuture: boolean;
@@ -657,11 +671,13 @@ export default function OrderSummary({
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>(
     {}
   );
+  const [addOnQuantities, setAddOnQuantities] = useState<Record<string, number>>({});
   const [selectedAttendanceMode, setSelectedAttendanceMode] = useState<
     "in-person" | "virtual" | ""
   >("");
   const [hasPasswordAccess, setHasPasswordAccess] = useState(false);
   const [hasTicketAccess, setHasTicketAccess] = useState(false);
+  const [ownedEventTickets, setOwnedEventTickets] = useState<any[]>([]);
   const [accessSnapshot, setAccessSnapshot] = useState<any>(null);
 
   const [initiatingPayment, setInitiatingPayment] = useState(false);
@@ -721,6 +737,19 @@ export default function OrderSummary({
   const [loadingProcessingFee, setLoadingProcessingFee] =
     useState<boolean>(false);
   const normalizedEvent = useMemo(() => normalizeEvent(eventData), [eventData]);
+  const normalizedCheckoutTickets = useMemo(
+    () =>
+      tickets.map((ticket) =>
+        normalizeCommerceTicket(ticket, {
+          eventMode: normalizedEvent.mode,
+        })
+      ),
+    [normalizedEvent.mode, tickets]
+  );
+  const normalizedAddOns = useMemo(
+    () => normalizeEventAddOns(eventData),
+    [eventData]
+  );
   const resolvedEventId = normalizedEvent.id || eventId || "";
   const hybridModeOptions = useMemo(() => {
     if (normalizedEvent.mode !== "hybrid") return [];
@@ -740,17 +769,77 @@ export default function OrderSummary({
     return Array.from(options);
   }, [normalizedEvent.mode, tickets]);
   const filteredCheckoutTickets = useMemo(() => {
-    if (normalizedEvent.mode !== "hybrid") return tickets;
+    if (normalizedEvent.mode !== "hybrid") return normalizedCheckoutTickets;
     if (!selectedAttendanceMode) return [];
 
-    return tickets.filter((ticket) => {
-      const ticketMode = getEffectiveTicketAttendanceMode(
-        ticket,
-        normalizedEvent.mode
-      );
+    return normalizedCheckoutTickets.filter((ticket) => {
+      const ticketMode =
+        ticket.attendanceMode ||
+        getEffectiveTicketAttendanceMode(ticket.raw, normalizedEvent.mode);
       return ticketMode === selectedAttendanceMode;
     });
-  }, [normalizedEvent.mode, selectedAttendanceMode, tickets]);
+  }, [normalizedCheckoutTickets, normalizedEvent.mode, selectedAttendanceMode]);
+  const ownedTicketSelections = useMemo(() => {
+    if (!resolvedEventId && !normalizedEvent.slug) return [];
+
+    const ticketGroups = new Map<
+      string,
+      {
+        id: string;
+        type: string;
+        quantity: number;
+        raw: any;
+      }
+    >();
+
+    ownedEventTickets.forEach((entry) => {
+      const event = entry?.event || {};
+      const ticket = entry?.ticket || {};
+      const entryEventId = String(entry?.eventId || event?.id || "");
+      const entryEventSlug = String(event?.slug || entry?.eventSlug || "");
+      const matchesEvent =
+        (resolvedEventId && entryEventId === resolvedEventId) ||
+        (normalizedEvent.slug && entryEventSlug === normalizedEvent.slug);
+
+      if (!matchesEvent) return;
+
+      const ticketId = String(
+        ticket?.id || ticket?._id || ticket?.ticketTypeId || entry?.ticketId || ""
+      );
+      if (!ticketId) return;
+
+      const quantity = Math.max(
+        0,
+        Number(
+          ticket?.quantity ??
+            entry?.quantity ??
+            ticket?.originalQuantity ??
+            entry?.originalQuantity ??
+            0
+        )
+      );
+      if (quantity < 1) return;
+
+      const existing = ticketGroups.get(ticketId);
+      if (existing) {
+        existing.quantity += quantity;
+        return;
+      }
+
+      ticketGroups.set(ticketId, {
+        id: ticketId,
+        type: String(ticket?.type || ticket?.ticketType || ticket?.name || "Ticket"),
+        quantity,
+        raw: {
+          ...ticket,
+          id: ticketId,
+          ticketTypeId: ticketId,
+        },
+      });
+    });
+
+    return Array.from(ticketGroups.values());
+  }, [normalizedEvent.slug, ownedEventTickets, resolvedEventId]);
   const selectedCartItems = useMemo(
     () =>
       filteredCheckoutTickets
@@ -761,17 +850,69 @@ export default function OrderSummary({
           return {
             id: ticket.id,
             name: ticket.name || ticket.type || "Ticket",
-            attendanceMode: getEffectiveTicketAttendanceMode(
-              ticket,
-              normalizedEvent.mode
-            ),
+            type: ticket.type || "General",
+            description: ticket.description || "",
+            attendanceMode:
+              ticket.attendanceMode ||
+              getEffectiveTicketAttendanceMode(ticket.raw, normalizedEvent.mode),
             quantity,
             price: unitPrice,
+            minOrder: ticket.minOrder,
+            maxOrder: ticket.maxOrder,
+            remainingQuantity: ticket.remainingQuantity,
+            saleStatus: ticket.saleStatus,
+            checkoutFields: ticket.checkoutFields,
+            raw: ticket.raw,
             lineTotal: unitPrice * quantity,
           };
         })
         .filter((ticket) => ticket.quantity > 0),
     [filteredCheckoutTickets, ticketQuantities]
+  );
+  const addOnEligibilityTickets = useMemo(
+    () => (selectedCartItems.length > 0 ? selectedCartItems : ownedTicketSelections),
+    [ownedTicketSelections, selectedCartItems]
+  );
+  const canPurchaseAddOnsOnly =
+    selectedCartItems.length === 0 && ownedTicketSelections.length > 0;
+  const resolvedCheckoutFields = useMemo(
+    () =>
+      resolveCheckoutFields(
+        eventData?.eventSettings?.checkoutFields ??
+          eventData?.checkoutFields ??
+          checkoutFields,
+        selectedCartItems.map((ticket) => ticket.checkoutFields)
+      ),
+    [checkoutFields, eventData, selectedCartItems]
+  );
+  const selectedAddOnItems = useMemo(
+    () =>
+      normalizedAddOns
+        .map((addOn) => {
+          const quantity = Number(addOnQuantities[addOn.id] || 0);
+          const eligibility = getAddOnEligibility(addOn, addOnEligibilityTickets);
+
+          return {
+            id: addOn.id,
+            name: addOn.name,
+            description: addOn.description,
+            quantity,
+            price: addOn.price,
+            saleStatus: addOn.saleStatus,
+            remainingQuantity: addOn.remainingQuantity,
+            eligible: eligibility.eligible,
+            maxSelectable:
+              addOn.remainingQuantity === null
+                ? eligibility.maxSelectable
+                : Math.min(
+                    eligibility.maxSelectable || addOn.remainingQuantity,
+                    addOn.remainingQuantity
+                  ),
+            lineTotal: addOn.price * quantity,
+          };
+        })
+        .filter((addOn) => addOn.quantity > 0),
+    [addOnEligibilityTickets, addOnQuantities, normalizedAddOns]
   );
   const totalTicketCount = useMemo(
     () =>
@@ -779,8 +920,10 @@ export default function OrderSummary({
     [selectedCartItems]
   );
   const subtotal = useMemo(
-    () => selectedCartItems.reduce((sum, ticket) => sum + ticket.lineTotal, 0),
-    [selectedCartItems]
+    () =>
+      selectedCartItems.reduce((sum, ticket) => sum + ticket.lineTotal, 0) +
+      selectedAddOnItems.reduce((sum, addOn) => sum + addOn.lineTotal, 0),
+    [selectedAddOnItems, selectedCartItems]
   );
   const calculatedServiceFee = useMemo(() => {
     if (!showServiceFee || !serviceFeeConfig) return 0;
@@ -797,11 +940,13 @@ export default function OrderSummary({
   }, [showServiceFee, serviceFeeConfig, subtotal]);
   const cartSignature = useMemo(
     () =>
-      selectedCartItems
-        .map((ticket) => `${ticket.id}:${ticket.quantity}`)
+      [
+        ...selectedCartItems.map((ticket) => `ticket:${ticket.id}:${ticket.quantity}`),
+        ...selectedAddOnItems.map((addOn) => `addon:${addOn.id}:${addOn.quantity}`),
+      ]
         .sort()
         .join("|"),
-    [selectedCartItems]
+    [selectedAddOnItems, selectedCartItems]
   );
   const checkoutAccessState = useMemo(
     () =>
@@ -1041,6 +1186,39 @@ export default function OrderSummary({
   }, [normalizedEvent.id, normalizedEvent.slug]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadOwnedTickets = async () => {
+      if (!normalizedEvent.id || !getAuthToken()) {
+        setOwnedEventTickets([]);
+        return;
+      }
+
+      try {
+        const res = await apiClient.get(`/users/tickets/mine`);
+        const ownedTickets = Array.isArray(res.data?.data?.ownedTickets)
+          ? res.data.data.ownedTickets
+          : [];
+
+        if (!cancelled) {
+          setOwnedEventTickets(ownedTickets);
+        }
+      } catch (error) {
+        console.error("Failed to load owned event tickets for add-ons", error);
+        if (!cancelled) {
+          setOwnedEventTickets([]);
+        }
+      }
+    };
+
+    loadOwnedTickets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedEvent.id]);
+
+  useEffect(() => {
     if (normalizedEvent.mode !== "hybrid") {
       setSelectedAttendanceMode("");
       return;
@@ -1053,7 +1231,42 @@ export default function OrderSummary({
 
   useEffect(() => {
     setTicketQuantities({});
+    setAddOnQuantities({});
   }, [selectedAttendanceMode]);
+
+  useEffect(() => {
+    onSelectedTicketCheckoutConfigsChange?.(
+      selectedCartItems.map((ticket) => ticket.checkoutFields)
+    );
+  }, [onSelectedTicketCheckoutConfigsChange, selectedCartItems]);
+
+  useEffect(() => {
+    setAddOnQuantities((current) => {
+      const nextState: Record<string, number> = {};
+
+      normalizedAddOns.forEach((addOn) => {
+        const currentQuantity = Number(current[addOn.id] || 0);
+        if (!currentQuantity) return;
+
+        const eligibility = getAddOnEligibility(addOn, addOnEligibilityTickets);
+        const maxSelectable =
+          addOn.remainingQuantity === null
+            ? eligibility.maxSelectable
+            : Math.min(
+                eligibility.maxSelectable || addOn.remainingQuantity,
+                addOn.remainingQuantity
+              );
+
+        if (!eligibility.eligible || addOn.saleStatus !== "on-sale" || maxSelectable <= 0) {
+          return;
+        }
+
+        nextState[addOn.id] = Math.min(currentQuantity, maxSelectable);
+      });
+
+      return nextState;
+    });
+  }, [addOnEligibilityTickets, normalizedAddOns]);
 
   /* ─────────────── FETCH TICKETS ───────────────*/
   useEffect(() => {
@@ -1178,6 +1391,9 @@ export default function OrderSummary({
   const shouldSendServiceFee = showServiceFee && calculatedServiceFee > 0;
 
   const updateTicketQuantity = (ticketId: string, nextQuantity: number) => {
+    const selectedTicket = filteredCheckoutTickets.find((ticket) => ticket.id === ticketId);
+    if (!selectedTicket) return;
+
     setTicketQuantities((current) => {
       const normalizedQuantity = Math.max(0, Math.floor(nextQuantity));
       const totalWithoutCurrent = Object.entries(current).reduce(
@@ -1186,9 +1402,34 @@ export default function OrderSummary({
         0
       );
 
+      if (selectedTicket.saleStatus !== "on-sale" && normalizedQuantity > 0) {
+        toast.error(selectedTicket.saleStatusDetail || "This ticket is not on sale.");
+        return current;
+      }
+
       if (normalizedQuantity + totalWithoutCurrent > MAX_TICKETS_PER_ORDER) {
         toast.error(
           `You can purchase a maximum of ${MAX_TICKETS_PER_ORDER} tickets at once`
+        );
+        return current;
+      }
+
+      if (
+        selectedTicket.maxOrder !== null &&
+        normalizedQuantity > Number(selectedTicket.maxOrder || 0)
+      ) {
+        toast.error(
+          `You can select up to ${selectedTicket.maxOrder} for ${selectedTicket.name}.`
+        );
+        return current;
+      }
+
+      if (
+        selectedTicket.remainingQuantity !== null &&
+        normalizedQuantity > Number(selectedTicket.remainingQuantity || 0)
+      ) {
+        toast.error(
+          `${selectedTicket.remainingQuantity} ${selectedTicket.name} tickets remain.`
         );
         return current;
       }
@@ -1205,22 +1446,71 @@ export default function OrderSummary({
     });
   };
 
+  const updateAddOnQuantity = (addOnId: string, nextQuantity: number) => {
+    const addOn = normalizedAddOns.find((entry) => entry.id === addOnId);
+    if (!addOn) return;
+
+    const eligibility = getAddOnEligibility(addOn, addOnEligibilityTickets);
+
+    setAddOnQuantities((current) => {
+      const normalizedQuantity = Math.max(0, Math.floor(nextQuantity));
+      const maxSelectable =
+        addOn.remainingQuantity === null
+          ? eligibility.maxSelectable
+          : Math.min(
+              eligibility.maxSelectable || addOn.remainingQuantity,
+              addOn.remainingQuantity
+            );
+
+      if (!eligibility.eligible && normalizedQuantity > 0) {
+        toast.error(
+          canPurchaseAddOnsOnly
+            ? "This add-on is not available for your existing ticket types."
+            : "Select an eligible ticket type before adding this add-on."
+        );
+        return current;
+      }
+
+      if (addOn.saleStatus !== "on-sale" && normalizedQuantity > 0) {
+        toast.error(addOn.saleStatusDetail || "This add-on is not available.");
+        return current;
+      }
+
+      if (maxSelectable >= 0 && normalizedQuantity > maxSelectable) {
+        toast.error(`You can select up to ${maxSelectable} for ${addOn.name}.`);
+        return current;
+      }
+
+      if (normalizedQuantity === 0) {
+        const { [addOnId]: _, ...rest } = current;
+        return rest;
+      }
+
+      return {
+        ...current,
+        [addOnId]: normalizedQuantity,
+      };
+    });
+  };
+
   const saveCheckoutSelectionSummary = () => {
     if (typeof window === "undefined") return;
 
     localStorage.setItem(
       "checkoutSelectionSummary",
-      JSON.stringify({
-        eventId: resolvedEventId,
-        eventSlug: normalizedEvent.slug,
-        eventName: normalizedEvent.title || "Event",
-        attendanceMode: selectedAttendanceMode || undefined,
-        items: selectedCartItems,
-        totalQuantity: totalTicketCount,
-        subtotal,
-        totalAmount: total,
-      })
-    );
+        JSON.stringify({
+          eventId: resolvedEventId,
+          eventSlug: normalizedEvent.slug,
+          eventName: normalizedEvent.title || "Event",
+          attendanceMode: selectedAttendanceMode || undefined,
+          items: selectedCartItems,
+          addOns: selectedAddOnItems,
+          checkoutAnswers,
+          totalQuantity: totalTicketCount,
+          subtotal,
+          totalAmount: total,
+        })
+      );
   };
 
   const buildCanonicalPaymentPayload = () => {
@@ -1233,7 +1523,21 @@ export default function OrderSummary({
         quantity: ticket.quantity,
         attendanceMode: ticket.attendanceMode || selectedAttendanceMode || undefined,
       })),
+      addOns: selectedAddOnItems.map((addOn) => ({
+        addOnId: addOn.id,
+        quantity: addOn.quantity,
+      })),
       totalQuantity: totalTicketCount,
+      customOrderFormAnswers: resolvedCheckoutFields.reduce(
+        (answers, field) => {
+          const value = checkoutAnswers[field.key];
+          if (value) {
+            answers[field.key] = value;
+          }
+          return answers;
+        },
+        {} as Record<string, any>
+      ),
     };
 
     if (selectedAttendanceMode) {
@@ -1304,12 +1608,20 @@ export default function OrderSummary({
       return;
     }
 
-    if (selectedCartItems.length === 0) {
-      toast.error("Please choose at least one ticket");
+    if (selectedCartItems.length === 0 && selectedAddOnItems.length === 0) {
+      toast.error("Please choose at least one ticket or add-on");
       return;
     }
 
-    if (totalTicketCount < 1) {
+    const missingCheckoutField = resolvedCheckoutFields.find(
+      (field) => field.required && !String(checkoutAnswers[field.key] || "").trim()
+    );
+    if (missingCheckoutField) {
+      toast.error(`Please complete ${missingCheckoutField.label || missingCheckoutField.key}.`);
+      return;
+    }
+
+    if (selectedCartItems.length > 0 && totalTicketCount < 1) {
       toast.error("Quantity must be at least 1");
       return;
     }
@@ -1524,54 +1836,87 @@ export default function OrderSummary({
                   key={ticket.id}
                   className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
                 >
-                  <div>
+                  <div className="min-w-0 pr-2">
                     <p className="font-medium">{ticket.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {formatter.format(Number(ticket.price || 0))} each
                     </p>
-                    {getTicketAttendanceMode(ticket) ? (
+                    {/* Description removed as per request */}
+                    {(ticket.attendanceMode || getTicketAttendanceMode(ticket.raw)) ? (
                       <p className="mt-1 text-xs font-medium text-[#0077F7]">
-                        {formatAttendanceLabel(getTicketAttendanceMode(ticket))}
+                        {formatAttendanceLabel(
+                          ticket.attendanceMode || getTicketAttendanceMode(ticket.raw)
+                        )}
                       </p>
                     ) : null}
+                    <p
+                      className={`mt-1 text-xs font-medium ${
+                        ticket.saleStatus === "on-sale"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : ticket.saleStatus === "sold-out"
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      {ticket.saleStatusLabel}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {ticket.saleStatusDetail}
+                      {ticket.saleStartAt
+                        ? ` ${ticket.saleStatus === "sales-not-started" ? "" : "Start"}${ticket.saleStatus === "sales-not-started" ? "" : ":"}`
+                        : ""}
+                    </p>
+                    {/* Start and end time removed as per request */}
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {ticket.remainingQuantity === null
+                        ? "Unlimited inventory"
+                        : `${ticket.remainingQuantity} remaining`}
+                      {" • "}
+                      {ticket.refundable ? "Refunds enabled" : "No refunds"}
+                      {" • "}
+                      {ticket.transferable ? "Transfers enabled" : "No transfers"}
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={Number(ticketQuantities[ticket.id] || 0) <= 0}
                       onClick={() =>
                         updateTicketQuantity(
                           ticket.id,
                           Number(ticketQuantities[ticket.id] || 0) - 1
                         )
                       }
+                      aria-label="Decrease quantity"
                     >
-                      <Image
-                        src="/images/icon-minus.png"
-                        alt="-"
-                        width={20}
-                        height={20}
-                      />
-                    </button>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="9" width="12" height="2" rx="1" fill="currentColor" />
+                      </svg>
+                    </Button>
                     <span className="min-w-4 text-center">
                       {Number(ticketQuantities[ticket.id] || 0)}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={ticket.saleStatus !== "on-sale"}
                       onClick={() =>
                         updateTicketQuantity(
                           ticket.id,
                           Number(ticketQuantities[ticket.id] || 0) + 1
                         )
                       }
+                      aria-label="Increase quantity"
                     >
-                      <Image
-                        src="/images/icon-plus.png"
-                        alt="+"
-                        width={20}
-                        height={20}
-                      />
-                    </button>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="9" y="4" width="2" height="12" rx="1" fill="currentColor" />
+                        <rect x="4" y="9" width="12" height="2" rx="1" fill="currentColor" />
+                      </svg>
+                    </Button>
                   </div>
                 </div>
               ))
@@ -1592,6 +1937,109 @@ export default function OrderSummary({
             You may purchase up to {MAX_TICKETS_PER_ORDER} tickets per order.
           </p>
         </div>
+
+        {normalizedAddOns.length > 0 ? (
+          <div className="rounded-[12px] border bg-white dark:bg-[#1a1a1a] p-4">
+            <div className="mb-4">
+              <p className="text-sm font-semibold">Add-ons</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Upsell extras can be purchased now and shown again in the buyer
+                ticket area until sales close.
+              </p>
+              {canPurchaseAddOnsOnly ? (
+                <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                  You already own tickets for this event, so eligible add-ons can be purchased without adding more tickets.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-3">
+              {normalizedAddOns.map((addOn) => {
+                const eligibility = getAddOnEligibility(addOn, addOnEligibilityTickets);
+                const currentQuantity = Number(addOnQuantities[addOn.id] || 0);
+                const maxSelectable =
+                  addOn.remainingQuantity === null
+                    ? eligibility.maxSelectable
+                    : Math.min(
+                        eligibility.maxSelectable || addOn.remainingQuantity,
+                        addOn.remainingQuantity
+                      );
+
+                return (
+                  <div
+                    key={addOn.id}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <p className="font-medium">{addOn.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatter.format(Number(addOn.price || 0))} each
+                      </p>
+                      {addOn.description ? (
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {addOn.description}
+                        </p>
+                      ) : null}
+                      <p
+                        className={`mt-1 text-xs font-medium ${
+                          addOn.saleStatus === "on-sale"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : addOn.saleStatus === "sold-out"
+                              ? "text-rose-600 dark:text-rose-400"
+                              : "text-amber-600 dark:text-amber-400"
+                        }`}
+                      >
+                        {addOn.saleStatusLabel}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {addOn.saleStatusDetail}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {!eligibility.eligible
+                          ? canPurchaseAddOnsOnly
+                            ? "Not available for the ticket types you already own."
+                            : "Select an eligible ticket first."
+                          : canPurchaseAddOnsOnly
+                            ? `Up to ${maxSelectable} available based on tickets you already own.`
+                            : `Up to ${maxSelectable} available with your current ticket selection.`}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        disabled={currentQuantity <= 0}
+                        onClick={() => updateAddOnQuantity(addOn.id, currentQuantity - 1)}
+                        className="disabled:opacity-40"
+                      >
+                        <Image
+                          src="/images/icon-minus.png"
+                          alt="-"
+                          width={20}
+                          height={20}
+                        />
+                      </button>
+                      <span className="min-w-4 text-center">{currentQuantity}</span>
+                      <button
+                        type="button"
+                        disabled={!eligibility.eligible || addOn.saleStatus !== "on-sale"}
+                        onClick={() => updateAddOnQuantity(addOn.id, currentQuantity + 1)}
+                        className="disabled:opacity-40"
+                      >
+                        <Image
+                          src="/images/icon-plus.png"
+                          alt="+"
+                          width={20}
+                          height={20}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* ─────────────────────────────────────────
     CREDIT BALANCE CARD
@@ -2068,6 +2516,14 @@ export default function OrderSummary({
                   <span>{formatter.format(ticket.lineTotal)}</span>
                 </p>
               ))}
+              {selectedAddOnItems.map((addOn) => (
+                <p key={addOn.id} className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                  <span>
+                    Add-on: {addOn.name} x {addOn.quantity}
+                  </span>
+                  <span>{formatter.format(addOn.lineTotal)}</span>
+                </p>
+              ))}
             </div>
           ) : (
             <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
@@ -2084,7 +2540,7 @@ export default function OrderSummary({
           {showServiceFee && (
             <p className="flex justify-between mt-1">
               <span>
-                Service Fee{" "}
+                Service Fee (line items){" "}
                 {serviceFeeConfig?.type === "percentage"
                   ? `(${serviceFeeConfig.value}%)`
                   : ""}

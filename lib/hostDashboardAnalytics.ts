@@ -514,3 +514,31 @@ export const normalizeTicketTypeBreakdowns = (data: any) => {
     revenueBreakdown: combined.filter((item) => item.revenue > 0 || item.ticketsSold > 0),
   };
 };
+
+export const normalizeAddOnBreakdowns = (data: any) => {
+  const addOnSalesBreakdown = readBreakdownArray(
+    data?.addOnBreakdown,
+    data?.addOnsByType,
+    data?.addOnsSoldByType,
+    data?.stats?.addOnBreakdown,
+    data?.analytics?.addOnBreakdown,
+    data?.reports?.addOnBreakdown,
+    data?.breakdowns?.addOns
+  );
+
+  const addOnRevenueBreakdown = readBreakdownArray(
+    data?.revenueByAddOn,
+    data?.addOnRevenueBreakdown,
+    data?.stats?.revenueByAddOn,
+    data?.analytics?.revenueByAddOn,
+    data?.reports?.revenueByAddOn,
+    data?.breakdowns?.revenueByAddOn
+  );
+
+  const combined = mergeBreakdowns(addOnSalesBreakdown, addOnRevenueBreakdown);
+
+  return {
+    addOnBreakdown: combined.filter((item) => item.ticketsSold > 0 || item.revenue > 0),
+    revenueBreakdown: combined.filter((item) => item.revenue > 0 || item.ticketsSold > 0),
+  };
+};

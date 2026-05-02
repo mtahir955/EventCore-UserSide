@@ -14,6 +14,17 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { apiClient } from "@/lib/apiClient"; // use your real path
 import { normalizeEvent } from "@/lib/event-publishing";
+import { normalizeEventAddOns } from "@/lib/event-commerce";
+
+type TicketAddOnUI = {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  saleStatusLabel: string;
+  saleStatusDetail: string;
+  canPurchase: boolean;
+};
 
 type TicketCardUI = {
   eventId: string;
@@ -37,6 +48,8 @@ type TicketCardUI = {
   refundableQuantity: number;
   streamUrl?: string;
   attendanceMode?: string;
+  eventSlug?: string;
+  availableAddOns?: TicketAddOnUI[];
   badge?: {
     variant: "IN" | "OUT";
     label: "Transferred From" | "Transferred To";
@@ -264,6 +277,15 @@ export default function Page() {
             email: transferredFrom.email || undefined,
           }
         : undefined;
+    const availableAddOns = normalizeEventAddOns(event).map((addOn) => ({
+      id: addOn.id,
+      name: addOn.name,
+      description: addOn.description,
+      price: toDisplayPrice(addOn.price),
+      saleStatusLabel: addOn.saleStatusLabel,
+      saleStatusDetail: addOn.saleStatusDetail,
+      canPurchase: !ended && addOn.saleStatus === "on-sale",
+    }));
 
     return {
       eventId: String(mergedTicket.eventId || event?.id || ""),
@@ -307,6 +329,8 @@ export default function Page() {
           : normalizedEvent.mode === "hybrid"
           ? "hybrid"
           : "in-person"),
+      eventSlug: normalizedEvent.slug,
+      availableAddOns,
       badge: explicitBadge || receivedBadge,
       transferredOut,
     };
@@ -722,6 +746,8 @@ export default function Page() {
                   verifiedAt={t.verifiedAt}
                   streamUrl={t.streamUrl}
                   attendanceMode={t.attendanceMode}
+                  eventSlug={t.eventSlug}
+                  availableAddOns={t.availableAddOns}
                 />
               ))}
             </div>

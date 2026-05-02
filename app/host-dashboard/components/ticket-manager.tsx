@@ -4,6 +4,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useMemo,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -27,6 +28,10 @@ import {
   downloadCsvExport,
   getTimeframeParams,
 } from "@/lib/hostDashboardAnalytics";
+import {
+  formatSalesDateTime,
+  normalizeCommerceTicket,
+} from "@/lib/event-commerce";
 
 type TicketManagerProps = {
   eventId?: string;
@@ -49,7 +54,7 @@ type TenantTicketAction =
   | "Add Note"
   | "Edit Note"
   | "Reclaim Ticket"
-  | "Force Claim";
+  | "Force Reclaim";
 
 type EventTicketCustomer = {
   [key: string]: any;
@@ -72,6 +77,7 @@ type EventTicketCustomer = {
   orderId: string;
   notesCount: number;
   lastHistoryStatus: string;
+  wasReclaimed?: boolean;
   permissions: {
     canCheckIn?: boolean;
     canUncheck?: boolean;
@@ -158,7 +164,7 @@ const tenantTicketActions: TenantTicketAction[] = [
   "Add Note",
   "Edit Note",
   "Reclaim Ticket",
-  "Force Claim",
+  "Force Reclaim",
 ];
 
 const staffTicketActions: TenantTicketAction[] = [
@@ -225,6 +231,17 @@ const formatDateTime = (value: any) => {
   if (Number.isNaN(date.getTime())) return dateValue;
 
   return date.toLocaleString();
+};
+
+const formatLocalDateTimeInputValue = (value: any) => {
+  const dateValue = getStringValue(value);
+  if (!dateValue) return "";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
 };
 
 const getAuditValue = (value: any) => {
@@ -482,6 +499,12 @@ export default function TicketManager({
 
   // Ticket Price (number)
   const [ticketPrice, setTicketPrice] = useState(0);
+  const [ticketDescription, setTicketDescription] = useState("");
+  const [ticketQuantityInput, setTicketQuantityInput] = useState("");
+  const [ticketSaleStartAt, setTicketSaleStartAt] = useState("");
+  const [ticketSaleEndAt, setTicketSaleEndAt] = useState("");
+  const [ticketPaymentPlanEnabled, setTicketPaymentPlanEnabled] =
+    useState(false);
 
   // Transferable (boolean)
   const [transferable, setTransferable] = useState(false);
@@ -633,16 +656,48 @@ export default function TicketManager({
     setEditingTicket(id);
 
     const t = tickets.find((x) => x.id === id);
+    const normalizedTicket =
+      ticketInventoryById[String(id)] ||
+      (t
+        ? normalizeCommerceTicket(t, {
+            eventMode: t?.event?.eventType ?? t?.eventType ?? null,
+          })
+        : null);
 
     if (t) {
       setTicketName(t.name);
       setTicketType(t.type);
-      setTicketPrice(Number(t.price));
+      setTicketPrice(Number(normalizedTicket?.price ?? t.price));
+      setTicketDescription(normalizedTicket?.description || "");
+      setTicketQuantityInput(
+        normalizedTicket?.quantity === null
+          ? ""
+          : String(normalizedTicket?.quantity ?? t.quantity ?? "")
+      );
+      setTicketSaleStartAt(
+        formatLocalDateTimeInputValue(normalizedTicket?.saleStartAt)
+      );
+      setTicketSaleEndAt(
+        formatLocalDateTimeInputValue(normalizedTicket?.saleEndAt)
+      );
+      setTicketPaymentPlanEnabled(
+        Boolean(
+          normalizedTicket?.paymentPlanEnabled ??
+            t?.paymentPlanEnabled ??
+            t?.allowPaymentPlan
+        )
+      );
+      setMinOrder(normalizedTicket?.minOrder ?? 1);
+      setMaxOrder(normalizedTicket?.maxOrder ?? 5);
 
       // ✅ NEW: only allow editing transferable when feature is enabled
-      setTransferable(allowTransfers ? t.isTransferable : false);
+      setTransferable(
+        allowTransfers
+          ? Boolean(normalizedTicket?.transferable ?? t.isTransferable)
+          : false
+      );
 
-      setIsRefundable(t.isRefundable);
+      setIsRefundable(Boolean(normalizedTicket?.refundable ?? t.isRefundable));
       setIsEarlyBird(t.earlyBirdOption);
       setEarlyBirdQuantity(t.earlyBirdQuantity ?? null);
     }
@@ -705,6 +760,40 @@ export default function TicketManager({
       return;
     }
 
+    const selectedTicket =
+      tickets.find((ticket) => String(ticket.id) === String(editingTicket)) || null;
+    const currentInventory = selectedTicket
+      ? ticketInventoryById[String(selectedTicket.id)] ||
+        normalizeCommerceTicket(selectedTicket, {
+          eventMode:
+            selectedTicket?.event?.eventType ?? selectedTicket?.eventType ?? null,
+        })
+      : null;
+    const soldQuantity = Number(currentInventory?.soldQuantity || 0);
+    const nextQuantity =
+      ticketQuantityInput.trim() === "" ? null : Number(ticketQuantityInput);
+
+    if (nextQuantity !== null && (!Number.isFinite(nextQuantity) || nextQuantity < 0)) {
+      toast.error("Quantity must be a valid positive number.");
+      return;
+    }
+
+    if (nextQuantity !== null && nextQuantity < soldQuantity) {
+      toast.error(
+        `Quantity cannot be lower than ${soldQuantity} because those tickets are already sold.`
+      );
+      return;
+    }
+
+    if (
+      ticketSaleStartAt &&
+      ticketSaleEndAt &&
+      new Date(ticketSaleEndAt) < new Date(ticketSaleStartAt)
+    ) {
+      toast.error("Sale end must be after the sale start.");
+      return;
+    }
+
     // const token = localStorage.getItem("hostToken");
     // if (!token) {
     //   toast.error("You are not logged in!");
@@ -715,11 +804,17 @@ export default function TicketManager({
       name: ticketName,
       type: ticketType.toLowerCase(), // "general" | "vip"
       price: ticketPrice.toString(), // backend needs string
+      description: ticketDescription,
+      quantity: nextQuantity,
+      totalQuantity: nextQuantity,
+      saleStartAt: ticketSaleStartAt || null,
+      saleEndAt: ticketSaleEndAt || null,
 
       // ✅ NEW: if feature disabled, always force false
       isTransferable: allowTransfers ? transferable : false,
 
-      isRefundable: isRefundable,
+      isRefundable: allowRefunds ? isRefundable : false,
+      paymentPlanEnabled: ticketPaymentPlanEnabled,
       earlyBirdOption: isEarlyBird,
       earlyBirdQuantity: isEarlyBird ? earlyBirdQuantity : null,
       minOrder,
@@ -820,6 +915,52 @@ export default function TicketManager({
 
   // Total number of pages
   const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
+
+  const ticketInventoryById = useMemo(() => {
+    const rows = Array.isArray(eventTicketRows) ? eventTicketRows : [];
+
+    return tickets.reduce<Record<string, ReturnType<typeof normalizeCommerceTicket>>>(
+      (accumulator, ticket) => {
+        const ticketId = String(ticket?.id ?? ticket?._id ?? "");
+        const ticketName = getStringValue(ticket?.name).toLowerCase();
+        const ticketType = getStringValue(ticket?.type).toLowerCase();
+        const soldQuantity = rows
+          .filter((row) => {
+            const rowTypeId = String(row.ticketTypeId || "");
+            const rowTicketId = String(row.ticketId || "");
+            const rowTicketName = getStringValue(row.ticketName).toLowerCase();
+            const rowTicketType = getStringValue(row.ticketType).toLowerCase();
+
+            return (
+              (ticketId && rowTypeId === ticketId) ||
+              (ticketId && rowTicketId === ticketId) ||
+              (ticketName && rowTicketName === ticketName) ||
+              (ticketType && rowTicketType === ticketType)
+            );
+          })
+          .reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+
+        accumulator[ticketId || ticket.name || crypto.randomUUID()] =
+          normalizeCommerceTicket(
+            {
+              ...ticket,
+              soldQuantity:
+                soldQuantity ||
+                ticket?.soldQuantity ||
+                ticket?.sold ||
+                ticket?.quantitySold ||
+                0,
+            },
+            {
+              eventMode: ticket?.event?.eventType ?? ticket?.eventType ?? null,
+            }
+          );
+
+        return accumulator;
+      },
+      {}
+    );
+  }, [eventTicketRows, tickets]);
 
   // 🔥 Fetch Tickets From API
   const fetchTickets = async () => {
@@ -1034,6 +1175,7 @@ export default function TicketManager({
         (ticket.isRefundable ? "Refundable" : "Not refunded"),
       isTransferable: ticket.isTransferable,
       isRefundable: ticket.isRefundable,
+      wasReclaimed: ticket.wasReclaimed === true || ticket.wasReclaimed === "true" || String(ticket.status ?? "").toLowerCase() === "reclaimed",
       eventId: ticket.eventId ?? ticket.event?.id ?? ticket.event?._id ?? eventId,
       eventName:
         ticket.eventName ??
@@ -1292,8 +1434,10 @@ export default function TicketManager({
         return allowTicketHistory && permissionEnabled(permissions.canViewHistory);
       case "Reclaim Ticket":
         return allowReclaimTicket && permissionEnabled(permissions.canReclaim);
-      case "Force Claim":
-        return allowForceClaim && permissionEnabled(permissions.canForceClaim);
+      case "Force Reclaim":
+        return allowForceClaim && 
+               permissionEnabled(permissions.canForceClaim) &&
+               ticket.wasReclaimed === true;
       default:
         return true;
     }
@@ -1588,7 +1732,7 @@ export default function TicketManager({
         );
       }
 
-      if (activeTenantAction === "Force Claim") {
+      if (activeTenantAction === "Force Reclaim") {
         response = await apiClient.post(
           `/events/${eventId}/tickets/${ticketPurchaseId}/force-claim`,
           {
@@ -1883,8 +2027,9 @@ export default function TicketManager({
                   <th className="pb-3">Type</th>
                   <th className="pb-3">Event</th>
                   <th className="pb-3">Date & Time</th>
+                  <th className="pb-3">Inventory</th>
                   <th className="pb-3">Price</th>
-                  <th className="pb-3">Transfer Status</th>
+                  <th className="pb-3">Sale Status</th>
 
                   <th className="pb-3 text-right">Action</th>
                 </tr>
@@ -1892,63 +2037,100 @@ export default function TicketManager({
 
               <tbody>
                 {currentTickets.length > 0 ? (
-                  currentTickets.map((ticket) => (
-                    <tr
-                      key={ticket.id}
-                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
-                    >
-                      {/* Ticket Name */}
-                      <td className="py-3 text-sm font-semibold">
-                        {ticket.name}
-                      </td>
+                  currentTickets.map((ticket) => {
+                    const ticketCommerce =
+                      ticketInventoryById[String(ticket.id)] ||
+                      normalizeCommerceTicket(ticket, {
+                        eventMode: ticket?.event?.eventType ?? ticket?.eventType ?? null,
+                      });
 
-                      {/* Ticket Type */}
-                      <td className="py-3 text-sm">
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#D19537]/15 text-[#D19537]">
-                          {ticket.type}
-                        </span>
-                      </td>
+                    return (
+                      <tr
+                        key={ticket.id}
+                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
+                      >
+                        <td className="py-3 text-sm font-semibold">
+                          <div className="space-y-1">
+                            <p>{ticket.name}</p>
+                            {ticketCommerce.description ? (
+                              <p className="max-w-[220px] text-xs font-normal text-gray-500">
+                                {ticketCommerce.description}
+                              </p>
+                            ) : null}
+                          </div>
+                        </td>
 
-                      {/* Event Name */}
-                      <td className="py-3 text-sm">{ticket.eventName}</td>
+                        <td className="py-3 text-sm">
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#D19537]/15 text-[#D19537]">
+                            {ticket.type}
+                          </span>
+                        </td>
 
-                      {/* Date & Time */}
-                      <td className="py-3 text-sm">
-                        {ticket.dateTime || "N/A"}
-                      </td>
+                        <td className="py-3 text-sm">{ticket.eventName}</td>
 
-                      {/* Price */}
-                      <td className="py-3 text-sm">${ticket.price}</td>
+                        <td className="py-3 text-sm">
+                          <div className="space-y-1">
+                            <p>{ticket.dateTime || "N/A"}</p>
+                            <p className="text-xs text-gray-500">
+                              {ticketCommerce.saleStartAt || ticketCommerce.saleEndAt
+                                ? `${formatSalesDateTime(ticketCommerce.saleStartAt)} to ${formatSalesDateTime(ticketCommerce.saleEndAt)}`
+                                : "Sales always open"}
+                            </p>
+                          </div>
+                        </td>
 
-                      {/* Transferable Status */}
-                      <td className="py-3 text-sm">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            ticket.isTransferable
-                              ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                              : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
-                          }`}
-                        >
-                          {ticket.isTransferable
-                            ? "Transferable"
-                            : "Untransferable"}
-                        </span>
-                      </td>
+                        <td className="py-3 text-sm">
+                          <div className="space-y-1">
+                            <p>
+                              Total:{" "}
+                              {ticketCommerce.quantity === null
+                                ? "Unlimited"
+                                : ticketCommerce.quantity}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Sold: {ticketCommerce.soldQuantity} • Remaining:{" "}
+                              {ticketCommerce.remainingQuantity === null
+                                ? "Unlimited"
+                                : ticketCommerce.remainingQuantity}
+                            </p>
+                          </div>
+                        </td>
 
-                      {/* Action */}
-                      <td className="py-3 text-right">
-                        <button
-                          onClick={() => handleEditTicket(ticket.id)}
-                          className="px-4 py-1.5 rounded-lg bg-[#D19537] text-white text-sm font-medium hover:bg-[#e4a645]"
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="py-3 text-sm">${ticket.price}</td>
+
+                        <td className="py-3 text-sm">
+                          <div className="space-y-2">
+                            <span
+                              className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                                ticketCommerce.saleStatus === "on-sale"
+                                  ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
+                                  : ticketCommerce.saleStatus === "sold-out"
+                                    ? "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
+                                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
+                              }`}
+                            >
+                              {ticketCommerce.saleStatusLabel}
+                            </span>
+                            <p className="max-w-[210px] text-xs text-gray-500">
+                              {ticketCommerce.saleStatusDetail}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="py-3 text-right">
+                          <button
+                            onClick={() => handleEditTicket(ticket.id)}
+                            className="px-4 py-1.5 rounded-lg bg-[#D19537] text-white text-sm font-medium hover:bg-[#e4a645]"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                    <td colSpan={8} className="text-center py-6 text-gray-500">
                       No tickets found.
                     </td>
                   </tr>
@@ -1960,60 +2142,78 @@ export default function TicketManager({
           {/* 📱 Mobile Card View */}
           <div className="sm:hidden space-y-4">
             {currentTickets.length > 0 ? (
-              currentTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-[#101010] shadow-sm"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-[15px] font-semibold">{ticket.name}</h3>
+              currentTickets.map((ticket) => {
+                const ticketCommerce =
+                  ticketInventoryById[String(ticket.id)] ||
+                  normalizeCommerceTicket(ticket, {
+                    eventMode: ticket?.event?.eventType ?? ticket?.eventType ?? null,
+                  });
 
-                    <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-[#D19537]/15 text-[#D19537]">
-                      {ticket.type}
-                    </span>
+                return (
+                  <div
+                    key={ticket.id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-[#101010] shadow-sm"
+                  >
+                    <div className="flex justify-between items-center mb-2 gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-[15px] font-semibold">{ticket.name}</h3>
+                        {ticketCommerce.description ? (
+                          <p className="mt-1 text-xs text-gray-500">
+                            {ticketCommerce.description}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-[#D19537]/15 text-[#D19537]">
+                        {ticket.type}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-[13px] text-gray-600 dark:text-gray-300">
+                      <p>
+                        <span className="font-medium">Event:</span>{" "}
+                        {ticket.eventName || ticket.event?.id || "N/A"}
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Date & Time:</span>{" "}
+                        {ticket.dateTime || "N/A"}
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Inventory:</span>{" "}
+                        {ticketCommerce.quantity === null
+                          ? "Unlimited"
+                          : ticketCommerce.quantity}{" "}
+                        total • {ticketCommerce.soldQuantity} sold •{" "}
+                        {ticketCommerce.remainingQuantity === null
+                          ? "Unlimited"
+                          : ticketCommerce.remainingQuantity}{" "}
+                        remaining
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Sales:</span>{" "}
+                        {ticketCommerce.saleStatusLabel} -{" "}
+                        {ticketCommerce.saleStatusDetail}
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Price:</span> ${ticket.price}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={() => handleEditTicket(ticket.id)}
+                        className="px-4 py-1.5 rounded-lg bg-[#D19537] text-white text-sm font-medium hover:bg-[#e4a645]"
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Details */}
-                  <div className="space-y-1 text-[13px] text-gray-600 dark:text-gray-300">
-                    <p>
-                      <span className="font-medium">Event:</span>{" "}
-                      {ticket.event?.id}
-                    </p>
-
-                    <p>
-                      <span className="font-medium">Date & Time:</span>{" "}
-                      {ticket.dateTime || "N/A"}
-                    </p>
-
-                    <p>
-                      <span className="font-medium">Price:</span> $
-                      {ticket.price}
-                    </p>
-
-                    <p>
-                      <span className="font-medium">Status:</span>{" "}
-                      {ticket.isTransferable ? (
-                        <span className="text-green-600 font-semibold">
-                          Transferable
-                        </span>
-                      ) : (
-                        <span className="text-red-500 font-semibold">
-                          Untransferable
-                        </span>
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      onClick={() => handleEditTicket(ticket.id)}
-                      className="px-4 py-1.5 rounded-lg bg-[#D19537] text-white text-sm font-medium hover:bg-[#e4a645]"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="text-center py-6 text-gray-500 text-sm">
                 No tickets found.
@@ -2062,6 +2262,54 @@ export default function TicketManager({
         {/* ✏️ Edit Ticket Section */}
         {editingTicket && (
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl mx-4 sm:mx-6 md:mx-8 mt-6 sm:mt-8 p-4 sm:p-6 border border-gray-200 dark:border-gray-700 transition-all">
+            {(() => {
+              const ticketCommerce =
+                ticketInventoryById[String(editingTicket)] || null;
+
+              return ticketCommerce ? (
+                <div className="mb-5 grid gap-3 rounded-xl border border-[#D19537]/30 bg-[#FFF8EF] p-4 text-sm text-gray-700 dark:border-[#D19537]/20 dark:bg-[#101010] dark:text-gray-200 md:grid-cols-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">
+                      Total quantity
+                    </p>
+                    <p className="mt-1 font-semibold">
+                      {ticketCommerce.quantity === null
+                        ? "Unlimited"
+                        : ticketCommerce.quantity}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">
+                      Sold
+                    </p>
+                    <p className="mt-1 font-semibold">{ticketCommerce.soldQuantity}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">
+                      Remaining
+                    </p>
+                    <p className="mt-1 font-semibold">
+                      {ticketCommerce.remainingQuantity === null
+                        ? "Unlimited"
+                        : ticketCommerce.remainingQuantity}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">
+                      Sale status
+                    </p>
+                    <p className="mt-1 font-semibold">{ticketCommerce.saleStatusLabel}</p>
+                  </div>
+                  <p className="md:col-span-4 text-xs text-gray-500">
+                    Quantity cannot be reduced below sold count. Sales window:{" "}
+                    {ticketCommerce.saleStartAt || ticketCommerce.saleEndAt
+                      ? `${formatSalesDateTime(ticketCommerce.saleStartAt)} to ${formatSalesDateTime(ticketCommerce.saleEndAt)}`
+                      : "Always open"}
+                  </p>
+                </div>
+              ) : null;
+            })()}
+
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <h2 className="text-lg sm:text-xl font-semibold">Edit Ticket</h2>
@@ -2076,7 +2324,7 @@ export default function TicketManager({
             {/* ----------------------------- */}
             {/* ROW 1: Ticket Name + Ticket Type */}
             {/* ----------------------------- */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {/* Ticket Name */}
               <div>
                 <label className="text-sm font-medium mb-1 block">
@@ -2106,6 +2354,18 @@ export default function TicketManager({
               </div>
             </div>
 
+            <div className="mb-6">
+              <label className="text-sm font-medium mb-1 block">
+                Description
+              </label>
+              <textarea
+                className="min-h-[110px] w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-[#101010]"
+                value={ticketDescription}
+                onChange={(e) => setTicketDescription(e.target.value)}
+                placeholder="Add ticket details, perks, or purchase notes"
+              />
+            </div>
+
             {/* ----------------------------- */}
             {/* ROW 2: Price + Transferable Toggle */}
             {/* ----------------------------- */}
@@ -2120,6 +2380,19 @@ export default function TicketManager({
                   className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
                   value={ticketPrice}
                   onChange={(e) => setTicketPrice(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Total Quantity
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={ticketQuantityInput}
+                  onChange={(e) => setTicketQuantityInput(e.target.value)}
+                  placeholder="Leave blank for unlimited"
                 />
               </div>
 
@@ -2146,13 +2419,73 @@ export default function TicketManager({
               )}
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Sale Start
+                </label>
+                <input
+                  type="datetime-local"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={ticketSaleStartAt}
+                  onChange={(e) => setTicketSaleStartAt(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Sale End
+                </label>
+                <input
+                  type="datetime-local"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={ticketSaleEndAt}
+                  onChange={(e) => setTicketSaleEndAt(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Min per order
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={minOrder}
+                  onChange={(e) => setMinOrder(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Max per order
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  className="h-10 w-full px-3 rounded-lg border dark:border-gray-700 dark:bg-[#101010]"
+                  value={maxOrder}
+                  onChange={(e) => setMaxOrder(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </div>
+            </div>
+
             {/* Edit Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              {/* Refundable */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {allowRefunds ? (
+                <ToggleRow
+                  label="Refundable"
+                  enabled={isRefundable}
+                  onToggle={() => setIsRefundable(!isRefundable)}
+                />
+              ) : null}
               <ToggleRow
-                label="Refundable"
-                enabled={isRefundable}
-                onToggle={() => setIsRefundable(!isRefundable)}
+                label="Payment Plan"
+                enabled={ticketPaymentPlanEnabled}
+                onToggle={() =>
+                  setTicketPaymentPlanEnabled(!ticketPaymentPlanEnabled)
+                }
               />
             </div>
 
@@ -2656,7 +2989,7 @@ function EventScopedTicketOperations({
             <option>Transfer Pending</option>
             <option>Cancelled</option>
             <option>Reclaimed</option>
-            <option>Force Claimed</option>
+            <option>Force Reclaimed</option>
           </select>
           <select
             value={eventTicketTypeId}
@@ -3414,7 +3747,7 @@ function EventScopedTicketOperations({
               </>
             )}
 
-            {activeTenantAction === "Force Claim" && (
+            {activeTenantAction === "Force Reclaim" && (
               <>
                 <ActionField label="Claim for customer ID">
                   <input

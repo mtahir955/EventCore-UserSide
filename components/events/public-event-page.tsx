@@ -32,6 +32,10 @@ import {
   EventModeBadge,
   EventPrivacyBadge,
 } from "@/components/events/event-badges";
+import {
+  normalizeCommerceTicket,
+  normalizeEventAddOns,
+} from "@/lib/event-commerce";
 
 const safeUrl = (url?: string | null) => {
   if (!url) return null;
@@ -154,6 +158,20 @@ export function PublicEventPage({
   }, [eventId, eventSlug]);
 
   const event = useMemo(() => normalizeEvent(eventData), [eventData]);
+  const commerceTickets = useMemo(
+    () =>
+      event.tickets.map((ticket: any) =>
+        normalizeCommerceTicket(ticket, {
+          eventMode: event.mode,
+        })
+      ),
+    [event.mode, event.tickets]
+  );
+  const eventAddOns = useMemo(() => normalizeEventAddOns(eventData), [eventData]);
+  const hasPurchasableTicket = useMemo(
+    () => commerceTickets.some((ticket) => ticket.saleStatus === "on-sale"),
+    [commerceTickets]
+  );
   const eventKey = event.slug || event.id || eventSlug || eventId || "";
   const eventImage = safeUrl(event.bannerImage) || "/images/hero-image.png";
   const calendarDate = event.startAt || event.goLiveAt || undefined;
@@ -324,7 +342,7 @@ export function PublicEventPage({
   const canPurchase =
     accessState.canPurchase &&
     !hasTicketAccess &&
-    event.tickets.length > 0 &&
+    hasPurchasableTicket &&
     (event.lifecycleStatus === "PUBLISHED" || canAppearInPublicListings(event));
 
   const canWatch =
@@ -601,29 +619,98 @@ export function PublicEventPage({
                 <h3 className="text-xl font-bold mb-4">Tickets</h3>
 
                 <div className="space-y-3">
-                  {event.tickets.length > 0 ? (
-                    event.tickets.map((ticket: any, index: number) => (
+                  {commerceTickets.length > 0 ? (
+                    commerceTickets.map((ticket: any, index: number) => (
                       <div
                         key={ticket.id || ticket.ticketId || index}
-                        className="flex items-center justify-between"
+                        className="rounded-xl border border-gray-100 px-4 py-3 dark:border-gray-800"
                       >
-                        <div>
+                        <div className="min-w-0 pr-4">
                           <p className="font-semibold text-gray-900 dark:text-white">
-                            {ticket.name || ticket.ticketName || "Ticket"}
+                            {ticket.name || "Ticket"}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {ticket.type || ticket.category || "General"}
+                            {ticket.type || "General"}
+                          </p>
+                          {ticket.description ? (
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              {ticket.description}
+                            </p>
+                          ) : null}
+                          <p
+                            className={`mt-2 text-xs font-medium ${
+                              ticket.saleStatus === "on-sale"
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : ticket.saleStatus === "sold-out"
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-amber-600 dark:text-amber-400"
+                            }`}
+                          >
+                            {ticket.saleStatusLabel}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {ticket.saleStatusDetail}
+                          </p>
+                          {ticket.quantity !== null ? (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {ticket.remainingQuantity} available of {ticket.quantity}
+                            </p>
+                          ) : null}
+                          {ticket.saleStartAt || ticket.saleEndAt ? (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {ticket.saleStartAt
+                                ? `Starts ${ticket.saleStartAt.toLocaleString()}`
+                                : "On sale now"}
+                              {" • "}
+                              {ticket.saleEndAt
+                                ? `Ends ${ticket.saleEndAt.toLocaleString()}`
+                                : "No scheduled close"}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold">${ticket.price || 0}</span>
+                          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                            {ticket.transferable ? "Transferable" : "Non-transferable"}
+                            {" • "}
+                            {ticket.refundable ? "Refundable" : "No refunds"}
                           </p>
                         </div>
-                        <span className="font-semibold">
-                          ${ticket.price || ticket.amount || 0}
-                        </span>
                       </div>
                     ))
                   ) : (
                     <p className="text-sm text-gray-500">Tickets are not available.</p>
                   )}
                 </div>
+
+                {eventAddOns.length > 0 ? (
+                  <div className="mt-5 rounded-xl bg-gray-50 px-4 py-4 dark:bg-[#161616]">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Available add-ons
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {eventAddOns.map((addOn) => (
+                        <div
+                          key={addOn.id}
+                          className="flex items-start justify-between gap-4 text-sm"
+                        >
+                          <div className="min-w-0 pr-4">
+                            <p className="font-medium">{addOn.name}</p>
+                            {addOn.description ? (
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                {addOn.description}
+                              </p>
+                            ) : null}
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {addOn.saleStatusDetail}
+                            </p>
+                          </div>
+                          <span className="font-semibold">${addOn.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {accessState.state === "unpublished" ? (
                   <div className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-950/20 dark:text-rose-100">

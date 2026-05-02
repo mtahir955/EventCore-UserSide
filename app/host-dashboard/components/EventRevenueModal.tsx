@@ -13,6 +13,7 @@ import {
   formatCurrency,
   getTimeframeLabel,
   getTimeframeParams,
+  normalizeAddOnBreakdowns,
   normalizeTicketTypeBreakdowns,
   updateCustomTimeframe,
   type DashboardTimeframe,
@@ -38,6 +39,8 @@ type RevenueSummary = {
   currency: string;
   ticketTypeBreakdown: TicketTypeBreakdown[];
   revenueTypeBreakdown: TicketTypeBreakdown[];
+  addOnBreakdown: TicketTypeBreakdown[];
+  addOnRevenueBreakdown: TicketTypeBreakdown[];
 };
 
 export function EventRevenueModal({ isOpen, event, onClose }: Props) {
@@ -80,6 +83,7 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
 
         const data = res.data?.data;
         const breakdowns = normalizeTicketTypeBreakdowns(data);
+        const addOnBreakdowns = normalizeAddOnBreakdowns(data);
 
         // 🔁 Normalize backend response → UI shape
         setSummary({
@@ -91,6 +95,8 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
           currency: data?.currency ?? "USD",
           ticketTypeBreakdown: breakdowns.ticketBreakdown,
           revenueTypeBreakdown: breakdowns.revenueBreakdown,
+          addOnBreakdown: addOnBreakdowns.addOnBreakdown,
+          addOnRevenueBreakdown: addOnBreakdowns.revenueBreakdown,
         });
       } catch (err: any) {
         console.error("Revenue fetch failed:", err);
@@ -247,6 +253,22 @@ export function EventRevenueModal({ isOpen, event, onClose }: Props) {
                 title="Revenue by type"
                 emptyText="No revenue breakdown for this range."
                 items={summary.revenueTypeBreakdown}
+                getValue={(item) =>
+                  formatCurrency(item.revenue, summary.currency)
+                }
+              />
+
+              <RevenueBreakdownList
+                title="Add-ons sold"
+                emptyText="No add-on sales for this range."
+                items={summary.addOnBreakdown}
+                getValue={(item) => item.ticketsSold.toLocaleString()}
+              />
+
+              <RevenueBreakdownList
+                title="Add-on revenue"
+                emptyText="No add-on revenue for this range."
+                items={summary.addOnRevenueBreakdown}
                 getValue={(item) =>
                   formatCurrency(item.revenue, summary.currency)
                 }

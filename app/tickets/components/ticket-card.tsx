@@ -14,6 +14,17 @@ import { saveAs } from "file-saver";
 import QRCode from "qrcode";
 import { apiClient } from "@/lib/apiClient";
 import { PurchaserStreamAccess } from "@/components/events/purchaser-stream-access";
+import Link from "next/link";
+
+type TicketAddOnUI = {
+  id: string;
+  name: string;
+  description?: string;
+  price: string;
+  saleStatusLabel: string;
+  saleStatusDetail: string;
+  canPurchase: boolean;
+};
 
 type TicketProps = {
   eventId: string;
@@ -54,6 +65,8 @@ type TicketProps = {
   confirmationNumber?: string;
   streamUrl?: string;
   attendanceMode?: string;
+  eventSlug?: string;
+  availableAddOns?: TicketAddOnUI[];
 };
 
 export function TicketCard({
@@ -84,6 +97,8 @@ export function TicketCard({
   confirmationNumber = "",
   streamUrl = "",
   attendanceMode = "",
+  eventSlug,
+  availableAddOns = [],
 }: TicketProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -109,6 +124,8 @@ export function TicketCard({
     refundableQuantity > 0;
   const showTicketActions = showTransferButton || showRefundAction;
   const transferDisabled = isLocked || !canTransfer || quantity <= 0;
+  const addOnsToShow = availableAddOns.slice(0, 3);
+  const showAddOnCta = addOnsToShow.some((addOn) => addOn.canPurchase) && eventId;
 
   const submitRefundRequest = async (data: {
     reason: string;
@@ -459,6 +476,27 @@ export function TicketCard({
                   title="Purchaser-only watch link"
                 />
               ) : null}
+
+              {addOnsToShow.length > 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 p-3 dark:border-gray-700">
+                  <p className="text-[12px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Event add-ons
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {addOnsToShow.map((addOn) => (
+                      <div key={addOn.id} className="text-[12px] sm:text-[13px]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-medium">{addOn.name}</span>
+                          <span>{addOn.price}</span>
+                        </div>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          {addOn.saleStatusLabel}: {addOn.saleStatusDetail}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* Price + Actions */}
@@ -582,6 +620,16 @@ export function TicketCard({
                 Download Tickets
               </button>
             )}
+            {showAddOnCta ? (
+              <Link
+                href={`/check-out?id=${encodeURIComponent(eventId)}${
+                  eventSlug ? `&slug=${encodeURIComponent(eventSlug)}` : ""
+                }`}
+                className="h-8 px-4 rounded-full text-[12px] bg-black text-white dark:bg-white dark:text-black inline-flex items-center"
+              >
+                Buy Add-ons
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>

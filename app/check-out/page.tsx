@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Header } from "../../components/header";
 import { Footer } from "../../components/footer";
 import OrderSummary from "../check-out/components/checkout/order-summary";
@@ -13,12 +14,58 @@ import {
   getSavedPaymentCards,
   sanitizeProfilePaymentDetails,
 } from "@/lib/paymentCards";
+import { resolveCheckoutFields } from "@/lib/event-commerce";
 
 type CheckoutProfile = {
   basicInfo?: Record<string, any>;
   contactDetails?: Record<string, any>;
   paymentDetails?: Record<string, any>;
 };
+
+const checkoutProfileToAnswers = (profile?: CheckoutProfile | null) => ({
+  firstName: profile?.basicInfo?.firstName || "",
+  lastName: profile?.basicInfo?.lastName || "",
+  email: profile?.basicInfo?.email || profile?.basicInfo?.username || "",
+  gender: profile?.basicInfo?.gender || "",
+  phone: profile?.contactDetails?.phoneNumber || profile?.contactDetails?.phone || "",
+  phoneCountryCode: profile?.contactDetails?.phoneCountryCode || "+1",
+  city: profile?.contactDetails?.city || profile?.contactDetails?.town || "",
+  pincode:
+    profile?.contactDetails?.pincode ||
+    profile?.contactDetails?.postalCode ||
+    profile?.contactDetails?.zipCode ||
+    "",
+  address: profile?.contactDetails?.address || "",
+  website: profile?.contactDetails?.website || "",
+});
+
+async function fetchCheckoutEventByIdentifiers(
+  eventId?: string | null,
+  eventSlug?: string | null
+) {
+  const attempts: Array<() => Promise<any>> = [];
+
+  if (eventId) {
+    attempts.push(() => apiClient.get(`/events/public/${eventId}`));
+  }
+
+  if (eventSlug) {
+    attempts.push(() => apiClient.get(`/events/public/slug/${eventSlug}`));
+  }
+
+  let lastError: any = null;
+
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      return res.data?.data || res.data;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
 
 const parseStoredJson = (key: string) => {
   if (typeof window === "undefined") return null;
@@ -90,8 +137,18 @@ const mergeCheckoutProfile = (
 };
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("id");
+  const eventSlug = searchParams.get("slug");
   const [checkoutProfile, setCheckoutProfile] =
     useState<CheckoutProfile | null>(null);
+  const [checkoutAnswers, setCheckoutAnswers] = useState<Record<string, string>>(
+    {}
+  );
+  const [eventData, setEventData] = useState<any>(null);
+  const [selectedTicketCheckoutConfigs, setSelectedTicketCheckoutConfigs] = useState<
+    any[]
+  >([]);
   const [selectedPaymentOption, setSelectedPaymentOption] = useState("new");
   const [saveNewCardForFuture, setSaveNewCardForFuture] = useState(false);
   const paymentSelectionInitializedRef = useRef(false);
@@ -111,6 +168,10 @@ export default function Page() {
       const localProfile = mergeCheckoutProfile(savedProfile, null, userData);
 
       setCheckoutProfile(localProfile);
+      setCheckoutAnswers((current) => ({
+        ...checkoutProfileToAnswers(localProfile),
+        ...current,
+      }));
 
       if (!hasAuthToken()) return;
 
@@ -121,6 +182,18 @@ export default function Page() {
         );
 
         setCheckoutProfile(mergedProfile);
+        setCheckoutAnswers((current) => {
+          const nextAnswers = checkoutProfileToAnswers(mergedProfile);
+          const mergedAnswers: Record<string, string> = { ...current };
+
+          Object.entries(nextAnswers).forEach(([key, value]) => {
+            if (!mergedAnswers[key]) {
+              mergedAnswers[key] = value;
+            }
+          });
+
+          return mergedAnswers;
+        });
         localStorage.setItem("buyerProfile", JSON.stringify(mergedProfile));
       } catch (error) {
         console.error("Checkout profile prefill failed:", error);
@@ -129,6 +202,29 @@ export default function Page() {
 
     loadCheckoutProfile();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadEvent = async () => {
+      if (!eventId && !eventSlug) return;
+
+      try {
+        const data = await fetchCheckoutEventByIdentifiers(eventId, eventSlug);
+        if (!cancelled) {
+          setEventData(data);
+        }
+      } catch (error) {
+        console.error("Checkout event schema prefill failed:", error);
+      }
+    };
+
+    loadEvent();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, eventSlug]);
 
   useEffect(() => {
     const storedCards = getSavedPaymentCards(checkoutProfile?.paymentDetails);
@@ -158,6 +254,15 @@ export default function Page() {
     }
   }, [checkoutProfile, selectedPaymentOption]);
 
+  const checkoutFields = useMemo(
+    () =>
+      resolveCheckoutFields(
+        eventData?.eventSettings?.checkoutFields ?? eventData?.checkoutFields,
+        selectedTicketCheckoutConfigs
+      ),
+    [eventData, selectedTicketCheckoutConfigs]
+  );
+
   return (
     <main className="bg-background text-foreground">
       {/* Header */}
@@ -169,8 +274,20 @@ export default function Page() {
         <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px]">
           {/* Left column - Forms */}
           <div className="space-y-8">
-            <BasicInformation profile={checkoutProfile} />
-            <ContactDetails profile={checkoutProfile} />
+            <BasicInformation
+              fields={checkoutFields}
+              values={checkoutAnswers}
+              onChange={(field, value) =>
+                setCheckoutAnswers((current) => ({ ...current, [field]: value }))
+              }
+            />
+            <ContactDetails
+              fields={checkoutFields}
+              values={checkoutAnswers}
+              onChange={(field, value) =>
+                setCheckoutAnswers((current) => ({ ...current, [field]: value }))
+              }
+            />
             <PaymentDetails
               profile={checkoutProfile}
               selectedOption={selectedPaymentOption}
@@ -184,6 +301,9 @@ export default function Page() {
           <aside className="lg:pt-2">
             <OrderSummary
               profile={checkoutProfile}
+              checkoutFields={checkoutFields}
+              checkoutAnswers={checkoutAnswers}
+              onSelectedTicketCheckoutConfigsChange={setSelectedTicketCheckoutConfigs}
               selectedPaymentOption={selectedPaymentOption}
               onSelectedPaymentOptionChange={handleSelectedPaymentOptionChange}
               saveNewCardForFuture={saveNewCardForFuture}

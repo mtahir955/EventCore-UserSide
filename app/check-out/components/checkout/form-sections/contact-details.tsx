@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import SectionShell from "./section-shell";
-import { useEffect, useRef, useState } from "react";
+import {
+  CHECKOUT_FIELD_DEFINITIONS,
+  type CheckoutFieldConfig,
+} from "@/lib/event-commerce";
 
-{
-  /* Phone Number */
-}
 const countryOptions = [
   {
     code: "+1",
@@ -16,238 +16,120 @@ const countryOptions = [
   {
     code: "+1",
     label: "Canada",
-    flag: "/images/flag-canada.png",
+    flag: "/images/flag-us.png",
   },
   {
     code: "+52",
     label: "Mexico",
-    flag: "/images/flag-mexico.png",
+    flag: "/images/flag-us.png",
   },
 ];
 
 type ContactDetailsProps = {
-  profile?: {
-    contactDetails?: Record<string, any>;
-  } | null;
+  fields: CheckoutFieldConfig[];
+  values: Record<string, any>;
+  onChange: (field: string, value: string) => void;
 };
 
-const getKnownCountryCode = (value?: string) =>
-  countryOptions.find((country) => country.code === value)?.code || "+1";
+export default function ContactDetails({
+  fields,
+  values,
+  onChange,
+}: ContactDetailsProps) {
+  const contactFields = fields.filter((field) => field.section === "contact");
+  const selectedCountry =
+    countryOptions.find((country) => country.code === values.phoneCountryCode) ||
+    countryOptions[0];
 
-function getPhoneParts(contactDetails: Record<string, any>) {
-  const rawPhone = String(contactDetails.phone || "").trim();
-  const explicitCode = contactDetails.phoneCountryCode;
-  const inferredCode = countryOptions.find((country) =>
-    rawPhone.startsWith(country.code)
-  )?.code;
-  const countryCode = getKnownCountryCode(explicitCode || inferredCode);
-  const phoneNumber =
-    contactDetails.phoneNumber ||
-    rawPhone.replace(countryCode, "").trim() ||
-    "";
-
-  return {
-    countryCode,
-    phoneNumber,
-  };
-}
-
-function getPrefillValues(profile?: ContactDetailsProps["profile"]) {
-  const contactDetails = profile?.contactDetails || {};
-  const phone = getPhoneParts(contactDetails);
-
-  return {
-    phone: phone.phoneNumber,
-    city: contactDetails.city || contactDetails.town || "",
-    pincode:
-      contactDetails.pincode ||
-      contactDetails.postalCode ||
-      contactDetails.zipCode ||
-      "",
-    address: contactDetails.address || "",
-    website: contactDetails.website || "",
-    countryCode: phone.countryCode,
-  };
-}
-
-export default function ContactDetails({ profile }: ContactDetailsProps) {
-  const [form, setForm] = useState({
-    phone: "",
-    city: "",
-    pincode: "",
-    address: "",
-    website: "",
-    countryCode: "+1",
-  });
-  const touchedFieldsRef = useRef<Record<string, boolean>>({});
-
-  const selectedCountry = countryOptions.find(
-    (c) => c.code === form.countryCode
-  );
-
-  useEffect(() => {
-    if (!profile) return;
-
-    const prefill = getPrefillValues(profile);
-    const hasPrefill = Object.entries(prefill).some(
-      ([key, value]) => key !== "countryCode" && !!value
-    );
-
-    if (hasPrefill) {
-      setForm((prev) => ({
-        ...prev,
-        phone: touchedFieldsRef.current.phone ? prev.phone : prefill.phone,
-        city: touchedFieldsRef.current.city ? prev.city : prefill.city,
-        pincode: touchedFieldsRef.current.pincode
-          ? prev.pincode
-          : prefill.pincode,
-        address: touchedFieldsRef.current.address
-          ? prev.address
-          : prefill.address,
-        website: touchedFieldsRef.current.website
-          ? prev.website
-          : prefill.website,
-        countryCode: touchedFieldsRef.current.countryCode
-          ? prev.countryCode
-          : prefill.countryCode,
-      }));
-    }
-  }, [profile]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    touchedFieldsRef.current[name] = true;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+  if (contactFields.length === 0) return null;
 
   return (
     <SectionShell title="Contact Details">
       <div className="grid grid-cols-1 gap-4 text-gray-900 dark:text-gray-100">
-        {/* Phone number */}
-        <div className="space-y-2">
-          <label className="text-sm text-gray-700 dark:text-gray-200">
-            Phone Number:
-          </label>
+        {contactFields.map((field) => {
+          const definition = CHECKOUT_FIELD_DEFINITIONS[field.key];
 
-          <div
-            className={`flex h-11 items-center gap-2 rounded-md border 
-      ${
-        !form.phone
-          ? "border-gray-300 dark:border-gray-700"
-          : "border-gray-300 dark:border-gray-700"
-      }
-      bg-white dark:bg-[#101010] px-3 relative`}
-          >
-            {/* Selected Flag */}
-            <Image
-              src={selectedCountry?.flag || "/images/flag-us.png"}
-              alt="Flag"
-              width={20}
-              height={20}
-              className="rounded-full"
-            />
+          if (field.key === "phone") {
+            return (
+              <div className="space-y-2" key={field.key}>
+                <label className="text-sm text-gray-700 dark:text-gray-200">
+                  {definition.label}
+                  {!field.required ? ":" : " *"}
+                </label>
 
-            {/* Dropdown */}
-            <select
-              value={form.countryCode}
-              onChange={(e) => {
-                touchedFieldsRef.current.countryCode = true;
-                setForm({ ...form, countryCode: e.target.value });
-              }}
-              className="bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none cursor-pointer"
-            >
-              {countryOptions.map((country) => (
-                <option key={country.code + country.label} value={country.code}>
-                  {country.label} ({country.code})
-                </option>
-              ))}
-            </select>
+                <div className="relative flex h-11 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 dark:border-gray-700 dark:bg-[#101010]">
+                  <Image
+                    src={selectedCountry?.flag || "/images/flag-us.png"}
+                    alt="Flag"
+                    width={20}
+                    height={20}
+                    className="rounded-full"
+                  />
 
-            {/* Phone Input */}
-            <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              required
-              placeholder="125-559-8852"
-              className="w-full bg-transparent text-[15px] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 outline-none"
-            />
-          </div>
-        </div>
+                  <select
+                    value={values.phoneCountryCode || selectedCountry?.code || "+1"}
+                    onChange={(event) =>
+                      onChange("phoneCountryCode", event.target.value)
+                    }
+                    className="cursor-pointer bg-transparent text-sm text-gray-700 outline-none dark:text-gray-300"
+                  >
+                    {countryOptions.map((country) => (
+                      <option key={country.code + country.label} value={country.code}>
+                        {country.label} ({country.code})
+                      </option>
+                    ))}
+                  </select>
 
-        {/* City + Pincode */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm text-gray-700 dark:text-gray-200">
-              City/Town:
-            </label>
-            <input
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              required
-              placeholder="Enter city"
-              className={`h-11 w-full rounded-md border ${
-                !form.city
-                  ? "border-gray-300 dark:border-gray-700"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] px-3 text-[15px] outline-none focus:ring-2 focus:ring-primary transition-colors`}
-            />
-          </div>
+                  <input
+                    name={field.key}
+                    value={values[field.key] || ""}
+                    onChange={(event) => onChange(field.key, event.target.value)}
+                    required={field.required}
+                    placeholder={field.placeholder}
+                    className="w-full bg-transparent text-[15px] text-gray-900 outline-none placeholder:text-gray-500 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+            );
+          }
 
-          <div className="space-y-2">
-            <label className="text-sm text-gray-700 dark:text-gray-200">
-              Pincode:
-            </label>
-            <input
-              name="pincode"
-              value={form.pincode}
-              onChange={handleChange}
-              required
-              placeholder="Enter pincode"
-              className={`h-11 w-full rounded-md border ${
-                !form.pincode
-                  ? "border-gray-300 dark:border-gray-700"
-                  : "border-gray-300 dark:border-gray-700"
-              } bg-white dark:bg-[#101010] px-3 text-[15px] outline-none focus:ring-2 focus:ring-primary transition-colors`}
-            />
-          </div>
-        </div>
+          if (field.key === "address") {
+            return (
+              <div className="space-y-2" key={field.key}>
+                <label className="text-sm text-gray-700 dark:text-gray-200">
+                  {definition.label}
+                  {!field.required ? ":" : " *"}
+                </label>
+                <textarea
+                  name={field.key}
+                  value={values[field.key] || ""}
+                  onChange={(event) => onChange(field.key, event.target.value)}
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  rows={4}
+                  className="w-full resize-none rounded-md border border-gray-300 bg-white p-3 text-[15px] outline-none transition-colors focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-[#101010]"
+                />
+              </div>
+            );
+          }
 
-        {/* Address */}
-        <div className="space-y-2">
-          <label className="text-sm text-gray-700 dark:text-gray-200">
-            Address:
-          </label>
-          <textarea
-            name="address"
-            value={form.address}
-            onChange={handleChange}
-            required
-            placeholder="Enter address"
-            rows={4}
-            className={`w-full rounded-md border ${
-              !form.address
-                ? "border-gray-300 dark:border-gray-700"
-                : "border-gray-300 dark:border-gray-700"
-            } bg-white dark:bg-[#101010] p-3 text-[15px] outline-none focus:ring-2 focus:ring-primary transition-colors resize-none`}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm text-gray-700 dark:text-gray-200">
-            Website (Optional):
-          </label>
-          <input
-            name="website"
-            value={form.website}
-            onChange={handleChange}
-            placeholder="Enter website URL"
-            className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-[15px] outline-none transition-colors focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-[#101010]"
-          />
-        </div>
+          return (
+            <div className="space-y-2" key={field.key}>
+              <label className="text-sm text-gray-700 dark:text-gray-200">
+                {definition.label}
+                {!field.required ? ":" : " *"}
+              </label>
+              <input
+                name={field.key}
+                value={values[field.key] || ""}
+                onChange={(event) => onChange(field.key, event.target.value)}
+                required={field.required}
+                placeholder={field.placeholder}
+                className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-[15px] outline-none transition-colors focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-[#101010]"
+              />
+            </div>
+          );
+        })}
       </div>
     </SectionShell>
   );

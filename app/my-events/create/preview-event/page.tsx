@@ -25,6 +25,12 @@ import {
   EventModeBadge,
   EventPrivacyBadge,
 } from "@/components/events/event-badges";
+import {
+  CHECKOUT_FIELD_DEFINITIONS,
+  normalizeCommerceTicket,
+  normalizeEventAddOns,
+  resolveCheckoutFields,
+} from "@/lib/event-commerce";
 
 type SetImagesPageProps = {
   setActivePage: React.Dispatch<React.SetStateAction<string>>;
@@ -85,7 +91,15 @@ export default function PreviewEventPage({
   const eventSettings = draft?.eventSettings || {};
   const trainers = draft?.trainers || [];
   const tickets = draft?.tickets || [];
+  const addOns = draft?.addOns || [];
   const bannerImage = draft?.bannerImage;
+  const previewTickets = tickets.map((ticket: any) =>
+    normalizeCommerceTicket(ticket, {
+      eventMode: details?.eventType,
+    })
+  );
+  const previewAddOns = normalizeEventAddOns({ addOns });
+  const checkoutFields = resolveCheckoutFields(eventSettings?.checkoutFields);
 
   const previewEvent = useMemo(
     () =>
@@ -95,12 +109,13 @@ export default function PreviewEventPage({
           ...eventSettings,
           bannerImage,
           tickets,
+          addOns,
           trainers,
           fullAddress: buildFullAddress(eventSettings),
         },
         eventSettings?.eventTimezone
       ),
-    [bannerImage, details, eventSettings, tickets, trainers]
+    [addOns, bannerImage, details, eventSettings, tickets, trainers]
   );
 
   const publishActionLabel =
@@ -207,6 +222,8 @@ export default function PreviewEventPage({
       "eventSettings",
       JSON.stringify({
         ...eventSettings,
+        checkoutFields: eventSettings?.checkoutFields || [],
+        addOns,
         venueName: normalizedLocation.venueName,
         displayLocation: normalizedLocation.displayLocation,
         addressLine1: normalizedLocation.addressLine1,
@@ -230,12 +247,29 @@ export default function PreviewEventPage({
 
     serializeEventTrainersForFormData(formData, trainers);
 
+    // Keep clientReferenceId for add-on mapping, but don't send backend-assigned IDs
     const ticketsSanitized = tickets.map((ticket: any) => {
-      const { id, ...rest } = ticket;
-      return rest;
+      const { id, clientReferenceId, ...rest } = ticket;
+      return {
+        ...rest,
+        // Send clientReferenceId so backend can map add-ons to tickets
+        clientReferenceId: clientReferenceId || id,
+      };
     });
 
     formData.append("tickets", JSON.stringify(ticketsSanitized));
+    
+    // Map applicableTicketIds to applicableTicketTypeIds for backend
+    const addOnsSanitized = addOns.map((addOn: any) => {
+      const { applicableTicketIds, ...rest } = addOn;
+      return {
+        ...rest,
+        // Backend expects applicableTicketTypeIds
+        applicableTicketTypeIds: applicableTicketIds || addOn.applicableTicketTypeIds || [],
+      };
+    });
+    
+    formData.append("addOns", JSON.stringify(addOnsSanitized));
 
     return formData;
   };
@@ -438,29 +472,49 @@ export default function PreviewEventPage({
                 <h3 className="mb-4 text-xl font-bold">Tickets</h3>
 
                 <div className="space-y-3">
-                  {tickets.length > 0 ? (
-                    tickets.map((ticket: any) => (
+                  {previewTickets.length > 0 ? (
+                    previewTickets.map((ticket: any) => (
                       <div
                         className="flex items-center justify-between w-full break-words"
                         key={ticket.id}
                       >
-                        <span className="text-[15px] sm:text-[16px] break-words flex items-center gap-2">
-                          {ticket.name}
-                          {ticket.type ? (
-                            <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase break-words">
-                              {ticket.type}
-                            </span>
+                        <div className="min-w-0 pr-4">
+                          <span className="text-[15px] sm:text-[16px] break-words flex flex-wrap items-center gap-2">
+                            {ticket.name}
+                            {ticket.type ? (
+                              <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-[#D19537]/15 text-[#D19537] uppercase break-words">
+                                {ticket.type}
+                              </span>
+                            ) : null}
+                            {ticket.attendanceMode ? (
+                              <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-blue-100 text-blue-700 uppercase break-words">
+                                {ticket.attendanceMode}
+                              </span>
+                            ) : null}
+                          </span>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Qty {ticket.quantity ?? "Unlimited"} • Sold{" "}
+                            {ticket.soldQuantity} • {ticket.saleStatusLabel}
+                          </p>
+                          {ticket.description ? (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {ticket.description}
+                            </p>
                           ) : null}
-                          {ticket.attendanceMode ? (
-                            <span className="px-2 py-1 text-[11px] font-semibold rounded-md bg-blue-100 text-blue-700 uppercase break-words">
-                              {ticket.attendanceMode}
-                            </span>
-                          ) : null}
-                        </span>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {ticket.saleStatusDetail}
+                          </p>
+                        </div>
 
-                        <span className="text-[15px] sm:text-[16px] font-semibold">
-                          ${ticket.price}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-[15px] sm:text-[16px] font-semibold block">
+                            ${ticket.price}
+                          </span>
+                          <span className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 block">
+                            Transfer {ticket.transferable ? "on" : "off"} • Refund{" "}
+                            {ticket.refundable ? "on" : "off"}
+                          </span>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -468,6 +522,64 @@ export default function PreviewEventPage({
                       No tickets configured yet.
                     </p>
                   )}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 p-5 dark:border-gray-800">
+                <h3 className="mb-4 text-xl font-bold">Add-ons</h3>
+
+                <div className="space-y-3">
+                  {previewAddOns.length > 0 ? (
+                    previewAddOns.map((addOn) => (
+                      <div
+                        className="flex items-center justify-between gap-4"
+                        key={addOn.id}
+                      >
+                        <div className="min-w-0 pr-4">
+                          <p className="text-[15px] sm:text-[16px] font-medium">
+                            {addOn.name}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Qty {addOn.quantity ?? "Unlimited"} • {addOn.saleStatusLabel}
+                          </p>
+                          {addOn.description ? (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {addOn.description}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span className="text-[15px] sm:text-[16px] font-semibold">
+                          ${addOn.price}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No add-ons configured yet.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 p-5 dark:border-gray-800">
+                <h3 className="mb-4 text-xl font-bold">Checkout Fields</h3>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {checkoutFields.map((field) => (
+                    <div
+                      key={field.key}
+                      className="rounded-xl bg-gray-50 px-4 py-3 text-sm dark:bg-[#141414]"
+                    >
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                        {CHECKOUT_FIELD_DEFINITIONS[field.key].label}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {field.section === "basic"
+                          ? "Basic Information"
+                          : "Contact Details"}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </section>
 

@@ -6,12 +6,31 @@ import { useEffect, useState } from "react";
 // import { API_BASE_URL } from "@/config/apiConfig";
 // import { SAAS_Tenant_ID } from "@/config/sasTenantId";
 import apiClient from "@/lib/apiClient";
+import {
+  formatCurrency,
+  normalizeAddOnBreakdowns,
+  normalizeTicketTypeBreakdowns,
+  type TicketTypeBreakdown,
+} from "@/lib/hostDashboardAnalytics";
 
 interface EventRevenueModalProps {
   isOpen: boolean;
   event: any;
   onClose: () => void;
 }
+
+type RevenueSummary = {
+  eventId: string;
+  eventName: string;
+  ticketsSold: number;
+  totalRevenue: number;
+  organizerEarning: number;
+  currency: string;
+  ticketTypeBreakdown: TicketTypeBreakdown[];
+  revenueTypeBreakdown: TicketTypeBreakdown[];
+  addOnBreakdown: TicketTypeBreakdown[];
+  addOnRevenueBreakdown: TicketTypeBreakdown[];
+};
 
 export function EventRevenueModal({
   isOpen,
@@ -20,7 +39,7 @@ export function EventRevenueModal({
 }: EventRevenueModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<RevenueSummary | null>(null);
 
   useEffect(() => {
     if (!isOpen || !event?.id) return;
@@ -70,15 +89,20 @@ export function EventRevenueModal({
         });
 
         const apiData = res.data?.data;
+        const ticketBreakdowns = normalizeTicketTypeBreakdowns(apiData);
+        const addOnBreakdowns = normalizeAddOnBreakdowns(apiData);
 
         setSummary({
           eventId: apiData.eventId,
           eventName: apiData.eventName,
           ticketsSold: apiData.ticketsSold ?? 0,
           totalRevenue: apiData.totalRevenue ?? 0,
-          platformFeePercent: apiData.platform?.percentage ?? 0,
-          platformShare: apiData.platform?.amount ?? 0,
           organizerEarning: apiData.organizer?.amount ?? 0,
+          currency: apiData.currency ?? "USD",
+          ticketTypeBreakdown: ticketBreakdowns.ticketBreakdown,
+          revenueTypeBreakdown: ticketBreakdowns.revenueBreakdown,
+          addOnBreakdown: addOnBreakdowns.addOnBreakdown,
+          addOnRevenueBreakdown: addOnBreakdowns.revenueBreakdown,
         });
       } catch (err) {
         console.error("Revenue summary error:", err);
@@ -102,7 +126,7 @@ export function EventRevenueModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md rounded-2xl border border-border bg-background shadow-xl">
+      <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
@@ -146,33 +170,50 @@ export function EventRevenueModal({
                     Total Revenue
                   </p>
                   <p className="text-xl font-semibold">
-                    ${summary.totalRevenue.toFixed(2)}
+                    {formatCurrency(summary.totalRevenue, summary.currency)}
                   </p>
                 </div>
               </div>
 
               {/* Breakdown */}
               <div className="rounded-xl border p-4 space-y-4">
-                {/*<div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    EventCore ({summary.platformFeePercent}%)
-                  </span>
-                  <span className="font-bold text-blue-600">
-                    ${summary.platformShare.toFixed(2)}
-                  </span>
-                </div>*/}
-
-                {/* <div className="h-px bg-border" /> */}
-
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
                     Organizer Earnings
                   </span>
                   <span className="font-medium">
-                    ${summary.organizerEarning.toFixed(2)}
+                    {formatCurrency(summary.organizerEarning, summary.currency)}
                   </span>
                 </div>
               </div>
+
+              <RevenueBreakdownList
+                title="Tickets by type"
+                emptyText="No ticket type data for this range."
+                items={summary.ticketTypeBreakdown}
+                getValue={(item) => item.ticketsSold.toLocaleString()}
+              />
+
+              <RevenueBreakdownList
+                title="Revenue by type"
+                emptyText="No revenue breakdown for this range."
+                items={summary.revenueTypeBreakdown}
+                getValue={(item) => formatCurrency(item.revenue, summary.currency)}
+              />
+
+              <RevenueBreakdownList
+                title="Add-ons sold"
+                emptyText="No add-on sales for this range."
+                items={summary.addOnBreakdown}
+                getValue={(item) => item.ticketsSold.toLocaleString()}
+              />
+
+              <RevenueBreakdownList
+                title="Add-on revenue"
+                emptyText="No add-on revenue for this range."
+                items={summary.addOnRevenueBreakdown}
+                getValue={(item) => formatCurrency(item.revenue, summary.currency)}
+              />
             </>
           )}
         </div>
@@ -187,6 +228,41 @@ export function EventRevenueModal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RevenueBreakdownList({
+  title,
+  emptyText,
+  items,
+  getValue,
+}: {
+  title: string;
+  emptyText: string;
+  items: TicketTypeBreakdown[];
+  getValue: (item: TicketTypeBreakdown) => string;
+}) {
+  return (
+    <div className="rounded-xl border p-4">
+      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div
+              key={`${title}-${item.ticketType}`}
+              className="flex items-center justify-between gap-4 text-sm"
+            >
+              <span className="truncate text-muted-foreground">
+                {item.ticketType}
+              </span>
+              <span className="font-semibold">{getValue(item)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

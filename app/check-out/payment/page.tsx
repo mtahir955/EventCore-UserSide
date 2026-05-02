@@ -43,7 +43,15 @@ type CheckoutSelectionSummary = {
     price: number;
     lineTotal: number;
   }>;
+  addOns?: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    lineTotal: number;
+  }>;
   totalQuantity?: number;
+  subtotal?: number;
   totalAmount?: number;
 };
 
@@ -64,6 +72,12 @@ export default function PaymentSuccessPage() {
           .map((item) => `${item.name} x ${item.quantity}`)
           .join(", ")
       : paymentData?.ticket?.name || "N/A";
+  const purchasedAddOnLabel =
+    checkoutSummary?.addOns?.length
+      ? checkoutSummary.addOns
+          .map((item) => `${item.name} x ${item.quantity}`)
+          .join(", ")
+      : "";
   const purchasedTicketCount =
     paymentData?.issuedTickets?.length ||
     checkoutSummary?.totalQuantity ||
@@ -461,6 +475,9 @@ export default function PaymentSuccessPage() {
                   label="Ticket"
                   value={purchasedTicketLabel}
                 />
+                {purchasedAddOnLabel ? (
+                  <Line label="Add-ons" value={purchasedAddOnLabel} />
+                ) : null}
                 <Line
                   label="Quantity"
                   value={`${purchasedTicketCount} Ticket(s)`}
@@ -538,6 +555,12 @@ export default function PaymentSuccessPage() {
                       ${purchasedAmount}
                     </span>
                   </div>
+                  {purchasedAddOnLabel ? (
+                    <p className="font-semibold">
+                      Add-ons:{" "}
+                      <span className="font-normal">{purchasedAddOnLabel}</span>
+                    </p>
+                  ) : null}
 
                   <p className="font-semibold">
                     Location:{" "}
