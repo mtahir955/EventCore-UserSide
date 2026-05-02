@@ -14,6 +14,7 @@ import {
   type TCountryCode,
 } from "countries-list";
 import { formatUsPhoneNumber } from "@/lib/phoneFormat";
+import { GOOGLE_MAPS_API_KEY, hasGoogleMapsApiKey } from "@/lib/google-maps";
 
 interface ContactDetailsData {
   phone?: string;
@@ -220,7 +221,7 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
           </label>
 
           <Autocomplete
-            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            apiKey={GOOGLE_MAPS_API_KEY}
             options={{
               types: ["address"],
               // componentRestrictions: { country: "us" }, // optional
@@ -255,6 +256,12 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
             placeholder="Search address..."
             className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
           />
+          {!hasGoogleMapsApiKey ? (
+            <p className="text-xs text-[#D6111A]">
+              Google Places is disabled because `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is missing in
+              this build.
+            </p>
+          ) : null}
 
           {/* Optional: show selected full address below (like your old textarea UX) */}
           {form.address ? (

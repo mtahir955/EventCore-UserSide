@@ -11,7 +11,6 @@ import { Toaster } from "react-hot-toast";
 import ThemeInitializer from "@/components/ThemeInitializer";
 import GoogleProviderWrapper from "@/components/GoogleProviderWrapper";
 import TenantProviderWrapper from "@/components/TenantProviderWrapper";
-import Script from "next/script";
 
 // ✅ Load local font
 const feelingPassionate = localFont({
@@ -34,10 +33,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
-        <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-          strategy="afterInteractive"
-        />
       </head>
 
       <body

@@ -8,6 +8,7 @@ import {
   extractStructuredLocationFromPlace,
   normalizeStructuredEventLocation,
 } from "@/lib/google-places";
+import { GOOGLE_MAPS_API_KEY, hasGoogleMapsApiKey } from "@/lib/google-maps";
 
 type StructuredLocationEditorProps = {
   label?: string;
@@ -58,31 +59,56 @@ export function StructuredLocationEditor({
     onChange(updated);
   };
 
+  const autocompletePlaceholder = hasGoogleMapsApiKey
+    ? "Search venue, address, or city"
+    : "Enter venue or city manually";
+
   return (
     <div className="space-y-4">
       <div>
         <label className="mb-2 block text-sm font-medium">
           {label} {required ? <span className="text-[#D6111A]">*</span> : null}
         </label>
-        <Autocomplete
-          key={
-            normalizedValue.placeId ||
-            normalizedValue.displayLocation ||
-            normalizedValue.formattedAddress ||
-            "structured-location"
-          }
-          apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-          options={{
-            fields: ["address_components", "formatted_address", "geometry", "name", "place_id"],
-            types: ["establishment", "geocode"],
-          }}
-          defaultValue={normalizedValue.displayLocation || normalizedValue.formattedAddress}
-          onPlaceSelected={(place) => onChange(extractStructuredLocationFromPlace(place))}
-          placeholder="Search venue, address, or city"
-          className={inputClassName}
-        />
+        {hasGoogleMapsApiKey ? (
+          <Autocomplete
+            key={
+              normalizedValue.placeId ||
+              normalizedValue.displayLocation ||
+              normalizedValue.formattedAddress ||
+              "structured-location"
+            }
+            apiKey={GOOGLE_MAPS_API_KEY}
+            options={{
+              fields: [
+                "address_components",
+                "formatted_address",
+                "geometry",
+                "name",
+                "place_id",
+              ],
+            }}
+            defaultValue={normalizedValue.displayLocation || normalizedValue.formattedAddress}
+            onPlaceSelected={(place) => onChange(extractStructuredLocationFromPlace(place))}
+            placeholder={autocompletePlaceholder}
+            className={inputClassName}
+          />
+        ) : (
+          <input
+            type="text"
+            value={normalizedValue.displayLocation}
+            onChange={(e) => updateField("displayLocation", e.target.value)}
+            placeholder={autocompletePlaceholder}
+            className={inputClassName}
+          />
+        )}
         {helperText ? (
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{helperText}</p>
+        ) : null}
+        {!hasGoogleMapsApiKey ? (
+          <p className="mt-2 text-xs text-[#D6111A]">
+            Google Places is disabled because `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is missing in
+            this build.
+          </p>
         ) : null}
       </div>
 
