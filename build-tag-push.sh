@@ -5,6 +5,8 @@
 
 set -e  # Exit on error
 
+ENV_FILE=${1:-".env.prod"}
+
 echo "========================================"
 echo "Building Tenant Frontend Docker Image (dev tag)"
 echo "========================================"
@@ -13,7 +15,8 @@ imageName="eventcoresolutions/eventcore-frontend"
 
 # Step 1: Build image with dev tag using docker-compose (no cache for fresh build)
 echo "Building ${imageName}:dev (fresh build, no cache)"
-docker-compose build --no-cache
+echo "Env file: $ENV_FILE"
+docker-compose --env-file "$ENV_FILE" build --no-cache
 
 echo ""
 echo "========================================"

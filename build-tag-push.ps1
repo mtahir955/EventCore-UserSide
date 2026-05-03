@@ -1,6 +1,10 @@
 # Build, Tag, and Push Docker Images - Tenant Frontend
 # This script builds images with 'dev' tag, tags them as 'latest', and pushes both
 
+param(
+    [string]$EnvFile = ".env.prod"
+)
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Building Tenant Frontend Docker Image (dev tag)" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
@@ -9,7 +13,8 @@ $imageName = "eventcoresolutions/eventcore-frontend"
 
 # Step 1: Build image with dev tag using docker-compose (no cache for fresh build)
 Write-Host "Building $imageName:dev (fresh build, no cache)" -ForegroundColor Yellow
-docker-compose build --no-cache
+Write-Host "Env file: $EnvFile" -ForegroundColor Gray
+docker-compose --env-file $EnvFile build --no-cache
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed!" -ForegroundColor Red
