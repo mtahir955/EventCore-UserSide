@@ -1,6 +1,6 @@
 "use client";
 
-import Autocomplete from "react-google-autocomplete";
+import { usePlacesWidget } from "react-google-autocomplete";
 import {
   StructuredEventLocation,
   buildStructuredAddress,
@@ -70,27 +70,11 @@ export function StructuredLocationEditor({
           {label} {required ? <span className="text-[#D6111A]">*</span> : null}
         </label>
         {hasGoogleMapsApiKey ? (
-          <Autocomplete
-            key={
-              normalizedValue.placeId ||
-              normalizedValue.displayLocation ||
-              normalizedValue.formattedAddress ||
-              "structured-location"
-            }
-            apiKey={GOOGLE_MAPS_API_KEY}
-            options={{
-              fields: [
-                "address_components",
-                "formatted_address",
-                "geometry",
-                "name",
-                "place_id",
-              ],
-            }}
-            defaultValue={normalizedValue.displayLocation || normalizedValue.formattedAddress}
+          <StructuredLocationAutocompleteInput
+            value={normalizedValue.displayLocation || normalizedValue.formattedAddress}
+            onChange={(nextValue) => updateField("displayLocation", nextValue)}
             onPlaceSelected={(place) => onChange(extractStructuredLocationFromPlace(place))}
             placeholder={autocompletePlaceholder}
-            className={inputClassName}
           />
         ) : (
           <input
@@ -204,5 +188,42 @@ export function StructuredLocationEditor({
         </div>
       </div>
     </div>
+  );
+}
+
+function StructuredLocationAutocompleteInput({
+  value,
+  onChange,
+  onPlaceSelected,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onPlaceSelected: (place: any) => void;
+  placeholder: string;
+}) {
+  const { ref } = usePlacesWidget<HTMLInputElement>({
+    apiKey: GOOGLE_MAPS_API_KEY,
+    options: {
+      fields: [
+        "address_components",
+        "formatted_address",
+        "geometry",
+        "name",
+        "place_id",
+      ],
+    },
+    onPlaceSelected,
+  });
+
+  return (
+    <input
+      ref={ref}
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={inputClassName}
+    />
   );
 }

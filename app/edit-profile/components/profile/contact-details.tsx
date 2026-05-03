@@ -7,7 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import Autocomplete from "react-google-autocomplete";
+import { usePlacesWidget } from "react-google-autocomplete";
 import {
   getCountryDataList,
   getEmojiFlag,
@@ -15,6 +15,9 @@ import {
 } from "countries-list";
 import { formatUsPhoneNumber } from "@/lib/phoneFormat";
 import { GOOGLE_MAPS_API_KEY, hasGoogleMapsApiKey } from "@/lib/google-maps";
+
+const addressInputClassName =
+  "h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors";
 
 interface ContactDetailsData {
   phone?: string;
@@ -220,54 +223,59 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
             Address:
           </label>
 
-          <Autocomplete
-            apiKey={GOOGLE_MAPS_API_KEY}
-            options={{
-              types: ["address"],
-              // componentRestrictions: { country: "us" }, // optional
-            }}
-            defaultValue={form.address}
-            onPlaceSelected={(place) => {
-              const formatted = place?.formatted_address || "";
+          {hasGoogleMapsApiKey ? (
+            <GoogleAddressInput
+              value={form.address}
+              onChange={(value) =>
+                setForm((prev) => ({
+                  ...prev,
+                  address: value,
+                }))
+              }
+              onPlaceSelected={(place) => {
+                const formatted = place?.formatted_address || "";
+                const components = place?.address_components || [];
+                const get = (type: string) =>
+                  components.find((c: any) => c.types.includes(type))
+                    ?.long_name || "";
 
-              // ✅ Extract city + postal code (optional)
-              const components = place?.address_components || [];
-              const get = (type: string) =>
-                components.find((c: any) => c.types.includes(type))
-                  ?.long_name || "";
+                const city =
+                  get("locality") ||
+                  get("postal_town") ||
+                  get("administrative_area_level_2");
+                const pincode = get("postal_code");
 
-              const city =
-                get("locality") || get("administrative_area_level_2");
-              const pincode = get("postal_code");
-
-              setForm((prev) => ({
-                ...prev,
-                address: formatted,
-                city: city || prev.city,
-                pincode: pincode || prev.pincode,
-              }));
-            }}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                address: (e.target as HTMLInputElement).value,
-              }))
-            }
-            placeholder="Search address..."
-            className="h-12 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#101010] text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-4 outline-none text-sm focus:ring-2 focus:ring-primary transition-colors"
-          />
+                setForm((prev) => ({
+                  ...prev,
+                  address: formatted || prev.address,
+                  city: city || prev.city,
+                  pincode: pincode || prev.pincode,
+                }));
+              }}
+            />
+          ) : (
+            <input
+              value={form.address}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  address: e.target.value,
+                }))
+              }
+              placeholder="Enter address"
+              className={addressInputClassName}
+              aria-label="Address"
+            />
+          )}
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Start typing to search when Google Places is available. You can always enter the full
+            address manually.
+          </p>
           {!hasGoogleMapsApiKey ? (
             <p className="text-xs text-[#D6111A]">
               Google Places is disabled because `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is missing in
               this build.
             </p>
-          ) : null}
-
-          {/* Optional: show selected full address below (like your old textarea UX) */}
-          {form.address ? (
-            <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#181818] p-4 text-sm">
-              {form.address}
-            </div>
           ) : null}
         </div>
 
@@ -293,6 +301,36 @@ const ContactDetails = forwardRef<ContactDetailsRef, ContactDetailsProps>(
 ContactDetails.displayName = "ContactDetails";
 
 export default ContactDetails;
+
+function GoogleAddressInput({
+  value,
+  onChange,
+  onPlaceSelected,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onPlaceSelected: (place: any) => void;
+}) {
+  const { ref } = usePlacesWidget<HTMLInputElement>({
+    apiKey: GOOGLE_MAPS_API_KEY,
+    options: {
+      types: ["address"],
+      fields: ["address_components", "formatted_address"],
+    },
+    onPlaceSelected,
+  });
+
+  return (
+    <input
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Search address..."
+      className={addressInputClassName}
+      aria-label="Address"
+    />
+  );
+}
 
 function CountryCodeDropdown({
   countryCode,
